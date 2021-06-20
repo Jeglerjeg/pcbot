@@ -124,7 +124,7 @@ def main():
     with open("csv/pokemon_species_names.csv", encoding="utf-8") as f:
         r = csv.DictReader(f)
         for row in r:
-            name = get_pokemon_name(int(row["species_id"]))
+            name = get_pokemon_name(int(row["pokemon_species_id"]))
             if name not in pokedex["pokemon"]:
                 continue
 
