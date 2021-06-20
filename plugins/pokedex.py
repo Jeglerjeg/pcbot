@@ -184,12 +184,12 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
     # Format the message
     formatted_message = (
         "**#{id:03} {upper_name} - GEN {generation}**\n"
+        "**{genus}**\n"
         "Weight: `{weight}kg` Height: `{height}m`\n"
         "Type: `{type}`\n"
-        "**{genus}**\n"
         "{pokemon_go}"
         "```\n{description}```"
-        "**EVOLUTION**: {formatted_evolution}"
+        "**EVOLUTIONS**: {formatted_evolution}"
     ).format(
         upper_name=pokemon["locale_name"].upper(),
         type=format_type(*pokemon["types"]),
