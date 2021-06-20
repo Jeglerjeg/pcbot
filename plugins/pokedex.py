@@ -198,8 +198,10 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
         pokemon_go=pokemon_go_info,
         **pokemon
     )
+    embed = discord.Embed(color=message.author.color)
+    embed.description = formatted_message
 
-    await client.say(message, formatted_message)
+    await client.send_message(message.channel, embed=embed)
 
 
 @pokedex_.command()
