@@ -676,14 +676,14 @@ async def calculate_pp_for_beatmapset(beatmapset):
     """ Calculates the pp for every difficulty in the given mapset, added
     to a "pp" key in the difficulty's dict. """
     # Init the cache of this mapset if it has not been created
-    set_id = beatmapset["id"]
+    set_id = str(beatmapset["id"])
     if set_id not in osu_config.data["map_cache"]:
         osu_config.data["map_cache"][set_id] = {}
 
     cached_mapset = osu_config.data["map_cache"][set_id]
 
     for i, diff in enumerate(beatmapset["beatmaps"]):
-        map_id = diff["id"]
+        map_id = str(diff["id"])
         # Skip any diff that's not standard osu!
         if int(diff["mode_int"]) != api.GameMode.Standard.value:
             continue
@@ -711,7 +711,6 @@ async def calculate_pp_for_beatmapset(beatmapset):
             "md5": diff["checksum"],
             "pp": pp_stats.pp,
         }
-
     await osu_config.asyncsave()
 
 
@@ -1231,8 +1230,12 @@ osu.command(name="score")(score)
 @osu.command(aliases="map")
 async def mapinfo(message: discord.Message, beatmap_url: str):
     """ Display simple beatmap information. """
-    beatmapset = await api.beatmapset_from_url(beatmap_url)
-    await calculate_pp_for_beatmapset(beatmapset)
+    try:
+        beatmapset = await api.beatmapset_from_url(beatmap_url)
+        await calculate_pp_for_beatmapset(beatmapset)
+    except Exception as e:
+        await client.say(message, e)
+        return
     header = "**{artist} - {title}** submitted by **{creator}**".format(**beatmapset)
     embed = discord.Embed(color=message.author.color, description=header + await format_beatmapset_diffs(beatmapset))
     await client.send_message(message.channel, embed=embed)
