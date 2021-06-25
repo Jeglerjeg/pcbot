@@ -311,7 +311,7 @@ async def beatmapset_from_url(url: str):
         beatmapset = await get_beatmapset(beatmapset_id)
     else:
         params = {
-            "id": beatmap_info.beatmap_id,
+            "beatmap_id": beatmap_info.beatmap_id,
         }
         beatmapset = await beatmapset_lookup(**params)
 
