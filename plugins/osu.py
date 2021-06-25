@@ -216,7 +216,7 @@ async def format_stream(member: discord.Member, score: dict, beatmap: dict):
     beatmap_length = int(beatmap["total_length"])
 
     # Convert beatmap length when speed mods are enabled
-    mods = Mods.list_mods(int(score["enabled_mods"]))
+    mods = Mods.list_mods(score["mods"])
     if Mods.DT in mods or Mods.NC in mods:
         beatmap_length /= 1.5
     elif Mods.HT in mods:
@@ -256,7 +256,8 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         countmiss=score["statistics"]["count_miss"],
         artist=beatmap["beatmapset"]["artist"].replace("_", "\_"),
         title=beatmap["beatmapset"]["title"].replace("_", "\_"),
-        i="*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else "",  # Escaping asterisk doesn't work in italics
+        i="*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else "",
+        # Escaping asterisk doesn't work in italics
         version=beatmap["version"],
         stars=float(beatmap["difficulty_rating"]),
         maxcombo=score["max_combo"],
@@ -419,7 +420,6 @@ async def update_user_data():
                 }
                 osu_tracking[str(member_id)]["scores"] = await api.get_user_scores(profile, "best", params=params)
 
-
         # Update the "new" data
         osu_tracking[str(member_id)]["new"] = user_data
         osu_tracking[str(member_id)]["new"]["events"] = user_recent
@@ -454,7 +454,6 @@ async def get_new_score(member_id: str):
             "limit": score_request_limit,
         }
         user_scores = await api.get_user_scores(profile, "best", params=params)
-
 
     # Compare the scores from top to bottom and try to find a new one
     for i, score in enumerate(user_scores):
@@ -644,8 +643,7 @@ async def format_beatmapset_diffs(beatmapset: list):
         diff_length = len("version")
 
     m = "```elm\n" \
-        "M {version: <{diff_len}}  stars  drain  pp".format(
-        version="version", diff_len=diff_length)
+        "M {version: <{diff_len}}  stars  drain  pp".format(version="version", diff_len=diff_length)
 
     for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
@@ -1288,10 +1286,13 @@ async def maps(message: discord.Message, *channels: discord.TextChannel):
 async def debug(message: discord.Message):
     """ Display some debug info. """
     await client.say(message, "Sent `{}` requests since the bot started (`{}`).\n"
+                              "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
                               "Members registered as playing: {}\n"
                               "Total members tracked: `{}`".format(
         api.requests_sent, client.time_started.ctime(),
+        round(api.requests_sent / ((datetime.now() - client.time_started).total_seconds() / 60.0),
+              2) if api.requests_sent > 0 else 0,
         time_elapsed,
         utils.format_objects(*[d["member"] for d in osu_tracking.values() if is_playing(d["member"])], dec="`"),
         len(osu_tracking)
