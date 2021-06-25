@@ -980,7 +980,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     if float(osu_user["statistics"]["pp"]) < minimum_pp_required:
         # Perhaps the user wants to display another gamemode
         await client.say(message,
-                         "**You have less than the required {}pp.\nIf you're not an osu!standard player, please "
+                         "**You have less than the required {}pp.\nIf you have enough in a different mode, please "
                          "enter your gamemode below. Valid gamemodes are `{}`.**".format(minimum_pp_required,
                                                                                          gamemodes))
 
