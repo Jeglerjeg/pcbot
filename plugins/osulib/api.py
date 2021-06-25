@@ -3,10 +3,9 @@
     Adds Mods enums with raw value calculations and some
     request functions.
 """
-
+import asyncio
 import logging
 import re
-import threading
 from collections import namedtuple
 from enum import Enum
 
@@ -48,7 +47,7 @@ async def get_access_token(client_id, client_secret):
     requests_sent += 1
     global access_token
     access_token = result["access_token"]
-    threading.Event.wait(result["expires_in"])
+    await asyncio.sleep(result["expires_in"])
     await get_access_token(client_id, client_secret)
 
 

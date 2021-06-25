@@ -375,16 +375,15 @@ async def update_user_data():
             params = {
                 "key": "id"
             }
+            await asyncio.sleep(1)
             user_data = await api.get_user(profile, mode.string, params=params)
+            await asyncio.sleep(1)
             user_recent = await api.get_user_recent_activity(profile)
         except aiohttp.ServerDisconnectedError:
             continue
         except asyncio.TimeoutError:
             logging.warning("Timed out when retrieving osu! info from {} ({})".format(member, profile))
             continue
-
-        # Sleep after using get_user as to not put too much strain on the API at once
-        await asyncio.sleep(.2)
 
         # Just in case something goes wrong, we skip this member (these things are usually one-time occurrences)
         if user_data is None:
@@ -402,6 +401,7 @@ async def update_user_data():
                     "mode": mode.string,
                     "limit": score_request_limit / 2,
                 }
+                await asyncio.sleep(1)
                 scores1 = await api.get_user_scores(profile, "best", params=params)
                 if len(scores1) < score_request_limit / 2:
                     osu_tracking[str(member_id)]["scores"] = scores1
@@ -411,6 +411,7 @@ async def update_user_data():
                         "limit": score_request_limit / 2,
                         "offset": score_request_limit / 2
                     }
+                    await asyncio.sleep(1)
                     scores2 = await api.get_user_scores(profile, "best", params=params)
                     osu_tracking[str(member_id)]["scores"] = scores1 + scores2
             else:
@@ -418,6 +419,7 @@ async def update_user_data():
                     "mode": mode.string,
                     "limit": score_request_limit,
                 }
+                await asyncio.sleep(1)
                 osu_tracking[str(member_id)]["scores"] = await api.get_user_scores(profile, "best", params=params)
 
         # Update the "new" data
