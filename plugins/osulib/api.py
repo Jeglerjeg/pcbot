@@ -6,18 +6,16 @@
 
 import logging
 import re
+import threading
 from collections import namedtuple
 from enum import Enum
 
 from pcbot import utils
 
 
-api_url = "https://osu.ppy.sh/api/"
-api_key = ""
+api_url = "https://osu.ppy.sh/api/v2/"
+access_token = ""
 requests_sent = 0
-
-ripple_url = "https://ripple.moe/api/"
-ripple_pattern = re.compile(r"ripple:\s*(?P<data>.+)")
 
 mode_names = {
     "Standard": ["standard", "osu"],
@@ -27,12 +25,29 @@ mode_names = {
 }
 
 
-def set_api_key(s: str):
+async def set_oauth_client(b: str, s: str):
     """ Set the osu! API key. This simplifies every API function as they
     can exclude the "k" parameter.
     """
-    global api_key
-    api_key = s
+
+    client_id = b
+    client_secret = s
+    await get_access_token(client_id, client_secret)
+
+
+async def get_access_token(client_id, client_secret):
+    params = {
+        "grant_type": "client_credentials",
+        "client_id": int(client_id),
+        "client_secret": client_secret,
+        "scope": "public"
+    }
+
+    result = await utils.post_request("https://osu.ppy.sh/oauth/token", call=utils._convert_json, data=params)
+    global access_token
+    access_token = result["access_token"]
+    threading.Event.wait(result["expires_in"])
+    await get_access_token(client_id, client_secret)
 
 
 class GameMode(Enum):
@@ -119,7 +134,7 @@ class Mods(Enum):
             mods = cls.list_mods(mods)
         assert type(mods) is list
 
-        return "".join((mod.name for mod in mods) if mods else ["Nomod"])
+        return "".join((mod for mod in mods) if mods else ["Nomod"])
 
 
 def def_section(api_name: str, first_element: bool=False):
@@ -127,21 +142,15 @@ def def_section(api_name: str, first_element: bool=False):
     async def template(url=api_url, request_tries: int=1, **params):
         global requests_sent
 
-        # Convert ripple id properly and change the url
-        if "u" in params:
-            ripple = ripple_pattern.match(params["u"])
-            if ripple:
-                params["u"] = ripple.group("data")
-                url = ripple_url
-
-        # Add the API key unless we're not sending to the official API
-        if url == api_url and "k" not in params:
-            params["k"] = api_key
+        # Add the API key
+        headers = {
+            "Authorization": "Bearer " + access_token
+        }
 
         # Download using a URL of the given API function name
         for i in range(request_tries):
             try:
-                json = await utils.download_json(url + api_name, **params)
+                json = await utils.download_json(url + api_name, headers=headers, **params)
             except ValueError as e:
                 logging.warning("ValueError Calling {}: {}".format(url + api_name, e))
             else:
@@ -166,13 +175,45 @@ def def_section(api_name: str, first_element: bool=False):
 
 
 # Define all osu! API requests using the template
-get_beatmaps = def_section("get_beatmaps")
-get_user = def_section("get_user", first_element=True)
-get_scores = def_section("get_scores")
-get_user_best = def_section("get_user_best")
-get_user_recent = def_section("get_user_recent")
-get_match = def_section("get_match", first_element=True)
-get_replay = def_section("get_replay")
+beatmap_lookup = def_section("beatmaps/lookup")
+beatmapset_lookup = def_section("beatmapsets/lookup")
+
+
+async def get_user(user, mode, params=None):
+    request = def_section("users/" + user + "/" + mode)
+    if params:
+        return await request(**params)
+    else:
+        return await request()
+
+
+async def get_user_scores(user_id, type, params=None):
+    request = def_section("users/" + user_id + "/scores/" + type)
+    if params:
+        return await request(**params)
+    else:
+        return await request("")
+
+
+async def get_user_beatmap_score(beatmap_id, user_id, params=None):
+    request = def_section("beatmaps/" + beatmap_id + "/scores/users/" + user_id)
+    if params:
+        result = await request(**params)
+    else:
+        result = await request()
+    if "{'error': None}" in str(result):
+        result = None
+    return result
+
+
+async def get_beatmapset(beatmapset_id):
+    request = def_section("beatmapsets/" + beatmapset_id)
+    return await request()
+
+
+async def get_user_recent_activity(user):
+    request = def_section("users/" + user + "/recent_activity")
+    return await request()
 
 beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
 beatmap_url_pattern_v2 = re.compile(r"https?://osu\.ppy\.sh/beatmapsets/(?P<beatmapset_id>\d+)(?:#(?P<mode>\w+)/(?P<beatmap_id>\d+))?")
@@ -211,7 +252,7 @@ def parse_beatmap_url(url: str):
     raise SyntaxError("The given URL is invalid.")
 
 
-async def beatmap_from_url(url: str, mode: GameMode=GameMode.Standard, *, return_type: str="beatmap"):
+async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
     """ Takes a url and returns the beatmap in the specified gamemode.
     If a url for a submission is given, it will find the most difficult map.
 
@@ -227,27 +268,29 @@ async def beatmap_from_url(url: str, mode: GameMode=GameMode.Standard, *, return
     if beatmap_info.beatmap_id is not None:
         if return_type == "id":
             return beatmap_info.beatmap_id
-
-        # Only download the beatmap of the id, so that only this beatmap will be returned
-        difficulties = await get_beatmaps(b=beatmap_info.beatmap_id, m=mode.value, limit=1)
+            # Only download the beatmap of the id, so that only this beatmap will be returned
+        params = {
+            "id": beatmap_info.beatmap_id,
+        }
+        difficulties = await beatmap_lookup(**params)
     else:
-        difficulties = await get_beatmaps(s=beatmap_info.beatmapset_id, m=mode.value)
-
+        difficulties = await get_beatmapset(beatmap_info.beatmapset_id)
+    logging.info(str(difficulties))
     # If the beatmap doesn't exist, the operation was unsuccessful
-    if not difficulties:
+    if not difficulties or "{'error': None}" in str(difficulties):
         raise LookupError("The beatmap with the given URL was not found.")
 
     # Find the most difficult beatmap
     beatmap = None
     highest = -1
     for diff in difficulties:
-        stars = float(diff["difficultyrating"])
+        stars = diff["difficulty_rating"]
         if stars > highest:
             beatmap, highest = diff, stars
 
     if return_type == "id":
         return beatmap["beatmap_id"]
-
+    logging.info(str(beatmap))
     return beatmap
 
 
@@ -262,17 +305,15 @@ async def beatmapset_from_url(url: str):
 
     # Use the beatmapset_id from the url if it has one, else find the beatmapset
     if beatmap_info.beatmapset_id is not None:
+
         beatmapset_id = beatmap_info.beatmapset_id
+
+        beatmapset = await get_beatmapset(beatmapset_id)
     else:
-        difficulty = await get_beatmaps(b=beatmap_info.beatmap_id, limit=1)
-
-        # If the beatmap doesn't exist, the operation was unsuccessful
-        if not difficulty:
-            raise LookupError("The beatmap with the given URL was not found.")
-
-        beatmapset_id = difficulty[0]["beatmapset_id"]
-
-    beatmapset = await get_beatmaps(s=beatmapset_id)
+        params = {
+            "id": beatmap_info.beatmap_id,
+        }
+        beatmapset = await beatmapset_lookup(**params)
 
     # Also make sure we get the beatmap
     if not beatmapset:
@@ -284,8 +325,8 @@ async def beatmapset_from_url(url: str):
 def lookup_beatmap(beatmaps: list, **lookup):
     """ Finds and returns the first beatmap with the lookup specified.
 
-    Beatmaps is a list of beatmap dicts and could be used with get_beatmaps().
-    Lookup is any key stored in a beatmap from get_beatmaps().
+    Beatmaps is a list of beatmap dicts and could be used with beatmap_lookup().
+    Lookup is any key stored in a beatmap from beatmap_lookup().
     """
     if not beatmaps:
         return None
@@ -310,10 +351,10 @@ def rank_from_events(events: dict, beatmap_id: str):
     list of events gathered via get_user().
     """
     for event in events:
-        if event["beatmap_id"] == beatmap_id:
-            match = re.search(r"rank\s#(?P<rank>\d+)(?:<|\s)", event["display_html"])
-
-            if match:
-                return int(match.group("rank"))
+        if event["type"] == "rank":
+            beatmap_url = "https://osu.ppy.sh" + event["beatmap"]["url"]
+            beatmap_info = parse_beatmap_url(beatmap_url)
+            if beatmap_info.beatmap_id == beatmap_id:
+                return event["rank"]
     else:
         return None

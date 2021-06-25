@@ -48,7 +48,8 @@ client = plugins.client  # type: discord.Client
 
 # Configuration data for this plugin, including settings for members and the API key
 osu_config = Config("osu", pretty=True, data=dict(
-    key="change to your api key",
+    client_id="change to your client ID",
+    client_secret="change to your client secret",
     pp_threshold=0.13,  # The amount of pp gain required to post a score
     score_request_limit=100,  # The maximum number of scores to request, between 0-100
     minimum_pp_required=0,  # The minimum pp required to assign a gamemode/profile in general
@@ -77,7 +78,8 @@ minimum_pp_required = osu_config.data.get("minimum_pp_required", 0)
 use_mentions_in_scores = osu_config.data.get("use_mentions_in_scores", True)
 max_diff_length = 21  # The maximum amount of characters in a beatmap difficulty
 
-api.set_api_key(osu_config.data.get("key"))
+asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
+                                                      osu_config.data.get("client_secret")), client.loop)
 host = "https://osu.ppy.sh/"
 rankings_url = "https://osu.ppy.sh/rankings/osu/performance"
 
@@ -126,8 +128,8 @@ class UpdateModes(Enum):
 def calculate_acc(mode: api.GameMode, score: dict, exclude_misses: bool = False):
     """ Calculate the accuracy using formulas from https://osu.ppy.sh/wiki/Accuracy """
     # Parse data from the score: 50s, 100s, 300s, misses, katu and geki
-    keys = ("count300", "count100", "count50", "countmiss", "countkatu", "countgeki")
-    c300, c100, c50, miss, katu, geki = map(int, (score[key] for key in keys))
+    keys = ("count_300", "count_100", "count_50", "count_miss", "count_katu", "count_geki")
+    c300, c100, c50, miss, katu, geki = map(int, (score["statistics"][key] for key in keys))
 
     # Catch accuracy is done a tad bit differently, so we calculate that by itself
     if mode is api.GameMode.Catch:
@@ -155,12 +157,13 @@ def format_user_diff(mode: api.GameMode, pp: float, rank: int, country_rank: int
                      data: dict):
     """ Get a bunch of differences and return a formatted string to send.
     iso is the country code. """
-    pp_rank = int(data["pp_rank"])
-    pp_country_rank = int(data["pp_country_rank"])
+    pp_rank = int(data["statistics"]["global_rank"])
+    pp_country_rank = int(data["statistics"]["country_rank"])
 
     # Find the performance page number of the respective ranks
 
-    formatted = "\u2139`{} {:.2f}pp {:+.2f}pp`".format(mode.name.replace("Standard", "osu!"), float(data["pp_raw"]), pp)
+    formatted = "\u2139`{} {:.2f}pp {:+.2f}pp`".format(mode.name.replace("Standard", "osu!"), float(data["statistics"]
+                                                                                                    ["pp"]), pp)
     formatted += (" [\U0001f30d]({}?page={})`#{:,}{}`".format(rankings_url, pp_rank // 50 + 1, pp_rank,
                                                               "" if int(rank) == 0 else " {:+}".format(int(rank))))
     formatted += (" [{}]({}?country={}&page={})`#{:,}{}`".format(utils.text_to_emoji(iso), rankings_url, iso,
@@ -175,7 +178,7 @@ def format_user_diff(mode: api.GameMode, pp: float, rank: int, country_rank: int
     else:
         formatted += " \U0001f3af"  # Dart
 
-    formatted += "`{:.3f}%".format(float(data["accuracy"]))
+    formatted += "`{:.3f}%".format(float(data["statistics"]["hit_accuracy"]))
     if not rounded_acc == 0:
         formatted += " {:+}%`".format(rounded_acc)
     else:
@@ -234,25 +237,32 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
     acc = calculate_acc(mode, score)
     return (
         "[{i}{artist} - {title} [{version}]{i}]({host}b/{beatmap_id})\n"
-        "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}+{mods}**"
+        "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}+{modslist}**"
         "```diff\n"
         "  acc     300s   100s   50s    miss   combo\n"
         "{sign} {acc:<8.2%}{count300:<7}{count100:<7}{count50:<7}{countmiss:<7}{maxcombo}{max_combo}```"
         "{live}"
     ).format(
         host=host,
-        sign="!" if acc == 1 else ("+" if score["perfect"] == "1" else "-"),
-        mods=Mods.format_mods(int(score["enabled_mods"])),
+        beatmap_id=score["beatmap"]["id"],
+        sign="!" if acc == 1 else ("+" if score["perfect"] == True else "-"),
+        modslist=Mods.format_mods(score["mods"]),
         acc=acc,
-        artist=beatmap["artist"].replace("_", "\_"),
-        title=beatmap["title"].replace("_", "\_"),
-        i="*" if "*" not in beatmap["artist"] + beatmap["title"] else "",  # Escaping asterisk doesn't work in italics
+        pp=score["pp"],
+        rank=score["rank"],
+        count300=score["statistics"]["count_300"],
+        count100=score["statistics"]["count_100"],
+        count50=score["statistics"]["count_50"],
+        countmiss=score["statistics"]["count_miss"],
+        artist=beatmap["beatmapset"]["artist"].replace("_", "\_"),
+        title=beatmap["beatmapset"]["title"].replace("_", "\_"),
+        i="*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else "",  # Escaping asterisk doesn't work in italics
         version=beatmap["version"],
-        stars=float(beatmap["difficultyrating"]),
+        stars=float(beatmap["difficulty_rating"]),
+        maxcombo=score["max_combo"],
         max_combo="/{}".format(beatmap["max_combo"]) if mode in (api.GameMode.Standard, api.GameMode.Catch) else "",
         scoreboard_rank="#{} ".format(rank) if rank else "",
         live=await format_stream(member, score, beatmap) if member else "",
-        **score
     )
 
 
@@ -266,12 +276,12 @@ async def format_minimal_score(mode: api.GameMode, score: dict, beatmap: dict, r
         "{live}"
     ).format(
         host=host,
-        mods=Mods.format_mods(int(score["enabled_mods"])),
+        mods=Mods.format_mods(score["mods"]),
         acc=acc,
-        artist=beatmap["artist"].replace("*", "\*").replace("_", "\_"),
-        title=beatmap["title"].replace("*", "\*").replace("_", "\_"),
+        artist=beatmap["beatmapset"]["artist"].replace("*", "\*").replace("_", "\_"),
+        title=beatmap["beatmapset"]["title"].replace("*", "\*").replace("_", "\_"),
         version=beatmap["version"],
-        stars=float(beatmap["difficultyrating"]),
+        stars=float(beatmap["difficulty_rating"]),
         scoreboard_rank="#{} ".format(rank) if rank else "",
         live=await format_stream(member, score, beatmap),
         **score
@@ -291,10 +301,21 @@ def get_primary_guild(member_id: str):
 def get_mode(member_id: str):
     """ Return the api.GameMode for the member with this id. """
     if member_id not in osu_config.data["mode"]:
-        return api.GameMode.Standard
+        mode = api.GameMode.Standard
+        mode.string = "osu"
+        return mode
 
     value = int(osu_config.data["mode"][member_id])
-    return api.GameMode(value)
+    mode = api.GameMode(value)
+    if mode == api.GameMode.Standard:
+        mode.string = "osu"
+    elif mode == api.GameMode.Taiko:
+        mode.string = "taiko"
+    elif mode == api.GameMode.Catch:
+        mode.string = "fruits"
+    elif mode == api.GameMode.Mania:
+        mode.string = "mania"
+    return mode
 
 
 def get_update_mode(member_id: str):
@@ -309,10 +330,7 @@ def get_user_url(member_id: str):
     """ Return the user website URL. """
     user_id = osu_config.data["profiles"][member_id]
 
-    if api.ripple_pattern.match(user_id):
-        return "https://ripple.moe/u/" + user_id[7:]
-    else:
-        return host + "u/" + user_id
+    return host + "u/" + user_id
 
 
 def is_playing(member: discord.Member):
@@ -351,14 +369,13 @@ async def update_user_data():
             continue
 
         # Get the user data for the player
-        mode = get_mode(str(member_id)).value
+        mode = get_mode(str(member_id))
         try:
             params = {
-                "u": profile,
-                "m": mode,
-                "type": "id"
+                "key": "id"
             }
-            user_data = await api.get_user(**params)
+            user_data = await api.get_user(profile, mode.string, params=params)
+            user_recent = await api.get_user_recent_activity(profile)
         except aiohttp.ServerDisconnectedError:
             continue
         except asyncio.TimeoutError:
@@ -380,16 +397,14 @@ async def update_user_data():
         else:
             # If this is the first time, update the user's list of scores for later
             params = {
-                "u": profile,
-                "m": mode,
+                "mode": mode.string,
                 "limit": score_request_limit,
-                "type": "id"
             }
-            osu_tracking[str(member_id)]["scores"] = await api.get_user_best(**params)
+            osu_tracking[str(member_id)]["scores"] = await api.get_user_scores(profile, "best", params=params)
 
         # Update the "new" data
         osu_tracking[str(member_id)]["new"] = user_data
-        osu_tracking[str(member_id)]["new"]["ripple"] = True if api.ripple_pattern.match(profile) else False
+        osu_tracking[str(member_id)]["new"]["events"] = user_recent
 
 
 async def get_new_score(member_id: str):
@@ -399,13 +414,10 @@ async def get_new_score(member_id: str):
     # Download a list of the user's scores
     profile = osu_config.data["profiles"][member_id]
     params = {
-        "u": profile,
-        "m": get_mode(member_id).value,
+        "mode": get_mode(member_id).string,
         "limit": score_request_limit,
-        "request_tries": 3,
-        "type": "id",
     }
-    user_scores = await api.get_user_best(**params)
+    user_scores = await api.get_user_scores(profile, "best", params=params)
 
     # Compare the scores from top to bottom and try to find a new one
     for i, score in enumerate(user_scores):
@@ -427,9 +439,12 @@ async def get_new_score(member_id: str):
         return None
 
 
-def get_diff(old, new, value):
+def get_diff(old, new, value, statistics=False):
     """ Get the difference between old and new osu! user data. """
-    return float(new[value]) - float(old[value])
+    if statistics:
+        return float(new["statistics"][value]) - float(old["statistics"][value])
+    else:
+        return float(new[value]) - float(old[value])
 
 
 def get_notify_channels(guild: discord.Guild, data_type: str):
@@ -450,17 +465,17 @@ async def get_potential_pp(score, beatmap, member: discord.Member, score_pp: flo
 
     # Find the potentially gained pp in standard when not FC
     if get_mode(str(member.id)) is api.GameMode.Standard and get_update_mode(str(member.id)) is not UpdateModes.PP \
-            and int(score["maxcombo"]) < int(beatmap["max_combo"]):
-        options = ["+" + Mods.format_mods(int(score["enabled_mods"]))]
+            and int(score["max_combo"]) < int(beatmap["max_combo"]):
+        options = ["+" + Mods.format_mods(score["mods"])]
 
         if use_acc:
             options.append("{acc:.2%}".format(acc=calculate_acc(api.GameMode.Standard, score, exclude_misses=True)))
         else:
-            options.append(score["count100"] + "x100")
-            options.append(score["count50"] + "x50")
+            options.append(score["statistics"]["count_100"] + "x100")
+            options.append(score["statistics"]["count_50"] + "x50")
 
         try:
-            pp_stats = await calculate_pp("https://osu.ppy.sh/b/{}".format(score["beatmap_id"]), *options)
+            pp_stats = await calculate_pp("https://osu.ppy.sh/b/{}".format(score["beatmap"]["id"]), *options)
             potential_pp = pp_stats.pp
         except Exception as e:
             logging.error(traceback.format_exc())
@@ -476,11 +491,10 @@ async def get_potential_pp(score, beatmap, member: discord.Member, score_pp: flo
     return potential_pp
 
 
-def get_score_name(member: discord.Member, username: str, ripple=False):
+def get_score_name(member: discord.Member, username: str):
     """ Formats the username and link for scores."""
     user_url = get_user_url(str(member.id))
-    return "{member.mention} [`{ripple}{name}`]({url})".format(member=member, name=username, url=user_url,
-                                                               ripple="ripple: " if ripple else "")
+    return "{member.mention} [`{name}`]({url})".format(member=member, name=username, url=user_url)
 
 
 def get_formatted_score_embed(member: discord.Member, score: dict, formatted_score: str, potential_pp: float = None):
@@ -503,15 +517,15 @@ async def notify_pp(member_id: str, data: dict):
 
     # Get the difference in pp since the old data
     old, new = data["old"], data["new"]
-    pp_diff = get_diff(old, new, "pp_raw")
+    pp_diff = get_diff(old, new, "pp", statistics=True)
 
     # If the difference is too small or nothing, move on
     if pp_threshold > pp_diff > -pp_threshold:
         return
 
-    rank_diff = -int(get_diff(old, new, "pp_rank"))
-    country_rank_diff = -int(get_diff(old, new, "pp_country_rank"))
-    accuracy_diff = get_diff(old, new, "accuracy")  # Percent points difference
+    rank_diff = -int(get_diff(old, new, "global_rank", statistics=True))
+    country_rank_diff = -int(get_diff(old, new, "country_rank", statistics=True))
+    accuracy_diff = get_diff(old, new, "hit_accuracy", statistics=True)  # Percent points difference
 
     member = data["member"]
     mode = get_mode(member_id)
@@ -529,21 +543,16 @@ async def notify_pp(member_id: str, data: dict):
     # If a new score was found, format the score
     if score:
         params = {
-            "b": int(score["beatmap_id"]),
-            "m": mode.value,
-            "limit": score_request_limit,
-            "request_tries": 3,
-            "a": 1
+            "id": score["beatmap"]["id"],
         }
-        beatmap = (await api.get_beatmaps(**params))[0]
+        beatmap = (await api.beatmap_lookup(**params))
 
         # There might not be any events
         scoreboard_rank = None
         if new["events"]:
-            scoreboard_rank = api.rank_from_events(new["events"], str(score["beatmap_id"]))
+            scoreboard_rank = api.rank_from_events(new["events"], str(score["beatmap"]["id"]))
 
         potential_pp = await get_potential_pp(score, beatmap, member, float(score["pp"]))
-
 
         if update_mode is UpdateModes.Minimal:
             m += await format_minimal_score(mode, score, beatmap, scoreboard_rank, member) + "\n"
@@ -551,7 +560,7 @@ async def notify_pp(member_id: str, data: dict):
             m += await format_new_score(mode, score, beatmap, scoreboard_rank, member)
 
     # Always add the difference in pp along with the ranks
-    m += format_user_diff(mode, pp_diff, rank_diff, country_rank_diff, accuracy_diff, old["country"], new)
+    m += format_user_diff(mode, pp_diff, rank_diff, country_rank_diff, accuracy_diff, old["country"]["code"], new)
 
     # Send the message to all guilds
     for guild in client.guilds:
@@ -564,7 +573,7 @@ async def notify_pp(member_id: str, data: dict):
         is_primary = True if primary_guild is None else (True if primary_guild == str(guild.id) else False)
 
         # Format the url and the username
-        name = get_score_name(member, new["username"], "ripple" in data)
+        name = get_score_name(member, new["username"])
         embed = get_formatted_score_embed(member, score, m, potential_pp)
 
         # The top line of the format will differ depending on whether we found a score or not
@@ -588,10 +597,10 @@ async def notify_pp(member_id: str, data: dict):
                 pass
 
 
-def format_beatmapset_diffs(beatmapset: list):
+async def format_beatmapset_diffs(beatmapset: list):
     """ Format some difficulty info on a beatmapset. """
     # Get the longest difficulty name
-    diff_length = len(max((diff["version"] for diff in beatmapset), key=len))
+    diff_length = len(max((diff["version"] for diff in beatmapset["beatmaps"]), key=len))
     if diff_length > max_diff_length:
         diff_length = max_diff_length
     elif diff_length < len("version"):
@@ -601,28 +610,29 @@ def format_beatmapset_diffs(beatmapset: list):
         "M {version: <{diff_len}}  stars  drain  pp".format(
         version="version", diff_len=diff_length)
 
-    for diff in sorted(beatmapset, key=lambda d: float(d["difficultyrating"])):
+    for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
+        calced_pp = await calculate_pp(diff["id"])
         m += "\n{gamemode: <2}{name: <{diff_len}}  {stars: <7}{drain: <7}{pp}".format(
-            gamemode=api.GameMode(int(diff["mode"])).name[0],
+            gamemode=api.GameMode(int(diff["mode_int"])).name[0],
             name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
             diff_len=diff_length,
-            stars="{:.2f}\u2605".format(float(diff["difficultyrating"])),
-            pp="{}pp".format(int(diff.get("pp", "0"))),
+            stars="{:.2f}\u2605".format(float(diff["difficulty_rating"])),
+            pp="{}pp".format(int(diff.get("pp", calced_pp.pp))),
             drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60))
         )
 
     return m + "```"
 
 
-def format_map_status(member: discord.Member, status_format: str, beatmapset: list, minimal: bool):
+async def format_map_status(member: discord.Member, status_format: str, beatmapset: list, minimal: bool):
     """ Format the status update of a beatmap. """
     set_id = beatmapset[0]["beatmapset_id"]
     user_id = osu_config.data["profiles"][str(member.id)]
 
     status = status_format.format(name=member.display_name, user_id=user_id, host=host, **beatmapset[0])
     if not minimal:
-        status += format_beatmapset_diffs(beatmapset)
+        status += await format_beatmapset_diffs(beatmapset)
 
     embed = discord.Embed(color=member.color, description=status)
     embed.set_thumbnail(
@@ -697,21 +707,21 @@ async def notify_maps(member_id: str, data: dict):
 
     # Format and post the events
     for event in events:
-        html = event["display_html"]
-
         # Get and format the type of event
-        if "has submitted" in html:
-            status_format = "\U0001F310 <name> has submitted a new beatmap <title>"
-        elif "has updated" in html:
-            status_format = "\U0001F53C <name> has updated the beatmap <title>"
-        elif "has been revived" in html:
-            status_format = "\U0001F64F <title> has been revived from eternal slumber by <name>"
-        elif "has just been qualified" in html:
-            status_format = "\U0001F497 <title> by <name> has been qualified!"
-        elif "has just been ranked" in html:
-            status_format = "\u23EB <title> by <name> has been ranked!"
-        elif "has been loved" in html:
-            status_format = "\u2764 <title> by <name> has been loved!"
+        if event["type"] == "beatmapsetUpload":
+            status_format = event["user"]["username"] + " has submitted a new beatmap " + event[
+                "beatmapset"]["title"]
+        elif event["type"] == "beatmapsetUpdate":
+            status_format = event["user"]["username"] + " has updated the beatmap  " + event["beatmapset"]["title"]
+        elif event["type"] == "beatmapsetRevive":
+            status_format = event["beatmapset"]["title"] + " has been revived from eternal slumber by " + event["user"][
+                "username"]
+        elif event["type"] == "beatmapsetApprove" and event["approval"] == "qualified":
+            status_format = event["beatmapset"]["title"] + " by " + event["user"]["username"] + " has been qualified!"
+        elif event["type"] == "beatmapsetApprove" and event["approval"] == "ranked":
+            status_format = event["beatmapset"]["title"] + " by " + event["user"]["username"] + " has been ranked!"
+        elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved":
+            status_format = event["beatmapset"]["title"] + " by " + event["user"]["username"] + " has been loved!"
         else:  # We discard any other events
             continue
 
@@ -726,10 +736,11 @@ async def notify_maps(member_id: str, data: dict):
         # Try returning the beatmap info 6 times with a span of a minute
         # This might be needed when new maps are submitted
         for _ in range(6):
+            beatmap_info = api.parse_beatmap_url(event["beatmap"]["url"])
             params = {
-                "s": event["beatmapset_id"],
+                "id": beatmap_info.beatmap_id
             }
-            beatmapset = await api.get_beatmaps(**params)
+            beatmapset = await api.beatmap_lookup(**params)
             if beatmapset:
                 break
             await asyncio.sleep(60)
@@ -743,8 +754,8 @@ async def notify_maps(member_id: str, data: dict):
         except ValueError:
             logging.error(traceback.format_exc())
 
-        new_event = MapEvent(html)
-        prev = discord.utils.get(recent_map_events, text=html)
+        new_event = MapEvent(event)
+        prev = discord.utils.get(recent_map_events, text=event)
         to_delete = []
 
         if prev:
@@ -769,7 +780,7 @@ async def notify_maps(member_id: str, data: dict):
             for channel in channels:
                 # Do not format difficulties when minimal (or pp) information is specified
                 update_mode = get_update_mode(member_id)
-                embed = format_map_status(member, status_format, beatmapset, update_mode is not UpdateModes.Full)
+                embed = await format_map_status(member, status_format, beatmapset, update_mode is not UpdateModes.Full)
                 if new_event.count > 1:
                     embed.set_footer(text="updated {} times since".format(new_event.count))
                     embed.timestamp = new_event.time_created
@@ -793,8 +804,9 @@ async def on_ready():
     global time_elapsed
 
     # Notify the owner when they have not set their API key
-    if osu_config.data["key"] == "change to your api key":
-        logging.warning("osu! functionality is unavailable until an API key is provided (config/osu.json)")
+    if osu_config.data["client_secret"] == "change to your client secret":
+        logging.warning("osu! functionality is unavailable until a "
+                        "client ID and client secret is provided (config/osu.json)")
 
     while not client.loop.is_closed():
         try:
@@ -904,48 +916,34 @@ async def osu(message: discord.Message, member: discord.Member = Annotate.Self,
         "date": datetime.now().ctime()
     }
     signature = await utils.retrieve_page("https://lemmmy.pw/osusig/sig.php", **params, **dark)
-    if api.ripple_pattern.match(user_id):
-        params = {
-            "head": "True",
-            "colour": color,
-            "uname": user_id[7:],
-            "pp": "True",
-            "countryrank": "True",
-            "xpbar": "True",
-            "mode": mode.value,
-            "date": datetime.now().ctime()
-        }
-        signature = await utils.retrieve_page("https://sig.ripple.moe/sig.php", **params, **dark)
     embed = discord.Embed(color=member.color)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
     embed.set_image(url=signature.url)
     await client.send_message(message.channel, embed=embed)
 
 
-async def has_enough_pp(**params):
+async def has_enough_pp(user, mode, **params):
     """ Lookup the given member and check if they have enough pp to register.
     params are just like api.get_user. """
-    osu_user = await api.get_user(**params)
-    return float(osu_user["pp_raw"]) >= minimum_pp_required
+    osu_user = await api.get_user(user, mode, params=params)
+    return osu_user["statistics"]["pp"] >= minimum_pp_required
 
 
 @osu.command(aliases="set")
 async def link(message: discord.Message, name: Annotate.LowerContent):
-    """ Tell the bot who you are on osu!.
-
-    If you're using ripple, type ripple:<name>. """
+    """ Tell the bot who you are on osu!. """
     mode = api.GameMode.Standard
     params = {
-        "u": name,
+        "key": "username",
     }
-    osu_user = await api.get_user(**params)
+    osu_user = await api.get_user(name, mode="osu", params=params)
 
     # Check if the osu! user exists
     assert osu_user, "osu! user `{}` does not exist.".format(name)
-    user_id = osu_user["user_id"]
+    user_id = osu_user["id"]
 
     # Make sure the user has more pp than the minimum limit defined in config
-    if float(osu_user["pp_raw"]) < minimum_pp_required:
+    if float(osu_user["statistics"]["pp"]) < minimum_pp_required:
         # Perhaps the user wants to display another gamemode
         await client.say(message,
                          "**You have less than the required {}pp.\nIf you're not an osu!standard player, please "
@@ -962,20 +960,17 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
         mode = api.GameMode.get_mode(reply.content)
         assert mode is not None, "**The given gamemode is invalid.**"
-        assert await has_enough_pp(u=user_id, m=mode.value, type="id"), \
+        assert await has_enough_pp(user=user_id, mode=mode.string), \
             "**Your pp in {} is less than the required {}pp.**".format(mode.name, minimum_pp_required)
 
     # Clear the scores when changing user
     if str(message.author.id) in osu_tracking:
         del osu_tracking[str(message.author.id)]
 
-    # Convert their user_id to a ripple id
-    user_id = osu_user["user_id"]
-    if api.ripple_pattern.match(name):
-        user_id = "ripple:" + user_id
+    user_id = osu_user["id"]
 
     # Assign the user using their unique user_id
-    osu_config.data["profiles"][str(message.author.id)] = user_id
+    osu_config.data["profiles"][str(message.author.id)] = str(user_id)
     osu_config.data["mode"][str(message.author.id)] = mode.value
     osu_config.data["primary_guild"][str(message.author.id)] = str(message.guild.id)
     await osu_config.asyncsave()
@@ -1008,7 +1003,16 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
         "No osu! profile assigned to **{}**!".format(message.author.name)
 
     user_id = osu_config.data["profiles"][str(message.author.id)]
-    assert await has_enough_pp(u=user_id, m=mode.value, type="id"), \
+    if mode == api.GameMode.Standard:
+        mode.string = "osu"
+    elif mode == api.GameMode.Taiko:
+        mode.string = "taiko"
+    elif mode == api.GameMode.Catch:
+        mode.string = "fruits"
+    elif mode == api.GameMode.Mania:
+        mode.string = "mania"
+
+    assert await has_enough_pp(user=user_id, mode=mode.string), \
         "**Your pp in {} is less than the required {}pp.**".format(mode.name, minimum_pp_required)
 
     osu_config.data["mode"][str(message.author.id)] = mode.value
@@ -1113,12 +1117,14 @@ if can_calc_pp:
 
 
 async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mode):
-    mods = api.Mods.format_mods(int(score["enabled_mods"]))
+    mods = api.Mods.format_mods(score["mods"])
 
-    score_pp = await calculate_pp(int(score["beatmap_id"]), *"{mods}{acc:.2%} {c300}x300 {c100}x100 {c50}x50 {"
-                                                             "scorerank}rank {countmiss}m {maxcombo}x".format(
-        acc=calculate_acc(mode, score), scorerank=score["rank"], c300=score["count300"], c100=score["count100"],
-        c50=score["count50"], mods="+" + mods + " " if mods != "Nomod" else "", **score).split())
+    score_pp = await calculate_pp(int(score["beatmap"]["id"]), *"{modslist}{acc:.2%} {c300}x300 {c100}x100 {c50}x50 {"
+                                                                "scorerank}rank {countmiss}m {maxcombo}x".format(
+        acc=calculate_acc(mode, score), scorerank=score["rank"], c300=score["statistics"]["count_300"],
+        c100=score["statistics"]["count_100"],
+        c50=score["statistics"]["count_50"], modslist="+" + mods + " " if mods != "Nomod" else "",
+        countmiss=score["statistics"]["count_miss"], maxcombo=score["max_combo"]).split())
 
     potential_pp = await get_potential_pp(score, beatmap, member, round(score_pp.pp, 2), use_acc=True)
     score["pp"] = round(score_pp.pp, 2)
@@ -1137,22 +1143,18 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
     mode = get_mode(str(member.id))
 
     params = {
-        "u": user_id,
-        "m": mode.value,
+        "mode": mode.string,
         "limit": 1
     }
 
-    scores = await api.get_user_recent(**params)
+    scores = await api.get_user_scores(user_id, "recent", params=params)
     assert scores, "Found no recent score."
 
     score = scores[0]
     params = {
-        "b": int(score["beatmap_id"]),
-        "m": mode.value,
-        "a": 1,
-        "request_tries": 3
+        "id": score["beatmap"]["id"],
     }
-    beatmap = (await api.get_beatmaps(**params))[0]
+    beatmap = (await api.beatmap_lookup(**params))
 
     embed = await create_score_embed_with_pp(member, score, beatmap, mode)
     await client.send_message(message.channel, embed=embed)
@@ -1177,28 +1179,18 @@ async def score(message: discord.Message, beatmap_url: str):
         return
 
     assert beatmap_info.beatmap_id, "Please link to a specific difficulty"
+    params = {
+        "mode": mode.string,
+    }
+    scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
+    assert scores, "Found no scores by **{}**.".format(message.author.name)
+
+    score = scores["score"]
 
     params = {
-        "b": beatmap_info.beatmap_id,
-        "m": mode.value,
-        "type": "id",
-        "limit": 1,
-        "u": user_id
+        "id": score["beatmap"]["id"],
     }
-    scores = await api.get_scores(**params)
-    assert len(scores) > 0, "Found no scores by **{}**.".format(message.author.name)
-
-    score = scores[0]
-
-    # Add the beatmap_id as it is not provided by the get_scores API endpoint
-    score["beatmap_id"] = beatmap_info.beatmap_id
-
-    params = {
-        "b": beatmap_info.beatmap_id,
-        "m": mode.value,
-        "limit": 1,
-    }
-    beatmap = (await api.get_beatmaps(**params))[0]
+    beatmap = (await api.beatmap_lookup(**params))
 
     embed = await create_score_embed_with_pp(message.author, score, beatmap, mode)
     await client.send_message(message.channel, embed=embed)
@@ -1211,14 +1203,15 @@ osu.command(name="score")(score)
 @osu.command(aliases="map")
 async def mapinfo(message: discord.Message, beatmap_url: str):
     """ Display simple beatmap information. """
-    try:
-        beatmapset = await api.beatmapset_from_url(beatmap_url)
-    except Exception as e:
-        await client.say(message, e)
-        return
+    logging.info(beatmap_url)
 
-    header = "**{artist} - {title}** submitted by **{creator}**".format(**beatmapset[0])
-    await client.say(message, header + format_beatmapset_diffs(beatmapset))
+    beatmapset = await api.beatmapset_from_url(beatmap_url)
+
+    logging.info(str(beatmapset))
+
+    header = "**{artist} - {title}** submitted by **{creator}**".format(**beatmapset)
+    embed = discord.Embed(color=message.author.color, description=header + await format_beatmapset_diffs(beatmapset))
+    await client.send_message(message.channel, embed=embed)
 
 
 def init_guild_config(guild: discord.Guild):
