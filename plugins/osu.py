@@ -375,9 +375,7 @@ async def update_user_data():
             params = {
                 "key": "id"
             }
-            await asyncio.sleep(1)
             user_data = await api.get_user(profile, mode.string, params=params)
-            await asyncio.sleep(1)
             user_recent = await api.get_user_recent_activity(profile)
         except aiohttp.ServerDisconnectedError:
             continue
@@ -401,7 +399,6 @@ async def update_user_data():
                     "mode": mode.string,
                     "limit": score_request_limit / 2,
                 }
-                await asyncio.sleep(1)
                 scores1 = await api.get_user_scores(profile, "best", params=params)
                 if len(scores1) < score_request_limit / 2:
                     osu_tracking[str(member_id)]["scores"] = scores1
@@ -411,7 +408,6 @@ async def update_user_data():
                         "limit": score_request_limit / 2,
                         "offset": score_request_limit / 2
                     }
-                    await asyncio.sleep(1)
                     scores2 = await api.get_user_scores(profile, "best", params=params)
                     osu_tracking[str(member_id)]["scores"] = scores1 + scores2
             else:
@@ -419,12 +415,12 @@ async def update_user_data():
                     "mode": mode.string,
                     "limit": score_request_limit,
                 }
-                await asyncio.sleep(1)
                 osu_tracking[str(member_id)]["scores"] = await api.get_user_scores(profile, "best", params=params)
 
         # Update the "new" data
         osu_tracking[str(member_id)]["new"] = user_data
         osu_tracking[str(member_id)]["new"]["events"] = user_recent
+        await asyncio.sleep(3)
 
 
 async def get_new_score(member_id: str):
