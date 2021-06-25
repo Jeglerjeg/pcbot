@@ -44,6 +44,8 @@ async def get_access_token(client_id, client_secret):
     }
 
     result = await utils.post_request("https://osu.ppy.sh/oauth/token", call=utils._convert_json, data=params)
+    global requests_sent
+    requests_sent += 1
     global access_token
     access_token = result["access_token"]
     threading.Event.wait(result["expires_in"])
