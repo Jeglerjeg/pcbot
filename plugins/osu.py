@@ -396,11 +396,29 @@ async def update_user_data():
             osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
         else:
             # If this is the first time, update the user's list of scores for later
-            params = {
-                "mode": mode.string,
-                "limit": score_request_limit,
-            }
-            osu_tracking[str(member_id)]["scores"] = await api.get_user_scores(profile, "best", params=params)
+            if score_request_limit > 50:
+                params = {
+                    "mode": mode.string,
+                    "limit": score_request_limit / 2,
+                }
+                scores1 = await api.get_user_scores(profile, "best", params=params)
+                if len(scores1) < score_request_limit / 2:
+                    osu_tracking[str(member_id)]["scores"] = scores1
+                else:
+                    params = {
+                        "mode": mode.string,
+                        "limit": score_request_limit / 2,
+                        "offset": score_request_limit / 2
+                    }
+                    scores2 = await api.get_user_scores(profile, "best", params=params)
+                    osu_tracking[str(member_id)]["scores"] = scores1 + scores2
+            else:
+                params = {
+                    "mode": mode.string,
+                    "limit": score_request_limit,
+                }
+                osu_tracking[str(member_id)]["scores"] = await api.get_user_scores(profile, "best", params=params)
+
 
         # Update the "new" data
         osu_tracking[str(member_id)]["new"] = user_data
@@ -413,11 +431,30 @@ async def get_new_score(member_id: str):
     player's top plays can be retrieved with score["pos"]. """
     # Download a list of the user's scores
     profile = osu_config.data["profiles"][member_id]
-    params = {
-        "mode": get_mode(member_id).string,
-        "limit": score_request_limit,
-    }
-    user_scores = await api.get_user_scores(profile, "best", params=params)
+    if score_request_limit > 50:
+        params = {
+            "mode": get_mode(member_id).string,
+            "limit": score_request_limit / 2,
+        }
+        scores1 = await api.get_user_scores(profile, "best", params=params)
+        if len(scores1) < score_request_limit / 2:
+            user_scores = scores1
+        else:
+            params = {
+                "mode": get_mode(member_id).string,
+                "limit": score_request_limit / 2,
+                "offset": score_request_limit / 2
+            }
+            scores2 = await api.get_user_scores(profile, "best", params=params)
+            user_scores = scores1 + scores2
+
+    else:
+        params = {
+            "mode": get_mode(member_id).string,
+            "limit": score_request_limit,
+        }
+        user_scores = await api.get_user_scores(profile, "best", params=params)
+
 
     # Compare the scores from top to bottom and try to find a new one
     for i, score in enumerate(user_scores):
