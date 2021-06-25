@@ -180,8 +180,11 @@ beatmap_lookup = def_section("beatmaps/lookup")
 beatmapset_lookup = def_section("beatmapsets/lookup")
 
 
-async def get_user(user, mode, params=None):
-    request = def_section("users/" + user + "/" + mode)
+async def get_user(user, mode=None, params=None):
+    if mode:
+        request = def_section("users/" + user + "/" + mode)
+    else:
+        request = def_section("users/" + user)
     if params:
         return await request(**params)
     else:

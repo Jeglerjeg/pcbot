@@ -957,11 +957,20 @@ async def has_enough_pp(user, mode, **params):
 @osu.command(aliases="set")
 async def link(message: discord.Message, name: Annotate.LowerContent):
     """ Tell the bot who you are on osu!. """
-    mode = api.GameMode.Standard
     params = {
         "key": "username",
     }
-    osu_user = await api.get_user(name, mode="osu", params=params)
+    osu_user = await api.get_user(name, params=params)
+    if osu_user["playmode"] == "osu":
+        mode = api.GameMode.Standard
+    elif osu_user["playmode"] == "taiko":
+        mode = api.GameMode.Taiko
+    elif osu_user["playmode"] == "fruits":
+        mode = api.GameMode.Catch
+    elif osu_user["playmode"] == "mania":
+        mode = api.GameMode.Mania
+    else:
+        mode = api.GameMode.Standard
 
     # Check if the osu! user exists
     assert osu_user, "osu! user `{}` does not exist.".format(name)
