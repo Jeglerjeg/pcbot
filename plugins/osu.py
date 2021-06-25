@@ -647,13 +647,15 @@ async def format_beatmapset_diffs(beatmapset: list):
 
     for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
-        calced_pp = await calculate_pp(diff["id"])
+        calced_pp = None
+        if not diff.get("pp"):
+            calced_pp = await calculate_pp(diff["id"])
         m += "\n{gamemode: <2}{name: <{diff_len}}  {stars: <7}{drain: <7}{pp}".format(
             gamemode=api.GameMode(int(diff["mode_int"])).name[0],
             name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
             diff_len=diff_length,
             stars="{:.2f}\u2605".format(float(diff["difficulty_rating"])),
-            pp="{}pp".format(int(diff.get("pp", calced_pp.pp))),
+            pp="{}pp".format(int(diff.get("pp", calced_pp.pp if calced_pp is not None else "0"))),
             drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60))
         )
 
@@ -1238,11 +1240,7 @@ osu.command(name="score")(score)
 @osu.command(aliases="map")
 async def mapinfo(message: discord.Message, beatmap_url: str):
     """ Display simple beatmap information. """
-    logging.info(beatmap_url)
-
     beatmapset = await api.beatmapset_from_url(beatmap_url)
-
-    logging.info(str(beatmapset))
 
     header = "**{artist} - {title}** submitted by **{creator}**".format(**beatmapset)
     embed = discord.Embed(color=message.author.color, description=header + await format_beatmapset_diffs(beatmapset))

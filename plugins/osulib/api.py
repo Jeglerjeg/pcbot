@@ -259,7 +259,6 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
     If a url for a submission is given, it will find the most difficult map.
 
     :param url: The osu! beatmap url to lookup.
-    :param mode: The GameMode to lookup.
     :param return_type: Defaults to "beatmap". Use "id" to only return the id (spares a request for /b/ urls).
     :raise SyntaxError: The URL is neither a v1 or v2 osu! url.
     :raise LookupError: The beatmap linked in the URL was not found.
@@ -277,7 +276,6 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
         difficulties = await beatmap_lookup(**params)
     else:
         difficulties = await get_beatmapset(beatmap_info.beatmapset_id)
-    logging.info(str(difficulties))
     # If the beatmap doesn't exist, the operation was unsuccessful
     if not difficulties or "{'error': None}" in str(difficulties):
         raise LookupError("The beatmap with the given URL was not found.")
@@ -292,7 +290,6 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
 
     if return_type == "id":
         return beatmap["beatmap_id"]
-    logging.info(str(beatmap))
     return beatmap
 
 
