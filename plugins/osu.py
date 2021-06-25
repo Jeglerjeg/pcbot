@@ -740,19 +740,17 @@ async def notify_maps(member_id: str, data: dict):
     for event in events:
         # Get and format the type of event
         if event["type"] == "beatmapsetUpload":
-            status_format = event["user"]["username"] + " has submitted a new beatmap " + event[
-                "beatmapset"]["title"]
+            status_format = "<name> has submitted a new beatmap <title>"
         elif event["type"] == "beatmapsetUpdate":
-            status_format = event["user"]["username"] + " has updated the beatmap  " + event["beatmapset"]["title"]
+            status_format = "<name> has updated the beatmap <title>"
         elif event["type"] == "beatmapsetRevive":
-            status_format = event["beatmapset"]["title"] + " has been revived from eternal slumber by " + event["user"][
-                "username"]
+            status_format = "<title> has been revived from eternal slumber by <name>"
         elif event["type"] == "beatmapsetApprove" and event["approval"] == "qualified":
-            status_format = event["beatmapset"]["title"] + " by " + event["user"]["username"] + " has been qualified!"
+            status_format = "<title> by <name> has been qualified!"
         elif event["type"] == "beatmapsetApprove" and event["approval"] == "ranked":
-            status_format = event["beatmapset"]["title"] + " by " + event["user"]["username"] + " has been ranked!"
+            status_format = "<title> by <name> has been ranked!"
         elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved":
-            status_format = event["beatmapset"]["title"] + " by " + event["user"]["username"] + " has been loved!"
+            status_format = "<title> by <name> has been loved!"
         else:  # We discard any other events
             continue
 
