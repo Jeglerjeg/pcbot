@@ -660,9 +660,9 @@ async def format_beatmapset_diffs(beatmapset):
 async def format_map_status(member: discord.Member, status_format: str, beatmapset, minimal: bool):
     """ Format the status update of a beatmap. """
     set_id = beatmapset["id"]
-    user_id = osu_config.data["profiles"][str(member.id)]
+    userid = osu_config.data["profiles"][str(member.id)]
 
-    status = status_format.format(name=member.display_name, user_id=user_id, host=host, **beatmapset)
+    status = status_format.format(name=member.display_name, user_id=userid, host=host, **beatmapset)
     if not minimal:
         status += await format_beatmapset_diffs(beatmapset)
 
