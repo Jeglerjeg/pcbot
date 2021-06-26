@@ -377,6 +377,7 @@ async def update_user_data():
             }
             user_data = await api.get_user(profile, mode.string, params=params)
             user_recent = await api.get_user_recent_activity(profile)
+            logging.info(user_recent)
         except aiohttp.ServerDisconnectedError:
             continue
         except asyncio.TimeoutError:
@@ -765,7 +766,7 @@ async def notify_maps(member_id: str, data: dict):
         # Try returning the beatmap info 6 times with a span of a minute
         # This might be needed when new maps are submitted
         for _ in range(6):
-            beatmapset = await api.beatmapset_from_url("https://osu.ppy.sh" + event["beatmap"]["url"])
+            beatmapset = await api.beatmapset_from_url("https://osu.ppy.sh" + event["beatmapset"]["url"])
             if beatmapset:
                 break
             await asyncio.sleep(60)
