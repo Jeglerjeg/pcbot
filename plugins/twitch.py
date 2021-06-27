@@ -70,16 +70,14 @@ def make_twitch_embed(member: discord.Member, response: dict):
 def started_streaming(before: discord.Member, after: discord.Member):
     """ Return True if the member just started streaming, and did not do so recently. """
     # The member is not streaming at the moment
-    if after.activites is not None:
-        for activity in after.activites:
-            if activity is None or not activity.type == discord.ActivityType.streaming:
-                return False
+    for activity in after.activities:
+        if activity is None or not activity.type == discord.ActivityType.streaming:
+            return False
 
     # Check if they were also streaming before
-    if before.activities is not None:
-        for activity in before.activities:
-            if activity and activity.type == discord.ActivityType.streaming:
-                return False
+    for activity in before.activities:
+        if activity and activity.type == discord.ActivityType.streaming:
+            return False
 
     # Update the stream history
     previous_stream = stream_history.get(str(after.id))
