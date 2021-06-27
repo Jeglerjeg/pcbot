@@ -338,7 +338,7 @@ def is_playing(member: discord.Member):
     """ Check if a member has "osu!" in their Game name. """
     # See if the member is playing
     for activity in member.activities:
-        if "osu" in activity.name.lower() or rank_regex.search(activity.name):
+        if activity is not None and ("osu" in activity.name.lower() or rank_regex.search(activity.name)):
             return True
     else:
         return False
