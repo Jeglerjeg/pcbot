@@ -424,7 +424,7 @@ async def update_user_data():
         # Update the "new" data
         osu_tracking[str(member_id)]["new"] = user_data
         osu_tracking[str(member_id)]["new"]["events"] = user_recent
-        await asyncio.sleep(3)
+        await asyncio.sleep(2)
 
 
 async def get_new_score(member_id: str):
@@ -447,6 +447,7 @@ async def get_new_score(member_id: str):
                 "limit": score_request_limit / 2,
                 "offset": score_request_limit / 2
             }
+            await asyncio.sleep(1)
             scores2 = await api.get_user_scores(profile, "best", params=params)
             user_scores = scores1 + scores2
 
