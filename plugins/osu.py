@@ -337,8 +337,11 @@ def get_user_url(member_id: str):
 def is_playing(member: discord.Member):
     """ Check if a member has "osu!" in their Game name. """
     # See if the member is playing
-    return getattr(member.activity, "name", None) and (
-            "osu" in member.activity.name.lower() or rank_regex.search(member.activity.name))
+    for activity in member.activities:
+        if "osu" in activity.name.lower() or rank_regex.search(activity.name):
+            return True
+    else:
+        return False
 
 
 async def update_user_data():
