@@ -1079,7 +1079,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     e.set_author(name=member.display_name, icon_url=member.avatar_url, url=host + "u/" + user_id)
     e.add_field(name="Game Mode", value=mode.name)
     e.add_field(name="Notification Mode", value=update_mode.name)
-    e.add_field(name="Playing osu!", value="YES" if str(member.id) in osu_tracking.keys() else "NO")
+    e.add_field(name="Playing osu!", value="YES" if is_playing(member) else "NO")
 
     await client.send_message(message.channel, embed=e)
 
