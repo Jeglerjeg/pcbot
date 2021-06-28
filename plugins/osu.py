@@ -510,8 +510,8 @@ async def get_potential_pp(score, beatmap, member: discord.Member, score_pp: flo
         if use_acc:
             options.append("{acc:.2%}".format(acc=calculate_acc(api.GameMode.Standard, score, exclude_misses=True)))
         else:
-            options.append(score["statistics"]["count_100"] + "x100")
-            options.append(score["statistics"]["count_50"] + "x50")
+            options.append(str(score["statistics"]["count_100"]) + "x100")
+            options.append(str(score["statistics"]["count_50"]) + "x50")
 
         try:
             pp_stats = await calculate_pp("https://osu.ppy.sh/b/{}".format(score["beatmap"]["id"]), *options)
