@@ -413,7 +413,15 @@ async def update_user_data():
                         "offset": score_request_limit / 2
                     }
                     scores2 = await api.get_user_scores(profile, "best", params=params)
-                    osu_tracking[str(member_id)]["scores"] = scores1 + scores2
+                    user_scores = scores1 + scores2
+                    for score in user_scores:
+                        del score["weight"]
+                        del score["beatmap"]["passcount"]
+                        del score["beatmapset"]
+                        del score["beatmap"]["playcount"]
+                        del score["user"]
+
+                    osu_tracking[str(member_id)]["scores"] = user_scores
             else:
                 params = {
                     "mode": mode.string,
@@ -438,18 +446,30 @@ async def get_new_score(member_id: str):
             "mode": get_mode(member_id).string,
             "limit": score_request_limit / 2,
         }
+        await asyncio.sleep(10)
         scores1 = await api.get_user_scores(profile, "best", params=params)
         if len(scores1) < score_request_limit / 2:
             user_scores = scores1
+            for score in user_scores:
+                del score["weight"]
+                del score["beatmap"]["passcount"]
+                del score["beatmapset"]
+                del score["beatmap"]["playcount"]
+                del score["user"]
         else:
             params = {
                 "mode": get_mode(member_id).string,
                 "limit": score_request_limit / 2,
                 "offset": score_request_limit / 2
             }
-            await asyncio.sleep(1)
             scores2 = await api.get_user_scores(profile, "best", params=params)
             user_scores = scores1 + scores2
+            for score in user_scores:
+                del score["weight"]
+                del score["beatmap"]["passcount"]
+                del score["beatmapset"]
+                del score["beatmap"]["playcount"]
+                del score["user"]
 
     else:
         params = {
@@ -457,13 +477,20 @@ async def get_new_score(member_id: str):
             "limit": score_request_limit,
         }
         user_scores = await api.get_user_scores(profile, "best", params=params)
+        for score in user_scores:
+            del score["weight"]
+            del score["beatmap"]["passcount"]
+            del score["beatmapset"]
+            del score["beatmap"]["playcount"]
+            del score["user"]
 
     # Compare the scores from top to bottom and try to find a new one
-    for i, score in user_scores:
+    for i, score in enumerate(user_scores):
         if score not in osu_tracking[member_id]["scores"]:
             if i == 0:
                 logging.info(f"a #1 score was set: check plugins.osu.osu_tracking['{member_id}']['debug']")
-                osu_tracking[member_id]["debug"] = dict(scores=user_scores, old=dict(osu_tracking[member_id]["old"]),
+                osu_tracking[member_id]["debug"] = dict(scores=user_scores,
+                                                        old=dict(osu_tracking[member_id]["old"]),
                                                         new=dict(osu_tracking[member_id]["new"]))
             osu_tracking[member_id]["scores"] = user_scores
 
