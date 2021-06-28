@@ -459,7 +459,7 @@ async def get_new_score(member_id: str):
         user_scores = await api.get_user_scores(profile, "best", params=params)
 
     # Compare the scores from top to bottom and try to find a new one
-    for i, score in enumerate(user_scores):
+    for i, score in user_scores:
         if score not in osu_tracking[member_id]["scores"]:
             if i == 0:
                 logging.info(f"a #1 score was set: check plugins.osu.osu_tracking['{member_id}']['debug']")
