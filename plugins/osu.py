@@ -502,6 +502,7 @@ async def get_new_score(member_id: str):
                 diff = 0
             return dict(score, pos=i + 1, diff=diff)
     else:
+        logging.info(f"{member_id} gained PP, but no new score was found")
         return None
 
 
