@@ -701,7 +701,7 @@ async def calculate_pp_for_beatmapset(beatmapset):
                 continue
 
             # If it was changed, add an asterisk to the beatmap name (this is a really stupid place to do this)
-            beatmapset[i]["version"] = "*" + diff["version"]
+            diff["version"] = "*" + diff["version"]
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
