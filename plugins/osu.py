@@ -785,8 +785,8 @@ async def notify_maps(member_id: str, data: dict):
         except ValueError:
             logging.error(traceback.format_exc())
 
-        new_event = MapEvent(event)
-        prev = discord.utils.get(recent_map_events, text=event)
+        new_event = MapEvent(str(event))
+        prev = discord.utils.get(recent_map_events, text=str(event))
         to_delete = []
 
         if prev:
