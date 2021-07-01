@@ -52,7 +52,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Psi Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.9,
             "id": 63,
             "locale_name": "Abra",
@@ -73,6 +72,7 @@
             "evolves_from_id": 0,
             "generation": 3,
             "genus": "Disaster Pok\u00e9mon",
+            "hatches_from": 12,
             "height": 1.2,
             "id": 359,
             "locale_name": "Absol",
@@ -143,7 +143,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Fossil Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 1.8,
             "id": 142,
             "locale_name": "Aerodactyl",
@@ -191,11 +190,11 @@
                     "ambipom"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 93,
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Long Tail Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.8,
             "id": 190,
             "locale_name": "Aipom",
@@ -405,6 +404,7 @@
                     "armaldo"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 177,
             "evolves_from_id": 0,
             "generation": 3,
@@ -569,6 +569,7 @@
                     "archeops"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 289,
             "evolves_from_id": 0,
             "generation": 5,
@@ -733,6 +734,7 @@
                     "aggron"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 151,
             "evolves_from_id": 0,
             "generation": 3,
@@ -871,10 +873,12 @@
                     "haxorus"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 309,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Tusk Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.6,
             "id": 610,
             "locale_name": "Axew",
@@ -944,6 +948,7 @@
                     "azumarill"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 90,
             "evolves_from_id": 0,
             "generation": 3,
@@ -971,10 +976,12 @@
                     "salamence"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 191,
             "evolves_from_id": 0,
             "generation": 3,
             "genus": "Rock Head Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.6,
             "id": 371,
             "locale_name": "Bagon",
@@ -994,6 +1001,7 @@
                     "claydol"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 175,
             "evolves_from_id": 0,
             "generation": 3,
@@ -1065,6 +1073,7 @@
                     "whiscash"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 173,
             "evolves_from_id": 0,
             "generation": 3,
@@ -1288,10 +1297,12 @@
                     "metagross"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 192,
             "evolves_from_id": 0,
             "generation": 3,
             "genus": "Iron Ball Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.6,
             "id": 374,
             "locale_name": "Beldum",
@@ -1438,6 +1449,7 @@
                     "bibarel"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 207,
             "evolves_from_id": 0,
             "generation": 4,
@@ -1461,6 +1473,7 @@
                     "barbaracle"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 353,
             "evolves_from_id": 0,
             "generation": 6,
@@ -1635,6 +1648,7 @@
                     "zebstrika"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 267,
             "evolves_from_id": 0,
             "generation": 5,
@@ -1661,6 +1675,7 @@
                     "gigalith"
                 ]
             ],
+            "evolution_cost": 200,
             "evolution_id": 268,
             "evolves_from_id": 524,
             "generation": 5,
@@ -1707,10 +1722,12 @@
                     "sudowoodo"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 91,
             "evolves_from_id": 0,
             "generation": 4,
             "genus": "Bonsai Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.5,
             "id": 438,
             "locale_name": "Bonsly",
@@ -1779,6 +1796,7 @@
                     "delphox"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 338,
             "evolves_from_id": 653,
             "generation": 6,
@@ -1900,10 +1918,12 @@
                     "bronzong"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 224,
             "evolves_from_id": 0,
             "generation": 4,
             "genus": "Bronze Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.5,
             "id": 436,
             "locale_name": "Bronzor",
@@ -1948,6 +1968,7 @@
                     "roserade"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 158,
             "evolves_from_id": 0,
             "generation": 4,
@@ -1972,10 +1993,12 @@
                     "floatzel"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 216,
             "evolves_from_id": 0,
             "generation": 4,
             "genus": "Sea Weasel Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.7,
             "id": 418,
             "locale_name": "Buizel",
@@ -2003,7 +2026,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Seed Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.7,
             "id": 1,
             "locale_name": "Bulbasaur",
@@ -2024,6 +2046,7 @@
                     "lopunny"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 220,
             "evolves_from_id": 0,
             "generation": 4,
@@ -2047,10 +2070,12 @@
                     "diggersby"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 340,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Digging Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.4,
             "id": 659,
             "locale_name": "Bunnelby",
@@ -2071,6 +2096,7 @@
                     "mothim"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 213,
             "evolves_from_id": 0,
             "generation": 4,
@@ -2142,6 +2168,7 @@
                     "cacturne"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 167,
             "evolves_from_id": 0,
             "generation": 3,
@@ -2326,6 +2353,7 @@
                     "sharpedo"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 160,
             "evolves_from_id": 0,
             "generation": 3,
@@ -2355,6 +2383,7 @@
                     "dustox"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 135,
             "evolves_from_id": 265,
             "generation": 3,
@@ -2526,7 +2555,6 @@
             "evolves_from_id": 440,
             "generation": 1,
             "genus": "Egg Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 1.1,
             "id": 113,
             "locale_name": "Chansey",
@@ -2608,7 +2636,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Lizard Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.6,
             "id": 4,
             "locale_name": "Charmander",
@@ -2699,6 +2726,7 @@
                     "cherrim"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 217,
             "evolves_from_id": 0,
             "generation": 4,
@@ -2752,10 +2780,12 @@
                     "chesnaught"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 337,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Spiny Nut Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.4,
             "id": 650,
             "locale_name": "Chespin",
@@ -2806,7 +2836,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Leaf Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.9,
             "id": 152,
             "locale_name": "Chikorita",
@@ -2829,6 +2858,7 @@
                     "infernape"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 204,
             "evolves_from_id": 0,
             "generation": 4,
@@ -2880,7 +2910,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Angler Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 0.5,
             "id": 170,
             "locale_name": "Chinchou",
@@ -2901,6 +2930,7 @@
                     "chimecho"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 184,
             "evolves_from_id": 0,
             "generation": 4,
@@ -2974,6 +3004,7 @@
                     "gorebyss"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 188,
             "evolves_from_id": 0,
             "generation": 3,
@@ -3128,7 +3159,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Star Shape Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.3,
             "id": 173,
             "locale_name": "Cleffa",
@@ -3267,6 +3297,7 @@
                     "vespiquen"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 214,
             "evolves_from_id": 0,
             "generation": 4,
@@ -3294,6 +3325,7 @@
                     "blaziken"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 131,
             "evolves_from_id": 255,
             "generation": 3,
@@ -3387,6 +3419,7 @@
                     "crawdaunt"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 174,
             "evolves_from_id": 0,
             "generation": 3,
@@ -3541,6 +3574,7 @@
                     "whimsicott"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 278,
             "evolves_from_id": 0,
             "generation": 5,
@@ -3657,10 +3691,12 @@
                     "rampardos"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 211,
             "evolves_from_id": 0,
             "generation": 4,
             "genus": "Head Butt Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.9,
             "id": 408,
             "locale_name": "Cranidos",
@@ -3724,6 +3760,7 @@
                     "toxicroak"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 235,
             "evolves_from_id": 0,
             "generation": 4,
@@ -3846,6 +3883,7 @@
                     "beartic"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 310,
             "evolves_from_id": 0,
             "generation": 5,
@@ -3874,7 +3912,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Lonely Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.4,
             "id": 104,
             "locale_name": "Cubone",
@@ -4061,10 +4098,12 @@
                     "darmanitan"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 282,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Zen Charm Pok\u00e9mon",
+            "hatches_from": 7,
             "height": 0.6,
             "id": 554,
             "locale_name": "Darumaka",
@@ -4132,6 +4171,7 @@
                     "sawsbuck"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 297,
             "evolves_from_id": 0,
             "generation": 5,
@@ -4159,10 +4199,12 @@
                     "hydreigon"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 323,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Irate Pok\u00e9mon",
+            "hatches_from": 12,
             "height": 0.8,
             "id": 633,
             "locale_name": "Deino",
@@ -4301,6 +4343,7 @@
                     "samurott"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 258,
             "evolves_from_id": 501,
             "generation": 5,
@@ -4440,7 +4483,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Mole Pok\u00e9mon",
-            "hatches_from": 2,
+            "hatches_from": 7,
             "height": 0.2,
             "id": 50,
             "locale_name": "Diglett",
@@ -4928,6 +4971,7 @@
                     "drifblim"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 219,
             "evolves_from_id": 0,
             "generation": 4,
@@ -4952,6 +4996,7 @@
                     "excadrill"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 270,
             "evolves_from_id": 0,
             "generation": 5,
@@ -5006,7 +5051,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Hypnosis Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.0,
             "id": 96,
             "locale_name": "Drowzee",
@@ -5069,6 +5113,7 @@
                     "swanna"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 295,
             "evolves_from_id": 0,
             "generation": 5,
@@ -5117,7 +5162,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Land Snake Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.5,
             "id": 206,
             "locale_name": "Dunsparce",
@@ -5140,6 +5184,7 @@
                     "reuniclus"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 294,
             "evolves_from_id": 577,
             "generation": 5,
@@ -5208,6 +5253,7 @@
                     "dusknoir"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 182,
             "evolves_from_id": 355,
             "generation": 3,
@@ -5260,6 +5306,7 @@
                     "dusknoir"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 182,
             "evolves_from_id": 0,
             "generation": 3,
@@ -5312,6 +5359,7 @@
                     "crustle"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 284,
             "evolves_from_id": 0,
             "generation": 5,
@@ -5339,6 +5387,7 @@
                     "eelektross"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 306,
             "evolves_from_id": 602,
             "generation": 5,
@@ -5445,7 +5494,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Snake Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 2.0,
             "id": 23,
             "locale_name": "Ekans",
@@ -5491,6 +5539,7 @@
                     "electivire"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 60,
             "evolves_from_id": 239,
             "generation": 1,
@@ -5540,6 +5589,7 @@
                     "manectric"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 153,
             "evolves_from_id": 0,
             "generation": 3,
@@ -5594,7 +5644,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Electric Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 239,
             "locale_name": "Elekid",
@@ -5614,6 +5663,7 @@
                     "beheeyem"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 307,
             "evolves_from_id": 0,
             "generation": 5,
@@ -5665,6 +5715,7 @@
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Sky Squirrel Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.4,
             "id": 587,
             "locale_name": "Emolga",
@@ -5763,6 +5814,7 @@
                     "sylveon"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 67,
             "evolves_from_id": 133,
             "generation": 2,
@@ -5786,10 +5838,12 @@
                     "meowstic"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 348,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Restraint Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.3,
             "id": 677,
             "locale_name": "Espurr",
@@ -5859,7 +5913,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Egg Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.4,
             "id": 102,
             "locale_name": "Exeggcute",
@@ -5954,6 +6007,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Wild Duck Pok\u00e9mon",
+            "hatches_from": 7,
             "height": 0.8,
             "id": 83,
             "locale_name": "Farfetch\u2019d",
@@ -5998,6 +6052,7 @@
                     "milotic"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 178,
             "evolves_from_id": 0,
             "generation": 3,
@@ -6024,10 +6079,12 @@
                     "delphox"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 338,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Fox Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.4,
             "id": 653,
             "locale_name": "Fennekin",
@@ -6073,6 +6130,7 @@
                     "ferrothorn"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 304,
             "evolves_from_id": 0,
             "generation": 5,
@@ -6121,6 +6179,7 @@
                     "lumineon"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 237,
             "evolves_from_id": 0,
             "generation": 4,
@@ -6255,6 +6314,7 @@
                     "talonflame"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 341,
             "evolves_from_id": 661,
             "generation": 6,
@@ -6282,10 +6342,12 @@
                     "talonflame"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 341,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Tiny Robin Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.3,
             "id": 661,
             "locale_name": "Fletchling",
@@ -6431,6 +6493,7 @@
                     "amoonguss"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 300,
             "evolves_from_id": 0,
             "generation": 5,
@@ -6482,6 +6545,7 @@
                     "haxorus"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 309,
             "evolves_from_id": 610,
             "generation": 5,
@@ -6505,6 +6569,7 @@
                     "jellicent"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 301,
             "evolves_from_id": 0,
             "generation": 5,
@@ -6532,10 +6597,12 @@
                     "greninja"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 339,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Bubble Frog Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.3,
             "id": 656,
             "locale_name": "Froakie",
@@ -6558,6 +6625,7 @@
                     "greninja"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 339,
             "evolves_from_id": 656,
             "generation": 6,
@@ -6676,6 +6744,7 @@
                     "garchomp"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 230,
             "evolves_from_id": 443,
             "generation": 4,
@@ -6838,7 +6907,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Gas Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 1.3,
             "id": 92,
             "locale_name": "Gastly",
@@ -6939,7 +7007,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Rock Pok\u00e9mon",
-            "hatches_from": 2,
+            "hatches_from": 7,
             "height": 0.4,
             "id": 74,
             "locale_name": "Geodude",
@@ -6963,10 +7031,12 @@
                     "garchomp"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 230,
             "evolves_from_id": 0,
             "generation": 4,
             "genus": "Land Shark Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.7,
             "id": 443,
             "locale_name": "Gible",
@@ -7014,7 +7084,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Long Neck Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.5,
             "id": 203,
             "locale_name": "Girafarig",
@@ -7110,6 +7179,7 @@
                     "purugly"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 221,
             "evolves_from_id": 0,
             "generation": 4,
@@ -7153,6 +7223,7 @@
                     "gliscor"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 104,
             "evolves_from_id": 0,
             "generation": 2,
@@ -7287,7 +7358,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Goldfish Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.6,
             "id": 118,
             "locale_name": "Goldeen",
@@ -7357,6 +7427,7 @@
                     "golurk"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 316,
             "evolves_from_id": 0,
             "generation": 5,
@@ -7531,6 +7602,7 @@
                     "gothitelle"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 293,
             "evolves_from_id": 0,
             "generation": 5,
@@ -7583,6 +7655,7 @@
                     "gothitelle"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 293,
             "evolves_from_id": 574,
             "generation": 5,
@@ -7759,7 +7832,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Sludge Pok\u00e9mon",
-            "hatches_from": 5,
+            "hatches_from": 7,
             "height": 0.9,
             "id": 88,
             "locale_name": "Grimer",
@@ -7835,6 +7908,7 @@
                     "torterra"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 203,
             "evolves_from_id": 387,
             "generation": 4,
@@ -7881,6 +7955,7 @@
                     "sceptile"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 130,
             "evolves_from_id": 252,
             "generation": 3,
@@ -7909,7 +7984,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Puppy Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.7,
             "id": 58,
             "locale_name": "Growlithe",
@@ -7978,6 +8052,7 @@
                     "swalot"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 159,
             "evolves_from_id": 0,
             "generation": 3,
@@ -8027,6 +8102,7 @@
                     "conkeldurr"
                 ]
             ],
+            "evolution_cost": 200,
             "evolution_id": 272,
             "evolves_from_id": 532,
             "generation": 5,
@@ -8438,6 +8514,7 @@
                     "stoutland"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 260,
             "evolves_from_id": 506,
             "generation": 5,
@@ -8461,6 +8538,7 @@
                     "hippowdon"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 233,
             "evolves_from_id": 0,
             "generation": 4,
@@ -8708,7 +8786,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Cottonweed Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.4,
             "id": 187,
             "locale_name": "Hoppip",
@@ -8785,7 +8862,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Dark Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 228,
             "locale_name": "Houndour",
@@ -8888,7 +8964,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Balloon Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.3,
             "id": 174,
             "locale_name": "Igglybuff",
@@ -9238,6 +9313,7 @@
                     "galvantula"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 303,
             "evolves_from_id": 0,
             "generation": 5,
@@ -9318,7 +9394,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Shellfish Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.5,
             "id": 140,
             "locale_name": "Kabuto",
@@ -9419,7 +9494,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Parent Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 2.2,
             "id": 115,
             "locale_name": "Kangaskhan",
@@ -9439,6 +9513,7 @@
                     "escavalier"
                 ]
             ],
+            "evolution_cost": 200,
             "evolution_id": 299,
             "evolves_from_id": 0,
             "generation": 5,
@@ -9578,6 +9653,7 @@
                     "gallade"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 140,
             "evolves_from_id": 280,
             "generation": 3,
@@ -9605,6 +9681,7 @@
                     "klinklang"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 305,
             "evolves_from_id": 599,
             "generation": 5,
@@ -9652,10 +9729,12 @@
                     "klinklang"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 305,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Gear Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.3,
             "id": 599,
             "locale_name": "Klink",
@@ -9706,7 +9785,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Poison Gas Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 109,
             "locale_name": "Koffing",
@@ -9778,7 +9856,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "River Crab Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.4,
             "id": 98,
             "locale_name": "Krabby",
@@ -9798,6 +9875,7 @@
                     "kricketune"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 208,
             "evolves_from_id": 0,
             "generation": 4,
@@ -9847,6 +9925,7 @@
                     "krookodile"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 281,
             "evolves_from_id": 551,
             "generation": 5,
@@ -9965,6 +10044,7 @@
                     "aggron"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 151,
             "evolves_from_id": 304,
             "generation": 3,
@@ -9992,6 +10072,7 @@
                     "chandelure"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 308,
             "evolves_from_id": 607,
             "generation": 5,
@@ -10062,7 +10143,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Transport Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 2.5,
             "id": 131,
             "locale_name": "Lapras",
@@ -10083,6 +10163,7 @@
                     "volcarona"
                 ]
             ],
+            "evolution_cost": 400,
             "evolution_id": 324,
             "evolves_from_id": 0,
             "generation": 5,
@@ -10115,7 +10196,7 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Rock Skin Pok\u00e9mon",
-            "hatches_from": 10,
+            "hatches_from": 12,
             "height": 0.6,
             "id": 246,
             "locale_name": "Larvitar",
@@ -10307,11 +10388,11 @@
                     "lickilicky"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 48,
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Licking Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.2,
             "id": 108,
             "locale_name": "Lickitung",
@@ -10354,6 +10435,7 @@
                     "cradily"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 176,
             "evolves_from_id": 0,
             "generation": 3,
@@ -10404,6 +10486,7 @@
                     "stoutland"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 260,
             "evolves_from_id": 0,
             "generation": 5,
@@ -10453,10 +10536,12 @@
                     "pyroar"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 343,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Lion Cub Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.6,
             "id": 667,
             "locale_name": "Litleo",
@@ -10506,6 +10591,7 @@
                     "chandelure"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 308,
             "evolves_from_id": 0,
             "generation": 5,
@@ -10533,6 +10619,7 @@
                     "ludicolo"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 136,
             "evolves_from_id": 270,
             "generation": 3,
@@ -10583,6 +10670,7 @@
                     "ludicolo"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 136,
             "evolves_from_id": 0,
             "generation": 3,
@@ -10610,6 +10698,7 @@
                     "exploud"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 145,
             "evolves_from_id": 293,
             "generation": 3,
@@ -10633,6 +10722,7 @@
                     "lucario"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 232,
             "evolves_from_id": 447,
             "generation": 4,
@@ -10823,6 +10913,7 @@
                     "luxray"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 209,
             "evolves_from_id": 403,
             "generation": 4,
@@ -10956,7 +11047,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Superpower Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.8,
             "id": 66,
             "locale_name": "Machop",
@@ -10984,7 +11074,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Live Coal Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.7,
             "id": 240,
             "locale_name": "Magby",
@@ -11054,6 +11143,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Fish Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.9,
             "id": 129,
             "locale_name": "Magikarp",
@@ -11076,6 +11166,7 @@
                     "magmortar"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 61,
             "evolves_from_id": 240,
             "generation": 1,
@@ -11133,7 +11224,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Magnet Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.3,
             "id": 81,
             "locale_name": "Magnemite",
@@ -11157,6 +11247,7 @@
                     "magnezone"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 34,
             "evolves_from_id": 81,
             "generation": 1,
@@ -11208,6 +11299,7 @@
                     "hariyama"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 146,
             "evolves_from_id": 0,
             "generation": 3,
@@ -11378,7 +11470,6 @@
             "evolves_from_id": 458,
             "generation": 2,
             "genus": "Kite Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 2.1,
             "id": 226,
             "locale_name": "Mantine",
@@ -11399,6 +11490,7 @@
                     "mantine"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 116,
             "evolves_from_id": 0,
             "generation": 4,
@@ -11475,7 +11567,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Wool Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 0.6,
             "id": 179,
             "locale_name": "Mareep",
@@ -11502,7 +11593,6 @@
             "evolves_from_id": 298,
             "generation": 2,
             "genus": "Aqua Mouse Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.4,
             "id": 183,
             "locale_name": "Marill",
@@ -11570,6 +11660,7 @@
                     "swampert"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 132,
             "evolves_from_id": 258,
             "generation": 3,
@@ -11663,10 +11754,12 @@
                     "medicham"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 152,
             "evolves_from_id": 0,
             "generation": 3,
             "genus": "Meditate Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.6,
             "id": 307,
             "locale_name": "Meditite",
@@ -11803,6 +11896,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Scratch Cat Pok\u00e9mon",
+            "hatches_from": 7,
             "height": 0.4,
             "id": 52,
             "locale_name": "Meowth",
@@ -11872,6 +11966,7 @@
                     "metagross"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 192,
             "evolves_from_id": 374,
             "generation": 3,
@@ -11963,6 +12058,7 @@
                     "mienshao"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 314,
             "evolves_from_id": 0,
             "generation": 5,
@@ -12079,7 +12175,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Milk Cow Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 1.2,
             "id": 241,
             "locale_name": "Miltank",
@@ -12102,6 +12197,7 @@
                     "mr-rime"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 57,
             "evolves_from_id": 0,
             "generation": 4,
@@ -12147,6 +12243,7 @@
                     "cinccino"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 292,
             "evolves_from_id": 0,
             "generation": 5,
@@ -12211,11 +12308,11 @@
                     "mismagius"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 98,
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Screech Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.7,
             "id": 200,
             "locale_name": "Misdreavus",
@@ -12303,6 +12400,7 @@
                     "infernape"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 204,
             "evolves_from_id": 390,
             "generation": 4,
@@ -12504,6 +12602,7 @@
                     "swampert"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 132,
             "evolves_from_id": 0,
             "generation": 3,
@@ -12573,6 +12672,7 @@
                     "snorlax"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 72,
             "evolves_from_id": 0,
             "generation": 4,
@@ -12596,6 +12696,7 @@
                     "musharna"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 265,
             "evolves_from_id": 0,
             "generation": 5,
@@ -12695,7 +12796,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Tiny Bird Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.2,
             "id": 177,
             "locale_name": "Natu",
@@ -12821,7 +12921,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Poison Pin Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.4,
             "id": 29,
             "locale_name": "Nidoran\u2640",
@@ -12849,7 +12948,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Poison Pin Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.5,
             "id": 32,
             "locale_name": "Nidoran\u2642",
@@ -12945,10 +13043,12 @@
                     "shedinja"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 144,
             "evolves_from_id": 0,
             "generation": 3,
             "genus": "Trainee Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.5,
             "id": 290,
             "locale_name": "Nincada",
@@ -13089,6 +13189,7 @@
                     "probopass"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 147,
             "evolves_from_id": 0,
             "generation": 3,
@@ -13112,6 +13213,7 @@
                     "camerupt"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 162,
             "evolves_from_id": 0,
             "generation": 3,
@@ -13139,6 +13241,7 @@
                     "shiftry"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 137,
             "evolves_from_id": 273,
             "generation": 3,
@@ -13222,7 +13325,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Weed Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.5,
             "id": 43,
             "locale_name": "Oddish",
@@ -13248,7 +13350,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Spiral Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.4,
             "id": 138,
             "locale_name": "Omanyte",
@@ -13298,7 +13399,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Rock Snake Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 8.8,
             "id": 95,
             "locale_name": "Onix",
@@ -13391,6 +13491,7 @@
                     "samurott"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 258,
             "evolves_from_id": 0,
             "generation": 5,
@@ -13482,6 +13583,7 @@
                     "seismitoad"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 273,
             "evolves_from_id": 535,
             "generation": 5,
@@ -13506,10 +13608,12 @@
                     "pangoro"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 346,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Playful Pok\u00e9mon",
+            "hatches_from": 12,
             "height": 0.6,
             "id": 674,
             "locale_name": "Pancham",
@@ -13553,6 +13657,7 @@
                     "simipour"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 264,
             "evolves_from_id": 0,
             "generation": 5,
@@ -13576,6 +13681,7 @@
                     "simisage"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 262,
             "evolves_from_id": 0,
             "generation": 5,
@@ -13599,6 +13705,7 @@
                     "simisear"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 263,
             "evolves_from_id": 0,
             "generation": 5,
@@ -13627,7 +13734,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Mushroom Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.3,
             "id": 46,
             "locale_name": "Paras",
@@ -13692,6 +13798,7 @@
                     "watchog"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 259,
             "evolves_from_id": 0,
             "generation": 5,
@@ -13715,10 +13822,12 @@
                     "bisharp"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 317,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Sharp Blade Pok\u00e9mon",
+            "hatches_from": 12,
             "height": 0.5,
             "id": 624,
             "locale_name": "Pawniard",
@@ -13811,6 +13920,7 @@
                     "lilligant"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 279,
             "evolves_from_id": 0,
             "generation": 5,
@@ -13839,7 +13949,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Long Nose Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.5,
             "id": 231,
             "locale_name": "Phanpy",
@@ -13933,7 +14042,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Tiny Mouse Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.3,
             "id": 172,
             "locale_name": "Pichu",
@@ -14039,6 +14147,7 @@
                     "unfezant"
                 ]
             ],
+            "evolution_cost": 12,
             "evolution_id": 266,
             "evolves_from_id": 0,
             "generation": 5,
@@ -14066,6 +14175,7 @@
                     "emboar"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 257,
             "evolves_from_id": 498,
             "generation": 5,
@@ -14147,11 +14257,11 @@
                     "mamoswine"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 112,
             "evolves_from_id": 220,
             "generation": 2,
             "genus": "Swine Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.1,
             "id": 221,
             "locale_name": "Piloswine",
@@ -14197,7 +14307,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Bagworm Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 204,
             "locale_name": "Pineco",
@@ -14218,7 +14327,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Stag Beetle Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.5,
             "id": 127,
             "locale_name": "Pinsir",
@@ -14241,6 +14349,7 @@
                     "empoleon"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 205,
             "evolves_from_id": 0,
             "generation": 4,
@@ -14343,7 +14452,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Tadpole Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 60,
             "locale_name": "Poliwag",
@@ -14447,7 +14555,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Fire Horse Pok\u00e9mon",
-            "hatches_from": 5,
+            "hatches_from": 7,
             "height": 1.0,
             "id": 77,
             "locale_name": "Ponyta",
@@ -14467,6 +14575,7 @@
                     "mightyena"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 133,
             "evolves_from_id": 0,
             "generation": 3,
@@ -14524,7 +14633,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Virtual Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 0.8,
             "id": 137,
             "locale_name": "Porygon",
@@ -14573,6 +14681,7 @@
                     "porygon-z"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 68,
             "evolves_from_id": 137,
             "generation": 2,
@@ -14649,6 +14758,7 @@
                     "empoleon"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 205,
             "evolves_from_id": 393,
             "generation": 4,
@@ -14701,7 +14811,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Duck Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.8,
             "id": 54,
             "locale_name": "Psyduck",
@@ -14773,6 +14882,7 @@
                     "liepard"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 261,
             "evolves_from_id": 0,
             "generation": 5,
@@ -14917,6 +15027,7 @@
                     "chesnaught"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 337,
             "evolves_from_id": 650,
             "generation": 6,
@@ -14941,7 +15052,7 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Balloon Pok\u00e9mon",
-            "hatches_from": 5,
+            "hatches_from": 12,
             "height": 0.5,
             "id": 211,
             "locale_name": "Qwilfish",
@@ -15038,6 +15149,7 @@
                     "gallade"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 140,
             "evolves_from_id": 0,
             "generation": 3,
@@ -15322,7 +15434,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Jet Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.6,
             "id": 223,
             "locale_name": "Remoraid",
@@ -15392,6 +15503,7 @@
                     "rhyperior"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 50,
             "evolves_from_id": 111,
             "generation": 1,
@@ -15424,7 +15536,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Spikes Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.0,
             "id": 111,
             "locale_name": "Rhyhorn",
@@ -15522,10 +15633,12 @@
                     "lucario"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 232,
             "evolves_from_id": 0,
             "generation": 4,
             "genus": "Emanation Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.7,
             "id": 447,
             "locale_name": "Riolu",
@@ -15571,6 +15684,7 @@
                     "gigalith"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 268,
             "evolves_from_id": 0,
             "generation": 5,
@@ -15649,6 +15763,7 @@
                     "roserade"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 158,
             "evolves_from_id": 406,
             "generation": 3,
@@ -15748,10 +15863,12 @@
                     "braviary"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 319,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Eaglet Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.5,
             "id": 627,
             "locale_name": "Rufflet",
@@ -15945,10 +16062,12 @@
                     "krookodile"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 281,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Desert Croc Pok\u00e9mon",
+            "hatches_from": 12,
             "height": 0.7,
             "id": 551,
             "locale_name": "Sandile",
@@ -15974,7 +16093,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Mouse Pok\u00e9mon",
-            "hatches_from": 5,
+            "hatches_from": 7,
             "height": 0.6,
             "id": 27,
             "locale_name": "Sandshrew",
@@ -16088,6 +16207,7 @@
                     "vivillon"
                 ]
             ],
+            "evolution_cost": 12,
             "evolution_id": 342,
             "evolves_from_id": 0,
             "generation": 6,
@@ -16238,10 +16358,12 @@
                     "scrafty"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 285,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Shedding Pok\u00e9mon",
+            "hatches_from": 12,
             "height": 0.6,
             "id": 559,
             "locale_name": "Scraggy",
@@ -16267,7 +16389,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Mantis Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.5,
             "id": 123,
             "locale_name": "Scyther",
@@ -16341,6 +16462,7 @@
                     "walrein"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 187,
             "evolves_from_id": 363,
             "generation": 3,
@@ -16368,6 +16490,7 @@
                     "shiftry"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 137,
             "evolves_from_id": 0,
             "generation": 3,
@@ -16396,7 +16519,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Sea Lion Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.1,
             "id": 86,
             "locale_name": "Seel",
@@ -16496,6 +16618,7 @@
                     "serperior"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 256,
             "evolves_from_id": 495,
             "generation": 5,
@@ -16542,10 +16665,12 @@
                     "leavanny"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 276,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Sewing Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.3,
             "id": 540,
             "locale_name": "Sewaddle",
@@ -16638,6 +16763,7 @@
                     "salamence"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 191,
             "evolves_from_id": 371,
             "generation": 3,
@@ -16666,7 +16792,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Bivalve Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.3,
             "id": 90,
             "locale_name": "Shellder",
@@ -16686,6 +16811,7 @@
                     "gastrodon"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 218,
             "evolves_from_id": 0,
             "generation": 4,
@@ -16709,6 +16835,7 @@
                     "accelgor"
                 ]
             ],
+            "evolution_cost": 200,
             "evolution_id": 312,
             "evolves_from_id": 0,
             "generation": 5,
@@ -16732,10 +16859,12 @@
                     "bastiodon"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 212,
             "evolves_from_id": 0,
             "generation": 4,
             "genus": "Shield Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.5,
             "id": 410,
             "locale_name": "Shieldon",
@@ -16810,6 +16939,7 @@
                     "luxray"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 209,
             "evolves_from_id": 0,
             "generation": 4,
@@ -16833,6 +16963,7 @@
                     "breloom"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 142,
             "evolves_from_id": 0,
             "generation": 3,
@@ -16857,7 +16988,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Mold Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 213,
             "locale_name": "Shuckle",
@@ -16878,6 +17008,7 @@
                     "banette"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 181,
             "evolves_from_id": 0,
             "generation": 3,
@@ -16927,6 +17058,7 @@
                     "dustox"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 135,
             "evolves_from_id": 265,
             "generation": 3,
@@ -17136,7 +17268,7 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Armor Bird Pok\u00e9mon",
-            "hatches_from": 10,
+            "hatches_from": 5,
             "height": 1.7,
             "id": 227,
             "locale_name": "Skarmory",
@@ -17208,6 +17340,7 @@
                     "delcatty"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 148,
             "evolves_from_id": 0,
             "generation": 3,
@@ -17231,10 +17364,12 @@
                     "drapion"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 234,
             "evolves_from_id": 0,
             "generation": 4,
             "genus": "Scorpion Pok\u00e9mon",
+            "hatches_from": 12,
             "height": 0.8,
             "id": 451,
             "locale_name": "Skorupi",
@@ -17255,10 +17390,12 @@
                     "dragalge"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 354,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Mock Kelp Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.5,
             "id": 690,
             "locale_name": "Skrelp",
@@ -17355,6 +17492,7 @@
                     "slaking"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 143,
             "evolves_from_id": 0,
             "generation": 3,
@@ -17460,7 +17598,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Dopey Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 1.2,
             "id": 79,
             "locale_name": "Slowpoke",
@@ -17486,7 +17623,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Lava Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.7,
             "id": 218,
             "locale_name": "Slugma",
@@ -17554,7 +17690,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Kiss Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.4,
             "id": 238,
             "locale_name": "Smoochum",
@@ -17579,7 +17714,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Sharp Claw Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.9,
             "id": 215,
             "locale_name": "Sneasel",
@@ -17603,6 +17737,7 @@
                     "serperior"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 256,
             "evolves_from_id": 0,
             "generation": 5,
@@ -17654,7 +17789,6 @@
             "evolves_from_id": 446,
             "generation": 1,
             "genus": "Sleeping Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 2.1,
             "id": 143,
             "locale_name": "Snorlax",
@@ -17675,6 +17809,7 @@
                     "froslass"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 186,
             "evolves_from_id": 0,
             "generation": 3,
@@ -17698,6 +17833,7 @@
                     "abomasnow"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 239,
             "evolves_from_id": 0,
             "generation": 4,
@@ -17727,7 +17863,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Fairy Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 209,
             "locale_name": "Snubbull",
@@ -17804,6 +17939,7 @@
                     "reuniclus"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 294,
             "evolves_from_id": 0,
             "generation": 5,
@@ -17896,6 +18032,7 @@
                     "vivillon"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 342,
             "evolves_from_id": 664,
             "generation": 6,
@@ -17922,6 +18059,7 @@
                     "walrein"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 187,
             "evolves_from_id": 0,
             "generation": 3,
@@ -17951,7 +18089,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "String Spit Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.5,
             "id": 167,
             "locale_name": "Spinarak",
@@ -18013,6 +18150,7 @@
                     "grumpig"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 164,
             "evolves_from_id": 0,
             "generation": 3,
@@ -18036,10 +18174,12 @@
                     "aromatisse"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 350,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Perfume Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.2,
             "id": 682,
             "locale_name": "Spritzee",
@@ -18067,7 +18207,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Tiny Turtle Pok\u00e9mon",
-            "hatches_from": 2,
             "height": 0.5,
             "id": 7,
             "locale_name": "Squirtle",
@@ -18109,7 +18248,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Big Horn Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.4,
             "id": 234,
             "locale_name": "Stantler",
@@ -18159,6 +18297,7 @@
                     "staraptor"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 206,
             "evolves_from_id": 396,
             "generation": 4,
@@ -18186,6 +18325,7 @@
                     "staraptor"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 206,
             "evolves_from_id": 0,
             "generation": 4,
@@ -18239,7 +18379,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Star Shape Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.8,
             "id": 120,
             "locale_name": "Staryu",
@@ -18380,6 +18519,7 @@
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Trap Pok\u00e9mon",
+            "hatches_from": 7,
             "height": 0.7,
             "id": 618,
             "locale_name": "Stunfisk",
@@ -18400,6 +18540,7 @@
                     "skuntank"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 223,
             "evolves_from_id": 0,
             "generation": 4,
@@ -18428,7 +18569,6 @@
             "evolves_from_id": 438,
             "generation": 2,
             "genus": "Imitation Pok\u00e9mon",
-            "hatches_from": 10,
             "height": 1.2,
             "id": 185,
             "locale_name": "Sudowoodo",
@@ -18515,6 +18655,7 @@
                     "masquerain"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 141,
             "evolves_from_id": 0,
             "generation": 3,
@@ -18539,6 +18680,7 @@
                     "altaria"
                 ]
             ],
+            "evolution_cost": 400,
             "evolution_id": 168,
             "evolves_from_id": 0,
             "generation": 3,
@@ -18566,6 +18708,7 @@
                     "leavanny"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 276,
             "evolves_from_id": 540,
             "generation": 5,
@@ -18716,10 +18859,12 @@
                     "slurpuff"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 351,
             "evolves_from_id": 0,
             "generation": 6,
             "genus": "Cotton Candy Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.4,
             "id": 684,
             "locale_name": "Swirlix",
@@ -18793,6 +18938,7 @@
                     "swellow"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 138,
             "evolves_from_id": 0,
             "generation": 3,
@@ -18844,11 +18990,11 @@
                     "tangrowth"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 52,
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Vine Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.0,
             "id": 114,
             "locale_name": "Tangela",
@@ -19000,7 +19146,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Little Bear Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 216,
             "locale_name": "Teddiursa",
@@ -19025,7 +19170,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Jellyfish Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.9,
             "id": 72,
             "locale_name": "Tentacool",
@@ -19073,6 +19217,7 @@
                     "emboar"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 257,
             "evolves_from_id": 0,
             "generation": 5,
@@ -19210,10 +19355,12 @@
                     "conkeldurr"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 272,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Muscular Pok\u00e9mon",
+            "hatches_from": 10,
             "height": 0.6,
             "id": 532,
             "locale_name": "Timburr",
@@ -19233,6 +19380,7 @@
                     "carracosta"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 288,
             "evolves_from_id": 0,
             "generation": 5,
@@ -19313,7 +19461,7 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Spike Ball Pok\u00e9mon",
-            "hatches_from": 2,
+            "hatches_from": 5,
             "height": 0.3,
             "id": 175,
             "locale_name": "Togepi",
@@ -19336,6 +19484,7 @@
                     "togekiss"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 87,
             "evolves_from_id": 175,
             "generation": 2,
@@ -19363,6 +19512,7 @@
                     "blaziken"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 131,
             "evolves_from_id": 0,
             "generation": 3,
@@ -19487,7 +19637,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Big Jaw Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.6,
             "id": 158,
             "locale_name": "Totodile",
@@ -19633,6 +19782,7 @@
                     "unfezant"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 266,
             "evolves_from_id": 519,
             "generation": 5,
@@ -19660,6 +19810,7 @@
                     "flygon"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 166,
             "evolves_from_id": 0,
             "generation": 3,
@@ -19686,6 +19837,7 @@
                     "sceptile"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 130,
             "evolves_from_id": 0,
             "generation": 3,
@@ -19754,6 +19906,7 @@
                     "garbodor"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 290,
             "evolves_from_id": 0,
             "generation": 5,
@@ -19854,6 +20007,7 @@
                     "torterra"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 203,
             "evolves_from_id": 0,
             "generation": 4,
@@ -19880,10 +20034,12 @@
                     "seismitoad"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 273,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Tadpole Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 0.5,
             "id": 535,
             "locale_name": "Tympole",
@@ -19906,10 +20062,12 @@
                     "eelektross"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 306,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "EleFish Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.2,
             "id": 602,
             "locale_name": "Tynamo",
@@ -20036,7 +20194,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Scuffle Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.7,
             "id": 236,
             "locale_name": "Tyrogue",
@@ -20227,6 +20384,7 @@
                     "vanilluxe"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 296,
             "evolves_from_id": 582,
             "generation": 5,
@@ -20253,6 +20411,7 @@
                     "vanilluxe"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 296,
             "evolves_from_id": 0,
             "generation": 5,
@@ -20335,6 +20494,7 @@
                     "scolipede"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 277,
             "evolves_from_id": 0,
             "generation": 5,
@@ -20462,6 +20622,7 @@
                     "flygon"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 166,
             "evolves_from_id": 328,
             "generation": 3,
@@ -20537,6 +20698,7 @@
                     "slaking"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 143,
             "evolves_from_id": 287,
             "generation": 3,
@@ -20733,7 +20895,6 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Ball Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.5,
             "id": 100,
             "locale_name": "Voltorb",
@@ -20753,10 +20914,12 @@
                     "mandibuzz"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 320,
             "evolves_from_id": 0,
             "generation": 5,
             "genus": "Diapered Pok\u00e9mon",
+            "hatches_from": 12,
             "height": 0.5,
             "id": 629,
             "locale_name": "Vullaby",
@@ -20782,7 +20945,7 @@
             "evolves_from_id": 0,
             "generation": 1,
             "genus": "Fox Pok\u00e9mon",
-            "hatches_from": 5,
+            "hatches_from": 7,
             "height": 0.6,
             "id": 37,
             "locale_name": "Vulpix",
@@ -20802,10 +20965,12 @@
                     "wailord"
                 ]
             ],
+            "evolution_cost": 400,
             "evolution_id": 161,
             "evolves_from_id": 0,
             "generation": 3,
             "genus": "Ball Whale Pok\u00e9mon",
+            "hatches_from": 2,
             "height": 2.0,
             "id": 320,
             "locale_name": "Wailmer",
@@ -20929,7 +21094,6 @@
             "evolves_from_id": 215,
             "generation": 4,
             "genus": "Sharp Claw Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.1,
             "id": 461,
             "locale_name": "Weavile",
@@ -21056,6 +21220,7 @@
                     "scolipede"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 277,
             "evolves_from_id": 543,
             "generation": 5,
@@ -21107,6 +21272,7 @@
                     "exploud"
                 ]
             ],
+            "evolution_cost": 12,
             "evolution_id": 145,
             "evolves_from_id": 0,
             "generation": 3,
@@ -21181,6 +21347,7 @@
                     "pelipper"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 139,
             "evolves_from_id": 0,
             "generation": 3,
@@ -21229,7 +21396,6 @@
             "evolves_from_id": 360,
             "generation": 2,
             "genus": "Patient Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.3,
             "id": 202,
             "locale_name": "Wobbuffet",
@@ -21249,6 +21415,7 @@
                     "swoobat"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 269,
             "evolves_from_id": 0,
             "generation": 5,
@@ -21301,7 +21468,6 @@
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Water Fish Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 0.4,
             "id": 194,
             "locale_name": "Wooper",
@@ -21352,6 +21518,7 @@
                     "dustox"
                 ]
             ],
+            "evolution_cost": 12,
             "evolution_id": 135,
             "evolves_from_id": 0,
             "generation": 3,
@@ -21375,10 +21542,12 @@
                     "wobbuffet"
                 ]
             ],
+            "evolution_cost": 25,
             "evolution_id": 100,
             "evolves_from_id": 0,
             "generation": 3,
             "genus": "Bright Pok\u00e9mon",
+            "hatches_from": 5,
             "height": 0.6,
             "id": 360,
             "locale_name": "Wynaut",
@@ -21463,6 +21632,7 @@
                     "runerigus"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 287,
             "evolves_from_id": 0,
             "generation": 5,
@@ -21509,11 +21679,11 @@
                     "yanmega"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 95,
             "evolves_from_id": 0,
             "generation": 2,
             "genus": "Clear Wing Pok\u00e9mon",
-            "hatches_from": 5,
             "height": 1.2,
             "id": 193,
             "locale_name": "Yanma",
@@ -21771,10 +21941,12 @@
                     "obstagoon"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 134,
             "evolves_from_id": 0,
             "generation": 3,
             "genus": "Tiny Raccoon Pok\u00e9mon",
+            "hatches_from": 7,
             "height": 0.4,
             "id": 263,
             "locale_name": "Zigzagoon",
@@ -21817,6 +21989,7 @@
                     "zoroark"
                 ]
             ],
+            "evolution_cost": 50,
             "evolution_id": 291,
             "evolves_from_id": 0,
             "generation": 5,
@@ -21871,6 +22044,7 @@
                     "hydreigon"
                 ]
             ],
+            "evolution_cost": 100,
             "evolution_id": 323,
             "evolves_from_id": 633,
             "generation": 5,
