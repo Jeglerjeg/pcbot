@@ -383,6 +383,7 @@ async def update_user_data():
             user_recent = await api.get_user_recent_activity(profile)
             for event in user_recent:
                 del event["created_at"]
+                del event["createdAt"]
                 del event["id"]
         except aiohttp.ServerDisconnectedError:
             continue
@@ -816,7 +817,7 @@ async def notify_maps(member_id: str, data: dict):
         except ValueError:
             logging.error(traceback.format_exc())
 
-        new_event = MapEvent(str(event))
+        new_event = MapEvent(text=str(event))
         prev = discord.utils.get(recent_map_events, text=str(event))
         to_delete = []
 
