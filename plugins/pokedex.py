@@ -33,7 +33,7 @@ pokedex_config = Config("pokedex", data=defaultdict(dict))
 default_scale_factor = 1.0
 min_scale_factor, max_scale_factor = 0.25, 4
 
-pokemon_go_gen = [1, 2, 3]
+pokemon_go_gen = [1, 2, 3, 4, 5, 6]
 
 # Load the Pokedex API
 with open(api_path) as api_file:
