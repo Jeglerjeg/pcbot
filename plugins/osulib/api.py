@@ -17,7 +17,7 @@ access_token = ""
 requests_sent = 0
 
 mode_names = {
-    "Standard": ["standard", "osu"],
+    "Standard": ["standard", "osu", "std"],
     "Taiko": ["taiko"],
     "Catch": ["catch", "ctb", "fruits"],
     "Mania": ["mania", "keys"]
