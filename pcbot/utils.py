@@ -212,8 +212,7 @@ async def post_request(url: str, call=None, headers=None, data=None, **params):
     :param params: Any additional url parameters.
     :return: The byte-like file OR whatever return value of the attribute set in call.
     """
-    import bot
-    async with aiohttp.ClientSession(loop=bot.client.loop) as session:
+    async with aiohttp.ClientSession(loop=client.loop) as session:
         coro = session.post
 
         async with coro(url, data=data, params=params, headers=headers) as response:
