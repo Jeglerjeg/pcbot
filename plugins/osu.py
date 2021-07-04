@@ -971,7 +971,7 @@ async def osu(message: discord.Message, member: discord.Member = Annotate.Self,
     params = {
         "colour": color,
         "uname": user_id,
-        "pp": "True",
+        "pp": 0,
         "countryrank": "True",
         "xpbar": "True",
         "mode": mode.value,
