@@ -5,9 +5,6 @@
         countdown
 """
 
-# TODO: Support for pendulum 1.1.0 and above
-# Please use pendulum==1.0.2 for now as timezones are broken in higher versions
-
 import discord
 import pendulum
 from operator import itemgetter
@@ -56,16 +53,16 @@ async def init_dt(message: discord.Message, time: str, timezone: str):
     return dt, timezone
 
 
-def format_when(dt: pendulum.Pendulum, timezone: str = "UTC"):
+def format_when(dt: pendulum.datetime, timezone: str = "UTC"):
     """ Format when something will happen"""
-    now = pendulum.utcnow()
+    now = pendulum.now("UTC")
 
-    diff = dt - now
+    diff = dt.diff(now)
     major_diff = dt.diff_for_humans(absolute=True)
     detailed_diff = diff.in_words().replace("-", "")
 
     return "`{time} {tz}` {pronoun} **{major}{diff}{pronoun2}**.".format(
-        time=dt.format(dt_format),
+        time=dt.strftime(dt_format),
         tz=timezone,
         pronoun="is in" if dt > now else "was",
         major="~" + major_diff + "** / **" if major_diff not in detailed_diff else "",
@@ -88,10 +85,10 @@ async def when(message: discord.Message, *time, timezone: tz_arg = "UTC"):
         await client.say(message, format_when(dt, timezone_name))
     else:
         timezone = reverse_gmt(timezone)
-        dt = pendulum.now(tz=timezone)
+        dt = pendulum.now(timezone)
 
         await client.say(message, "`{} {}` is **UTC{}{}**.".format(
-            dt.format(dt_format), timezone_name,
+            dt.strftime(dt_format), timezone_name,
             "-" if dt.offset_hours < 0 else ("+" if dt.offset_hours > 0 else ""),
             abs(dt.offset_hours) if dt.offset_hours else "",
         ))
@@ -124,7 +121,7 @@ async def create(message: discord.Message, tag: tag_arg, *time, timezone: tz_arg
     timezone_name = timezone
     dt, timezone = await init_dt(message, " ".join(time), timezone)
 
-    seconds = int((dt - pendulum.now(tz=timezone)).total_seconds())
+    seconds = (dt.diff(pendulum.now(timezone)).in_seconds())
     assert seconds > 0, "A countdown has to be set in the future."
 
     cd = dict(time=dt.to_datetime_string(), tz=timezone, tz_name=timezone_name, tag=tag,
@@ -202,7 +199,7 @@ async def handle_countdown_reminders():
     # Go through the reminders starting at the newest one
     for cd in sorted(reminders, key=itemgetter("dt")):
         # Find in how many seconds the countdown will finish
-        seconds = int((cd["dt"] - pendulum.now(tz=cd["tz"])).total_seconds())
+        seconds = (cd["dt"].diff(pendulum.now(cd["tz"])).in_seconds())
 
         # If the next reminder is in longer than a month, don't bother waiting,
         if seconds > 60 * 60 * 24 * 30:
