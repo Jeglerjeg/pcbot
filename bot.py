@@ -470,6 +470,7 @@ async def on_message(message: discord.Message):
 
         # Check that the author is allowed to use the command
         if not plugins.can_use_command(command, message.author, message.channel):
+            await client.send_message(message.channel, "You don't have permission to use this command.")
             return
 
         # Parse the command with the user's arguments
