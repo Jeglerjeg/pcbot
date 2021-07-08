@@ -1213,6 +1213,7 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
     mode = get_mode(str(member.id))
 
     params = {
+        "include_fails": 1,
         "mode": mode.string,
         "limit": 1
     }
