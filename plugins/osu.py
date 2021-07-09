@@ -239,8 +239,8 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         "[{i}{artist} - {title} [{version}]{i}]({host}b/{beatmap_id})\n"
         "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist}**"
         "```diff\n"
-        "  acc     300s  100s  50s  miss  combo\n"
-        "{sign} {acc:<8.2%}{count300:<6}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}```"
+        "  acc     300s   100s  50s  miss  combo\n"
+        "{sign} {acc:<8.2%}{count300:<7}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}```"
         "{live}"
     ).format(
         host=host,
