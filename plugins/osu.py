@@ -237,7 +237,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
     acc = calculate_acc(mode, score)
     return (
         "[{i}{artist} - {title} [{version}]{i}]({host}b/{beatmap_id})\n"
-        "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}+{modslist}**"
+        "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist}**"
         "```diff\n"
         "  acc     300s   100s   50s    miss   combo\n"
         "{sign} {acc:<8.2%}{count300:<7}{count100:<7}{count50:<7}{countmiss:<7}{maxcombo}{max_combo}```"
@@ -263,6 +263,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         maxcombo=score["max_combo"],
         max_combo="/{}".format(beatmap["max_combo"]) if mode in (api.GameMode.Standard, api.GameMode.Catch) else "",
         scoreboard_rank="#{} ".format(rank) if rank else "",
+        failed="(Failed) " if score["passed"] is False and score["rank"] is not "F" else "",
         live=await format_stream(member, score, beatmap) if member else "",
     )
 
@@ -573,10 +574,10 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
         objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
                   score["statistics"]["count_50"] + score["statistics"]["count_miss"]
         beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
-                                                            + score["beatmap"]["count_spinners"]
+                          + score["beatmap"]["count_spinners"]
         embed.set_footer(
             text="Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp, potential_pp - float(score["pp"])) +
-                 ("\nFailed: {completion_rate:.2f}% completed".format(completion_rate=(objects / beatmap_objects) * 100)
+                 ("\nCompletion rate: {completion_rate:.2f}%".format(completion_rate=(objects / beatmap_objects) * 100)
                   if score["passed"] is False else "")
         )
     else:
@@ -584,10 +585,10 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
             objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
                       score["statistics"]["count_50"] + score["statistics"]["count_miss"]
             beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
-                                                                + score["beatmap"]["count_spinners"]
+                              + score["beatmap"]["count_spinners"]
             embed.set_footer(
-                text="Failed: {completion_rate: .2f} % completed".format(completion_rate=
-                                                                         (objects / beatmap_objects) * 100)
+                text="Completion rate: {completion_rate:.2f}%".format(completion_rate=
+                                                                      (objects / beatmap_objects) * 100)
             )
     return embed
 
