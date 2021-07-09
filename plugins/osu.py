@@ -659,6 +659,7 @@ async def notify_pp(member_id: str, data: dict):
         # Format the url and the username
         name = get_score_name(member, new["username"])
         embed = get_formatted_score_embed(member, score, m, potential_pp)
+        embed.set_thumbnail(url=score["beatmapset"]["covers"]["list@2x"])
 
         # The top line of the format will differ depending on whether we found a score or not
         if score:
@@ -707,19 +708,22 @@ async def format_beatmapset_diffs(beatmapset):
     return m + "```"
 
 
-async def format_map_status(member: discord.Member, status_format: str, beatmapset, minimal: bool):
+async def format_map_status(member: discord.Member, status_format: str, beatmapset, minimal: bool, user_update=True):
     """ Format the status update of a beatmap. """
     set_id = beatmapset["id"]
-    user_id = osu_config.data["profiles"][str(member.id)]
-
-    status = status_format.format(name=member.display_name, user_id=user_id, host=host, artist=beatmapset["artist"],
+    if user_update:
+        user_id = osu_config.data["profiles"][str(member.id)]
+        name = member.display_name
+    else:
+        user_id = beatmapset["user_id"]
+        name = beatmapset["creator"]
+    status = status_format.format(name=name, user_id=user_id, host=host, artist=beatmapset["artist"],
                                   title=beatmapset["title"], id=beatmapset["id"])
     if not minimal:
         status += await format_beatmapset_diffs(beatmapset)
 
     embed = discord.Embed(color=member.color, description=status)
-    embed.set_thumbnail(
-        url="https://b.ppy.sh/thumb/{}.jpg?date={}".format(set_id, datetime.now().ctime().replace(" ", "%20")))
+    embed.set_thumbnail(url=beatmapset["covers"]["list@2x"])
     return embed
 
 
@@ -1218,6 +1222,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap), potential_pp)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
+    embed.set_thumbnail(url=score["beatmapset"]["covers"]["list@2x"])
     return embed
 
 
@@ -1297,8 +1302,9 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
     except Exception as e:
         await client.say(message, e)
         return
-    header = "**{artist} - {title}** submitted by **{creator}**".format(**beatmapset)
-    embed = discord.Embed(color=message.author.color, description=header + await format_beatmapset_diffs(beatmapset))
+    status = "[**{artist} - {title}**]({host}s/{id}) submitted by [**{name}**]({host}u/{user_id})"
+    embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False, member=message.author,
+                                    user_update=False)
     await client.send_message(message.channel, embed=embed)
 
 
