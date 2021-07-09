@@ -576,8 +576,8 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
                                                             + score["beatmap"]["count_spinners"]
         embed.set_footer(
             text="Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp, potential_pp - float(score["pp"])) +
-                 "\nFailed: {completion_rate:.2f}% completed".format(completion_rate=(objects / beatmap_objects) * 100)
-            if score["passed"] is False else ""
+                 ("\nFailed: {completion_rate:.2f}% completed".format(completion_rate=(objects / beatmap_objects) * 100)
+                  if score["passed"] is False else "")
         )
     else:
         if score["passed"] is False:
