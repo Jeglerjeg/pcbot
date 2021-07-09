@@ -571,7 +571,7 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
     # Add potential pp in the footer
     if potential_pp:
         objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
-                  score["statistics"]["count_50"]
+                  score["statistics"]["count_50"] + score["statistics"]["count_miss"]
         beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
                                                             + score["beatmap"]["count_spinners"]
         embed.set_footer(
@@ -582,7 +582,7 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
     else:
         if score["passed"] is False:
             objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
-                      score["statistics"]["count_50"]
+                      score["statistics"]["count_50"] + score["statistics"]["count_miss"]
             beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
                                                                 + score["beatmap"]["count_spinners"]
             embed.set_footer(
