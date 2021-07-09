@@ -580,14 +580,15 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
             if score["passed"] is False else ""
         )
     else:
-        objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
-                  score["statistics"]["count_50"]
-        beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
-                                                            + score["beatmap"]["count_spinners"]
-        embed.set_footer(
-            text="Failed: {completion_rate: .2f} % completed".format(completion_rate=(objects / beatmap_objects) * 100)
-            if score["passed"] is False else ""
-        )
+        if score["passed"] is False:
+            objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
+                      score["statistics"]["count_50"]
+            beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
+                                                                + score["beatmap"]["count_spinners"]
+            embed.set_footer(
+                text="Failed: {completion_rate: .2f} % completed".format(completion_rate=
+                                                                         (objects / beatmap_objects) * 100)
+            )
     return embed
 
 
