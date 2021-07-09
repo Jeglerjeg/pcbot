@@ -693,7 +693,7 @@ async def format_beatmapset_diffs(beatmapset):
         diff_length = len("version")
 
     m = "```elm\n" \
-        "Mode  {version: <{diff_len}}  Stars  Drain  PP\n".format(version="Difficulty", diff_len=diff_length)
+        "Mode  {version: <{diff_len}}  Stars  Drain  PP".format(version="Difficulty", diff_len=diff_length)
 
     for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
