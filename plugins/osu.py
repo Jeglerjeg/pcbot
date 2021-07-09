@@ -239,8 +239,8 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         "[{i}{artist} - {title} [{version}]{i}]({host}b/{beatmap_id})\n"
         "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist}**"
         "```diff\n"
-        "  acc     300s   100s   50s    miss   combo\n"
-        "{sign} {acc:<8.2%}{count300:<7}{count100:<7}{count50:<7}{countmiss:<7}{maxcombo}{max_combo}```"
+        "  acc     300s  100s  50s  miss  combo\n"
+        "{sign} {acc:<8.2%}{count300:<6}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}```"
         "{live}"
     ).format(
         host=host,
@@ -1223,7 +1223,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap), potential_pp)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
-    embed.set_thumbnail(url=score["beatmapset"]["covers"]["list@2x"])
+    embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
     return embed
 
 
