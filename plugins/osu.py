@@ -245,7 +245,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
     ).format(
         host=host,
         beatmap_id=score["beatmap"]["id"],
-        sign="!" if acc == 1 else ("+" if score["perfect"] == True else "-"),
+        sign="!" if acc == 1 else ("+" if score["perfect"] is True else "-"),
         modslist=Mods.format_mods(score["mods"]),
         acc=acc,
         pp=score["pp"],
@@ -570,9 +570,24 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
 
     # Add potential pp in the footer
     if potential_pp:
+        objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
+                  score["statistics"]["count_50"]
+        beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
+                                                            + score["beatmap"]["count_spinners"]
         embed.set_footer(
-            text="Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp, potential_pp - float(score["pp"])))
-
+            text="Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp, potential_pp - float(score["pp"])) +
+                 "\nFailed: {completion_rate:.2f}% completed".format(completion_rate=(objects / beatmap_objects) * 100)
+            if score["passed"] is False else ""
+        )
+    else:
+        objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
+                  score["statistics"]["count_50"]
+        beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
+                                                            + score["beatmap"]["count_spinners"]
+        embed.set_footer(
+            text="Failed: {completion_rate: .2f} % completed".format(completion_rate=(objects / beatmap_objects) * 100)
+            if score["passed"] is False else ""
+        )
     return embed
 
 
@@ -1189,10 +1204,10 @@ if can_calc_pp:
 async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mode):
     mods = api.Mods.format_mods(score["mods"])
 
-    score_pp = await calculate_pp(int(score["beatmap"]["id"]), *"{modslist}{acc:.2%} {c300}x300 {c100}x100 {c50}x50 {"
-                                                                "scorerank}rank {countmiss}m {maxcombo}x".format(
-        acc=calculate_acc(mode, score), scorerank=score["rank"], c300=score["statistics"]["count_300"],
-        c100=score["statistics"]["count_100"],
+    score_pp = await calculate_pp(int(score["beatmap"]["id"]), *"{modslist}{acc:.2%} {c300}x300 {c100}x100 {c50}x50 "
+                                                                "{scorerank}rank {countmiss}m {maxcombo}x".format(
+        acc=calculate_acc(mode, score), scorerank="F" if score["passed"] is False else score["rank"],
+        c300=score["statistics"]["count_300"], c100=score["statistics"]["count_100"],
         c50=score["statistics"]["count_50"], modslist="+" + mods + " " if mods != "Nomod" else "",
         countmiss=score["statistics"]["count_miss"], maxcombo=score["max_combo"]).split())
 
