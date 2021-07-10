@@ -963,14 +963,26 @@ async def on_message(message):
         return True
 
 
-@plugins.command(aliases="circlesimulator eba")
-async def osu(message: discord.Message, member: discord.Member = Annotate.Self,
-              mode: api.GameMode.get_mode = None):
+@plugins.command(aliases="circlesimulator eba", usage="[member] [mode]")
+async def osu(message: discord.Message, *options):
     """ Handle osu! commands.
 
     When your user is linked, this plugin will check if you are playing osu!
     (your profile would have `playing osu!`), and send updates whenever you set a
     new top score. """
+    member = None
+    mode = None
+
+    for value in options:
+        member = utils.find_member(guild=message.guild, name=value)
+        if member:
+            continue
+        else:
+            mode = api.GameMode.get_mode(value)
+
+    if member is None:
+        member = message.author
+
     # Make sure the member is assigned
     assert str(member.id) in osu_config.data[
         "profiles"], "No osu! profile assigned to **{}**! Please assign a profile using !osu link".format(member.name)
