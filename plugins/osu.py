@@ -1292,14 +1292,20 @@ async def score(message: discord.Message, *options):
         beatmap_id = None
         match = False
         async for m in message.channel.history(limit=10):
-            match_v1 = api.beatmap_url_pattern_v1.search(m.content)
+            to_search = m.content
+            if m.embeds:
+                for embed in m.embeds:
+                    to_search += embed.description if embed.description else ""
+                    to_search += embed.title if embed.title else ""
+                    to_search += embed.footer.text if embed.footer else ""
+            match_v1 = api.beatmap_url_pattern_v1.search(to_search)
             if match_v1:
                 if match_v1.group("type") == "b":
                     beatmap_id = match_v1.group("id")
                 match = True
                 break
 
-            match_v2 = api.beatmap_url_pattern_v2.search(m.content)
+            match_v2 = api.beatmap_url_pattern_v2.search(to_search)
             if match_v2:
                 if match_v2.group("mode") is not None:
                     beatmap_id = match_v2.group("beatmap_id")
