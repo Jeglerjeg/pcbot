@@ -1258,26 +1258,61 @@ plugins.command()(recent)
 osu.command(aliases="last new")(recent)
 
 
-async def score(message: discord.Message, beatmap_url: str):
-    """ You scored. """
-    assert str(message.author.id) in osu_config.data["profiles"], \
-        "No osu! profile assigned to **{}**!".format(message.author.name)
+async def score(message: discord.Message, *options):
+    """ Display your own or the member's score on a beatmap.
+    If URL is not provided it searches the last 10 messages for a URL"""
+    member = None
+    beatmap_url = None
 
-    user_id = osu_config.data["profiles"][str(message.author.id)]
-    mode = get_mode(str(message.author.id))
+    for value in options:
+        if not utils.http_url_pattern.match(value):
+            member = utils.find_member(guild=message.guild, name=value)
+        else:
+            beatmap_url = value
 
-    try:
-        beatmap_info = api.parse_beatmap_url(beatmap_url)
-    except SyntaxError as e:
-        await client.say(message, e)
-        return
+    if not member:
+        member = message.author
 
-    assert beatmap_info.beatmap_id, "Please link to a specific difficulty"
+    assert str(member.id) in osu_config.data["profiles"], \
+        "No osu! profile assigned to **{}**!".format(member.name)
+
+    if not beatmap_url:
+        beatmap_id = None
+        match = False
+        async for m in message.channel.history(limit=10):
+            match_v1 = api.beatmap_url_pattern_v1.search(m.content)
+            if match_v1:
+                if match_v1.group("type") == "b":
+                    beatmap_id = match_v1.group("id")
+                match = True
+                break
+
+            match_v2 = api.beatmap_url_pattern_v2.search(m.content)
+            if match_v2:
+                if match_v2.group("mode") is not None:
+                    beatmap_id = match_v2.group("beatmap_id")
+                match = True
+                break
+        if not match:
+            await client.say(message, "No beatmap link found")
+            return
+    else:
+        try:
+            beatmap_info = api.parse_beatmap_url(beatmap_url)
+            beatmap_id = beatmap_info.beatmap_id
+        except SyntaxError as e:
+            await client.say(message, e)
+            return
+
+    user_id = osu_config.data["profiles"][str(member.id)]
+    mode = get_mode(str(member.id))
+
+    assert beatmap_id, "Please link to a specific difficulty"
     params = {
         "mode": mode.string,
     }
-    scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
-    assert scores, "Found no scores by **{}**.".format(message.author.name)
+    scores = await api.get_user_beatmap_score(beatmap_id, user_id, params=params)
+    assert scores, "Found no scores by **{}**.".format(member.name)
 
     score = scores["score"]
 
@@ -1286,12 +1321,12 @@ async def score(message: discord.Message, beatmap_url: str):
     }
     beatmap = (await api.beatmap_lookup(**params))
 
-    embed = await create_score_embed_with_pp(message.author, score, beatmap, mode)
+    embed = await create_score_embed_with_pp(member, score, beatmap, mode)
     await client.send_message(message.channel, embed=embed)
 
 
-plugins.command(name="score")(score)
-osu.command(name="score")(score)
+plugins.command(name="score", usage="<member> <url>")(score)
+osu.command(name="score", usage="<member> <url>")(score)
 
 
 @osu.command(aliases="map")
