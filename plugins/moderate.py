@@ -314,7 +314,7 @@ async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
             if m.id == message.id:
                 return
 
-        if not changelog_channel:
+        if changelog_channel is None:
             return
 
         if message.channel == changelog_channel:
@@ -322,6 +322,7 @@ async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
 
         if message.author == client.user:
             return
+
         if not message.attachments == []:
             attachments = ""
             for i in range(len(message.attachments)):
