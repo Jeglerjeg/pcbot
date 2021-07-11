@@ -683,15 +683,15 @@ async def format_beatmapset_diffs(beatmapset):
     diff_length = len(max((diff["version"] for diff in beatmapset["beatmaps"]), key=len))
     if diff_length > max_diff_length:
         diff_length = max_diff_length
-    elif diff_length < len("version"):
-        diff_length = len("version")
+    elif diff_length < len("difficulty"):
+        diff_length = len("difficulty")
 
     m = "```elm\n" \
-        "Mode  {version: <{diff_len}}  Stars  Drain  PP".format(version="Difficulty", diff_len=diff_length)
+        "M {version: <{diff_len}}  Stars  Drain  PP".format(version="Difficulty", diff_len=diff_length)
 
     for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
-        m += "\n{gamemode: <2}    {name: <{diff_len}}  {stars: <7}{drain: <7}{pp}".format(
+        m += "\n{gamemode: <2}{name: <{diff_len}}  {stars: <7}{drain: <7}{pp}".format(
             gamemode=api.GameMode(int(diff["mode_int"])).name[0],
             name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
             diff_len=diff_length,
