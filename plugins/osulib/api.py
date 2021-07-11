@@ -220,7 +220,9 @@ async def get_user_recent_activity(user):
     return await request()
 
 beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
-beatmap_url_pattern_v2 = re.compile(r"https?://osu\.ppy\.sh/beatmapsets/(?P<beatmapset_id>\d+)(?:#(?P<mode>\w+)/(?P<beatmap_id>\d+))?")
+beatmapset_url_pattern_v2 = re.compile(r"https?://osu\.ppy\.sh/beatmapsets/"
+                                       r"(?P<beatmapset_id>\d+)(?:#(?P<mode>\w+)/(?P<beatmap_id>\d+))?")
+beatmap_url_pattern_v2 = re.compile(r"https?://osu\.ppy\.sh/beatmaps/(?P<beatmap_id>\d+)(?:\?mode=(?P<mode>\w+))")
 
 BeatmapURLInfo = namedtuple("BeatmapURLInfo", "beatmapset_id beatmap_id gamemode")
 
@@ -244,14 +246,22 @@ def parse_beatmap_url(url: str):
         else:
             return BeatmapURLInfo(beatmapset_id=match_v1.group("id"), beatmap_id=None, gamemode=mode)
 
-    match_v2 = beatmap_url_pattern_v2.match(url)
-    if match_v2:
-        if match_v2.group("mode") is None:
-            return BeatmapURLInfo(beatmapset_id=match_v2.group("beatmapset_id"), beatmap_id=None, gamemode=None)
+    match_v2_beatmapset = beatmapset_url_pattern_v2.match(url)
+    if match_v2_beatmapset:
+        if match_v2_beatmapset.group("mode") is None:
+            return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"), beatmap_id=None, gamemode=None)
         else:
-            return BeatmapURLInfo(beatmapset_id=match_v2.group("beatmapset_id"),
-                                  beatmap_id=match_v2.group("beatmap_id"),
-                                  gamemode=GameMode.get_mode(match_v2.group("mode")))
+            return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"),
+                                  beatmap_id=match_v2_beatmapset.group("beatmap_id"),
+                                  gamemode=GameMode.get_mode(match_v2_beatmapset.group("mode")))
+
+    match_v2_beatmap = beatmap_url_pattern_v2.match(url)
+    if match_v2_beatmap:
+        if match_v2_beatmap.group("mode") is None:
+            return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"), gamemode=None)
+        else:
+            return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"),
+                                  gamemode=GameMode.get_mode((match_v2_beatmap.group("mode"))))
 
     raise SyntaxError("The given URL is invalid.")
 

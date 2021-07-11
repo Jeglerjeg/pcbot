@@ -1299,12 +1299,17 @@ async def score(message: discord.Message, *options):
                 match = True
                 break
 
-            match_v2 = api.beatmap_url_pattern_v2.search(to_search)
-            if match_v2:
-                if match_v2.group("mode") is not None:
-                    beatmap_id = match_v2.group("beatmap_id")
+            match_v2_beatmapset = api.beatmapset_url_pattern_v2.search(to_search)
+            if match_v2_beatmapset:
+                if match_v2_beatmapset.group("mode") is not None:
+                    beatmap_id = match_v2_beatmapset.group("beatmap_id")
                 match = True
                 break
+
+            match_v2_beatmap = api.beatmap_url_pattern_v2.search(to_search)
+            if match_v2_beatmap:
+                beatmap_id = match_v2_beatmap.group("beatmap_id")
+
         if not match:
             await client.say(message, "No beatmap link found")
             return
