@@ -568,28 +568,22 @@ def get_score_name(member: discord.Member, username: str):
 def get_formatted_score_embed(member: discord.Member, score: dict, formatted_score: str, potential_pp: float = None):
     embed = discord.Embed(color=member.color, url=get_user_url(str(member.id)))
     embed.description = formatted_score
+    footer = ""
 
     # Add potential pp in the footer
     if potential_pp:
+        footer += "Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp, potential_pp - float(score["pp"]))
+
+    # Add completion rate to footer if score is failed
+    if score["passed"] is False:
         objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
                   score["statistics"]["count_50"] + score["statistics"]["count_miss"]
+
         beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
-                          + score["beatmap"]["count_spinners"]
-        embed.set_footer(
-            text="Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp, potential_pp - float(score["pp"])) +
-                 ("\nCompletion rate: {completion_rate:.2f}%".format(completion_rate=(objects / beatmap_objects) * 100)
-                  if score["passed"] is False else "")
-        )
-    else:
-        if score["passed"] is False:
-            objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
-                      score["statistics"]["count_50"] + score["statistics"]["count_miss"]
-            beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
-                              + score["beatmap"]["count_spinners"]
-            embed.set_footer(
-                text="Completion rate: {completion_rate:.2f}%".format(completion_rate=
-                                                                      (objects / beatmap_objects) * 100)
-            )
+                                                            + score["beatmap"]["count_spinners"]
+        footer += "\nCompletion rate: {completion_rate:.2f}%".format(completion_rate=(objects / beatmap_objects) * 100)
+
+    embed.set_footer(text=footer)
     return embed
 
 
