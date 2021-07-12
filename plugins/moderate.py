@@ -288,7 +288,7 @@ def get_changelog_channel(guild: discord.Guild):
         return
 
     channel = discord.utils.get(guild.channels, name="changelog")
-    if not channel:
+    if channel is None:
         return
 
     permissions = channel.permissions_for(guild.me)
