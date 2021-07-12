@@ -338,10 +338,13 @@ async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
                 "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}".format(message)
             )
     else:
-            await log_change(
-                changelog_channel,
-                "An uncached message was deleted in {0.mention}".format(client.get_channel(raw_message.channel_id))
-            )
+        if changelog_channel is None:
+            return
+
+        await log_change(
+            changelog_channel,
+            "An uncached message was deleted in {0.mention}".format(client.get_channel(raw_message.channel_id))
+        )
 
 
 @plugins.event()
