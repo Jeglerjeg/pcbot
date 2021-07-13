@@ -20,3 +20,4 @@ plugins/osulib/setdatacache
 *.sh
 *.xsh
 *.osu
+*.osr
