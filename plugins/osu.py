@@ -41,7 +41,7 @@ import discord
 
 import plugins
 from pcbot import Config, utils, Annotate
-from plugins.osulib import api, Mods, calculate_pp, can_calc_pp, ClosestPPStats
+from plugins.osulib import api, Mods, calculate_pp, can_calc_pp, ClosestPPStats, ordr
 from plugins.twitchlib import twitch
 
 client = plugins.client  # type: discord.Client
@@ -66,6 +66,7 @@ osu_config = Config("osu", pretty=True, data=dict(
 ))
 
 osu_tracking = {}  # Saves the requested data or deletes whenever the user stops playing (for comparisons)
+last_rendered = {}  # Saves when the member last rendered a replay
 update_interval = osu_config.data.get("update_interval", 30)
 not_playing_skip = osu_config.data.get("not_playing_skip", 10)
 time_elapsed = 0  # The registered time it takes to process all information between updates (changes each update)
@@ -580,7 +581,7 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
                   score["statistics"]["count_50"] + score["statistics"]["count_miss"]
 
         beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
-                                                            + score["beatmap"]["count_spinners"]
+                          + score["beatmap"]["count_spinners"]
         footer += "\nCompletion rate: {completion_rate:.2f}%".format(completion_rate=(objects / beatmap_objects) * 100)
 
     embed.set_footer(text=footer)
@@ -1264,9 +1265,55 @@ plugins.command()(recent)
 osu.command(aliases="last new")(recent)
 
 
+@osu.command()
+async def render(message: discord.Message, render_url: str):
+    """ Render a replay using <https://ordr.issou.best>.
+    You can only render a replay every 10 minutes. """
+
+    if message.author.id in last_rendered:
+        time_since_render = datetime.now() - last_rendered[message.author.id]
+        in_minutes = time_since_render.total_seconds() / 60
+        if in_minutes < 10:
+            await client.say(message, "It's been less than 10 minutes since your last render. "
+                                      "Please wait before trying again")
+            return
+
+    render_job = await ordr.send_render_job(render_url)
+
+    assert isinstance(render_job, dict), \
+        "An error occured when sending this replay:\n{}".format(render_job)
+
+    if "renderID" not in render_job:
+        await client.say(message, "An error occured when sending this replay:\n{}".format(render_job["message"]))
+        return
+
+    last_rendered[message.author.id] = datetime.now()
+
+    e = discord.Embed(color=message.author.color)
+    e.description = "Progress: Rendering 0%"
+
+    placeholder_msg = await client.send_message(message.channel, embed=e)
+
+    render_complete = False
+    video_url = ""
+
+    while not render_complete:
+        ordr_render = await ordr.get_render(render_job["renderID"])
+        if not utils.http_url_pattern.match(ordr_render["videoUrl"]):
+            await asyncio.sleep(10)
+            e.description = "Progress: {}".format(ordr_render["progress"])
+            await placeholder_msg.edit(embed=e)
+        else:
+            e.description = "Progress: {}".format(ordr_render["progress"])
+            video_url = ordr_render["videoUrl"]
+            render_complete = True
+
+    await placeholder_msg.edit(content=video_url, embed=e)
+
+
 async def score(message: discord.Message, *options):
     """ Display your own or the member's score on a beatmap.
-    If URL is not provided it searches the last 10 messages for a URL"""
+    If URL is not provided it searches the last 10 messages for a URL. """
     member = None
     beatmap_url = None
 

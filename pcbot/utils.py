@@ -191,7 +191,7 @@ async def retrieve_page(url: str, head=False, call=None, headers=None, **params)
     async with aiohttp.ClientSession(loop=client.loop) as session:
         coro = session.head if head else session.get
 
-        async with coro(url, params=params, headers=headers or {}) as response:
+        async with coro(url=url, params=params, headers=headers or {}) as response:
             if call is not None:
                 if type(call) is str:
                     attr = getattr(response, call)
@@ -203,13 +203,14 @@ async def retrieve_page(url: str, head=False, call=None, headers=None, **params)
 
 
 async def post_request(url: str, call=None, headers=None, data=None, **params):
-    """ Download and return a website with aiohttp.
+    """ Send a POST request with aiohttp.
 
-    :param url: Download url as str.
+    :param url: POST destination URL.
     :param call: Any attribute coroutine to call before returning. Eg: "text" would return await response.text().
                  This may also be a coroutine with the response as parameter.
     :param headers: A dict of any additional headers.
     :param params: Any additional url parameters.
+    :param data: Data to be sent in the request body
     :return: The byte-like file OR whatever return value of the attribute set in call.
     """
     async with aiohttp.ClientSession(loop=client.loop) as session:
