@@ -1266,7 +1266,7 @@ osu.command(aliases="last new")(recent)
 
 
 @osu.command()
-async def render(message: discord.Message, render_url: str):
+async def render(message: discord.Message, replay_url: str):
     """ Render a replay using <https://ordr.issou.best>.
     You can only render a replay every 10 minutes. """
 
@@ -1278,7 +1278,7 @@ async def render(message: discord.Message, render_url: str):
                                       "Please wait before trying again")
             return
 
-    render_job = await ordr.send_render_job(render_url)
+    render_job = await ordr.send_render_job(replay_url)
 
     assert isinstance(render_job, dict), \
         "An error occured when sending this replay:\n{}".format(render_job)
