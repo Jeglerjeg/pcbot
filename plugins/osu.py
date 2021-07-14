@@ -76,7 +76,7 @@ pp_threshold = osu_config.data.get("pp_threshold", 0.13)
 score_request_limit = osu_config.data.get("score_request_limit", 100)
 minimum_pp_required = osu_config.data.get("minimum_pp_required", 0)
 use_mentions_in_scores = osu_config.data.get("use_mentions_in_scores", True)
-max_diff_length = 21  # The maximum amount of characters in a beatmap difficulty
+max_diff_length = 22  # The maximum amount of characters in a beatmap difficulty
 
 asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
                                                       osu_config.data.get("client_secret")), client.loop)
@@ -280,13 +280,15 @@ async def format_minimal_score(mode: api.GameMode, score: dict, beatmap: dict, r
         host=host,
         mods=Mods.format_mods(score["mods"]),
         acc=acc,
+        beatmap_id=score["beatmap"]["id"],
         artist=beatmap["beatmapset"]["artist"].replace("*", "\*").replace("_", "\_"),
         title=beatmap["beatmapset"]["title"].replace("*", "\*").replace("_", "\_"),
         version=beatmap["version"],
+        rank=score["rank"],
         stars=float(beatmap["difficulty_rating"]),
         scoreboard_rank="#{} ".format(rank) if rank else "",
         live=await format_stream(member, score, beatmap),
-        **score
+        pp=score["pp"]
     )
 
 
@@ -580,7 +582,7 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
                   score["statistics"]["count_50"] + score["statistics"]["count_miss"]
 
         beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
-                                                            + score["beatmap"]["count_spinners"]
+                          + score["beatmap"]["count_spinners"]
         footer += "\nCompletion rate: {completion_rate:.2f}%".format(completion_rate=(objects / beatmap_objects) * 100)
 
     embed.set_footer(text=footer)
@@ -703,9 +705,54 @@ async def format_beatmapset_diffs(beatmapset):
     return m + "```"
 
 
-async def format_map_status(member: discord.Member, status_format: str, beatmapset, minimal: bool, user_update=True):
+async def format_beatmap_info(beatmapset):
+    """ Format some difficulty info on a beatmapset. """
+    # Get the longest difficulty name
+    diff_length = len(max((diff["version"] for diff in beatmapset["beatmaps"]), key=len))
+    if diff_length > max_diff_length + 1:
+        diff_length = max_diff_length + 1
+    elif diff_length < len("difficulty"):
+        diff_length = len("difficulty")
+
+    m = "```elm\n" \
+        "{version: <{diff_len}}  Drain  BPM  Passrate".format(version="Difficulty", diff_len=diff_length)
+
+    for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
+        diff_name = diff["version"]
+        pass_rate = "Not passed yet"
+        if not diff["passcount"] == 0 and not diff["playcount"] == 0:
+            pass_rate = "{:.2f}%".format((diff["passcount"] / diff["playcount"]) * 100)
+
+        m += "\n{name: <{diff_len}}  {drain: <7}{bpm: <5}{passrate}\n\nOD   CS   AR   HP   Max Combo\n{od: <5}" \
+             "{cs: <5}{ar: <5}{hp: <5}{maxcombo}\n\nAim PP  Speed PP  Acc PP  Total PP\n{aim_pp: <8}{speed_pp: <10}" \
+             "{acc_pp: <8}{pp}\n\nAim Stars  Speed Stars  Total Stars\n{aim_stars: <11}{speed_stars: <13}" \
+             "{stars}".format(
+              gamemode=api.GameMode(int(diff["mode_int"])).name[0],
+              name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 2] + "...",
+              diff_len=diff_length,
+              stars="{:.2f}\u2605".format(float(diff["difficulty_rating"])),
+              pp="{}pp".format(int(diff.get("pp", "0"))),
+              drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)),
+              aim_pp="{}pp".format(int(diff.get("aim_pp", "0"))),
+              speed_pp="{}pp".format(int(diff.get("speed_pp", "0"))),
+              acc_pp="{}pp".format(int(diff.get("acc_pp", "0"))),
+              passrate=pass_rate,
+              od=diff["accuracy"],
+              ar=diff["ar"],
+              hp=diff["drain"],
+              cs=diff["cs"],
+              aim_stars="{:.2f}\u2605".format(float(diff["aim_stars"])),
+              speed_stars="{:.2f}\u2605".format(float(diff["speed_stars"])),
+              bpm=int(diff["bpm"]),
+              maxcombo="{}x".format(diff["max_combo"])
+             )
+
+    return m + "```"
+
+
+async def format_map_status(member: discord.Member, status_format: str, beatmapset, minimal: bool, user_update=True,
+                            beatmap=False):
     """ Format the status update of a beatmap. """
-    set_id = beatmapset["id"]
     if user_update:
         user_id = osu_config.data["profiles"][str(member.id)]
         name = member.display_name
@@ -715,10 +762,18 @@ async def format_map_status(member: discord.Member, status_format: str, beatmaps
     status = status_format.format(name=name, user_id=user_id, host=host, artist=beatmapset["artist"],
                                   title=beatmapset["title"], id=beatmapset["id"])
     if not minimal:
-        status += await format_beatmapset_diffs(beatmapset)
+        if not beatmap:
+            status += await format_beatmapset_diffs(beatmapset)
+            embed = discord.Embed(color=member.color, description=status)
+            embed.set_image(url=beatmapset["covers"]["cover@2x"])
+        else:
+            status += await format_beatmap_info(beatmapset)
+            embed = discord.Embed(color=member.color, description=status)
+            embed.set_image(url=beatmapset["covers"]["cover@2x"])
+    else:
+        embed = discord.Embed(color=member.color, description=status)
+        embed.set_image(url=beatmapset["covers"]["cover@2x"])
 
-    embed = discord.Embed(color=member.color, description=status)
-    embed.set_thumbnail(url=beatmapset["covers"]["list@2x"])
     return embed
 
 
@@ -740,8 +795,13 @@ async def calculate_pp_for_beatmapset(beatmapset):
 
         # If the diff is cached and unchanged, use the cached pp
         if map_id in cached_mapset:
-            if diff["checksum"] == cached_mapset[map_id]["md5"]:
+            if diff["checksum"] == cached_mapset[map_id]["md5"] and "speed_pp" in cached_mapset[map_id]:
                 diff["pp"] = cached_mapset[map_id]["pp"]
+                diff["aim_pp"] = cached_mapset[map_id]["aim_pp"]
+                diff["speed_pp"] = cached_mapset[map_id]["speed_pp"]
+                diff["acc_pp"] = cached_mapset[map_id]["acc_pp"]
+                diff["aim_stars"] = cached_mapset[map_id]["aim_stars"]
+                diff["speed_stars"] = cached_mapset[map_id]["speed_stars"]
                 continue
 
             # If it was changed, add an asterisk to the beatmap name (this is a really stupid place to do this)
@@ -749,17 +809,27 @@ async def calculate_pp_for_beatmapset(beatmapset):
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
-            pp_stats = await calculate_pp(int(map_id), ignore_cache=True)
+            pp_stats = await calculate_pp(int(map_id), ignore_cache=True, map_calc=True)
         except ValueError:
             logging.error(traceback.format_exc())
             continue
 
         diff["pp"] = pp_stats.pp
+        diff["aim_pp"] = pp_stats.aim_pp
+        diff["speed_pp"] = pp_stats.speed_pp
+        diff["acc_pp"] = pp_stats.acc_pp
+        diff["aim_stars"] = pp_stats.aim_stars
+        diff["speed_stars"] = pp_stats.speed_stars
 
         # Cache the difficulty
         osu_config.data["map_cache"][set_id][map_id] = {
             "md5": diff["checksum"],
             "pp": pp_stats.pp,
+            "aim_stars": pp_stats.aim_stars,
+            "speed_stars": pp_stats.speed_stars,
+            "aim_pp": pp_stats.aim_pp,
+            "speed_pp": pp_stats.speed_pp,
+            "acc_pp": pp_stats.acc_pp,
         }
     await osu_config.asyncsave()
 
@@ -858,7 +928,13 @@ async def notify_maps(member_id: str, data: dict):
             for channel in channels:
                 # Do not format difficulties when minimal (or pp) information is specified
                 update_mode = get_update_mode(member_id)
-                embed = await format_map_status(member, status_format, beatmapset, update_mode is not UpdateModes.Full)
+                if len(beatmapset["beatmaps"]) == 1 and beatmapset["beatmaps"][0]["mode"] == "osu":
+                    embed = await format_map_status(member, status_format, beatmapset,
+                                                    update_mode is not UpdateModes.Full, beatmap=True)
+                else:
+                    embed = await format_map_status(member, status_format, beatmapset,
+                                                    update_mode is not UpdateModes.Full)
+
                 if new_event.count > 1:
                     embed.set_footer(text="updated {} times since".format(new_event.count))
                     embed.timestamp = new_event.time_created
@@ -1355,9 +1431,15 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
     except Exception as e:
         await client.say(message, e)
         return
+
     status = "[**{artist} - {title}**]({host}s/{id}) submitted by [**{name}**]({host}u/{user_id})"
-    embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False, member=message.author,
-                                    user_update=False)
+    if len(beatmapset["beatmaps"]) == 1 and beatmapset["beatmaps"][0]["mode"] == "osu":
+        embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False,
+                                        member=message.author, user_update=False, beatmap=True)
+    else:
+        embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False,
+                                        member=message.author, user_update=False)
+
     await client.send_message(message.channel, embed=embed)
 
 

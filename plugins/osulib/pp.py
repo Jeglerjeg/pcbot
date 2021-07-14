@@ -21,6 +21,8 @@ host = "https://osu.ppy.sh/"
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
 PPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs")
+MapPPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs aim_pp speed_pp acc_pp aim_stars "
+                        "speed_stars")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars artist title version")
 
 plugin_path = "plugins/osulib/"
@@ -90,12 +92,13 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
     return beatmap
 
 
-async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False):
+async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, map_calc = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
     :param ignore_cache: When true, the .osu will always be downloaded
+    :param map_calc: When true, calculates and returns more fields in the PPStats tuple
     """
     noautoacc = False
     ez = ezpp_new()
@@ -163,6 +166,20 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False):
     od = ezpp_od(ez)
     hp = ezpp_hp(ez)
     cs = ezpp_cs(ez)
+
+    if map_calc:
+        # Calculate map_calc specific values
+        aim_pp = ezpp_aim_pp(ez)
+        speed_pp = ezpp_speed_pp(ez)
+        acc_pp = ezpp_acc_pp(ez)
+        aim_stars = ezpp_aim_stars(ez)
+        speed_stars = ezpp_speed_stars(ez)
+
+        # Calculate the pp
+        pp = ezpp_pp(ez)
+        ezpp_free(ez)
+        return MapPPStats(pp, totalstars, artist, title, version, ar, od, hp, cs, aim_pp, speed_pp, acc_pp, aim_stars,
+                          speed_stars)
 
     # Calculate the pp
     pp = ezpp_pp(ez)
