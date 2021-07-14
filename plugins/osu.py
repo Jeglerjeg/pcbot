@@ -656,7 +656,7 @@ async def notify_pp(member_id: str, data: dict):
         name = get_score_name(member, new["username"])
         embed = get_formatted_score_embed(member, score, m, potential_pp)
         if score:
-            embed.set_thumbnail(url=score["beatmapset"]["covers"]["list@2x"])
+            embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
 
         # The top line of the format will differ depending on whether we found a score or not
         if score:
