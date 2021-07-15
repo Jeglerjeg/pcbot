@@ -93,7 +93,8 @@ parser.add("hp", r"hp([0-9.]+)", type=float)
 parser.add("hits", "(\d+)hits", type=int)
 parser.add("pp", r"([0-9.]+)pp", type=float)
 
-parser.add("rank", r"(SSHrank|SSrank|SHrank|Srank|Arank|Brank|Crank|Drank|Frank|)", type=str)
+parser.add("rank", r"(SSHrank|XHrank|SSrank|SHrank|Srank|Xrank|Arank|Brank|Crank|Drank|Frank)", type=str)
+
 
 def parse(*args):
     """ Parse pp arguments. """
