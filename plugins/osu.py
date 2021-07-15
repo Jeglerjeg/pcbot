@@ -245,7 +245,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
     ).format(
         host=host,
         beatmap_id=score["beatmap"]["id"],
-        sign="!" if acc == 1 else ("+" if score["perfect"] is True else "-"),
+        sign="!" if acc == 1 else ("+" if score["perfect"] and score["passed"] else "-"),
         modslist=Mods.format_mods(score["mods"]),
         acc=acc,
         pp=score["pp"],
