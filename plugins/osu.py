@@ -40,7 +40,7 @@ import asyncio
 import discord
 
 import plugins
-from pcbot import Config, utils, Annotate
+from pcbot import Config, utils, Annotate, config as botconfig
 from plugins.osulib import api, Mods, calculate_pp, can_calc_pp, ClosestPPStats
 from plugins.twitchlib import twitch
 
@@ -1055,7 +1055,8 @@ async def osu(message: discord.Message, *options):
 
     # Make sure the member is assigned
     assert str(member.id) in osu_config.data[
-        "profiles"], "No osu! profile assigned to **{}**! Please assign a profile using !osu link".format(member.name)
+        "profiles"], "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        member.name, botconfig.guild_command_prefix(member.guild))
 
     user_id = osu_config.data["profiles"][str(member.id)]
     mode = get_mode(str(member.id)) if mode is None else mode
