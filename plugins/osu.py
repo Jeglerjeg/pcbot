@@ -1313,7 +1313,7 @@ osu.command(aliases="last new")(recent)
 @osu.command(usage="<replay>")
 async def render(message: discord.Message, *options):
     """ Render a replay using <https://ordr.issou.best>.
-    The command accepts either a URL or an uploaded file
+    The command accepts either a URL or an uploaded file.\n
     You can only render a replay every 5 minutes. """
 
     replay_url = ""
