@@ -1265,7 +1265,7 @@ plugins.command()(recent)
 osu.command(aliases="last new")(recent)
 
 
-@osu.command(usage="replay")
+@osu.command(usage="<replay>")
 async def render(message: discord.Message, *options):
     """ Render a replay using <https://ordr.issou.best>.
     The command accepts either a URL or an uploaded file
