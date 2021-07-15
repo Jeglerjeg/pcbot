@@ -1265,19 +1265,30 @@ plugins.command()(recent)
 osu.command(aliases="last new")(recent)
 
 
-@osu.command()
-async def render(message: discord.Message, replay_url: str):
+@osu.command(usage="replay")
+async def render(message: discord.Message, *options):
     """ Render a replay using <https://ordr.issou.best>.
-    You can only render a replay every 10 minutes. """
+    The command accepts either a URL or an uploaded file
+    You can only render a replay every 5 minutes. """
+
+    replay_url = ""
+    for value in options:
+        if utils.http_url_pattern.match(value):
+            replay_url = value
+
+    if not message.attachments == []:
+        for attachment in message.attachments:
+            replay_url = attachment.url
 
     if message.author.id in last_rendered:
         time_since_render = datetime.now() - last_rendered[message.author.id]
         in_minutes = time_since_render.total_seconds() / 60
-        if in_minutes < 10:
-            await client.say(message, "It's been less than 10 minutes since your last render. "
+        if in_minutes < 5:
+            await client.say(message, "It's been less than 5 minutes since your last render. "
                                       "Please wait before trying again")
             return
 
+    assert replay_url, "No replay provided"
     render_job = await ordr.send_render_job(replay_url)
 
     assert isinstance(render_job, dict), \
@@ -1308,7 +1319,7 @@ async def render(message: discord.Message, replay_url: str):
             video_url = ordr_render["videoUrl"]
             render_complete = True
 
-    await placeholder_msg.edit(content=video_url, embed=e)
+    await placeholder_msg.edit(content=video_url, embed=None)
 
 
 async def score(message: discord.Message, *options):
