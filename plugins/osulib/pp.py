@@ -104,21 +104,34 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
     """
     noautoacc = False
     ez = ezpp_new()
-    ezpp_set_autocalc(ez, 1)
     beatmap = await parse_map(beatmap_url_or_id, ignore_cache=ignore_cache)
     args = parse_options(*options)
 
+    # Set number of misses
+    ezpp_set_nmiss(ez, args.misses)
+
+    # Set args if needed
+    if args.ar:
+        ezpp_set_base_ar(ez, args.ar)
+    if args.hp:
+        ezpp_set_base_hp(ez, args.hp)
+    if args.od:
+        ezpp_set_base_od(ez, args.od)
+    if args.cs:
+        ezpp_set_base_cs(ez, args.cs)
+
+    # Calculate the mod bitmask and apply settings if needed
+    mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
+    ezpp_set_mods(ez, mods_bitmask)
+
     ezpp_data_dup(ez, beatmap, len(beatmap.encode(errors="replace")))
+    ezpp_set_autocalc(ez, 1)
 
     # Store total map objects in case map length is changed
     total_objects = ezpp_nobjects(ez)
 
     # Store max combo for use in create_score_embed_with_pp()
     max_combo = ezpp_max_combo(ez)
-
-    # Calculate the mod bitmask and apply settings if needed
-    mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
-    ezpp_set_mods(ez, mods_bitmask)
 
     # Calculate the star difficulty
     totalstars = ezpp_stars(ez)
@@ -128,9 +141,6 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
         objects = args.c300 + args.c100 + args.c50 + args.misses
         ezpp_set_end(ez, objects)
         noautoacc = True
-
-    # Set number of misses
-    ezpp_set_nmiss(ez, args.misses)
 
     # Set accuracy based on arguments
     if args.acc is not None and noautoacc is not True:
@@ -157,18 +167,6 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
     # If the pp arg is given, return using the closest pp function
     if args.pp is not None:
         return await find_closest_pp(beatmap, args)
-
-    # Set args if needed
-    # TODO: cs doesn't seem to actually be applied in calculation, although
-    # it works in the native C version of oppai-ng
-    if args.cs:
-        ezpp_set_base_cs(ez, args.cs)
-    if args.ar:
-        ezpp_set_base_ar(ez, args.ar)
-    if args.hp:
-        ezpp_set_base_hp(ez, args.hp)
-    if args.od:
-        ezpp_set_base_od(ez, args.od)
 
     ar = ezpp_ar(ez)
     od = ezpp_od(ez)
@@ -208,37 +206,36 @@ async def find_closest_pp(beatmap, args):
     if not can_calc_pp:
         return None
     ez = ezpp_new()
-    ezpp_set_autocalc(ez, 1)
+
+    # Set number of misses
+    ezpp_set_nmiss(ez, args.misses)
+
+    # Set args if needed
+    if args.cs:
+        ezpp_set_base_cs(ez, args.cs)
+    if args.ar:
+        ezpp_set_base_ar(ez, args.ar)
+    if args.hp:
+        ezpp_set_base_hp(ez, args.hp)
+    if args.od:
+        ezpp_set_base_od(ez, args.od)
+
     ezpp_data_dup(ez, beatmap, len(beatmap.encode(errors="replace")))
+    ezpp_set_autocalc(ez, 1)
 
     # Set mod bitmask
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
+    # Apply mods
+    ezpp_set_mods(ez, mods_bitmask)
+
+    # Set score version
+    ezpp_set_score_version(ez, args.score_version)
+
     # Define a partial command for easily setting the pp value by 100s count
     def calc(accuracy: float):
-        # Set score version
-        ezpp_set_score_version(ez, args.score_version)
-
-        # Set number of misses
-        ezpp_set_nmiss(ez, args.misses)
-
-        # Apply mods
-        ezpp_set_mods(ez, mods_bitmask)
-
         # Set accuracy
         ezpp_set_accuracy_percent(ez, accuracy)
-
-        # Set args if needed
-        # TODO: cs doesn't seem to actually be applied in calculation, although
-        # it works in the native C version of oppai-ng
-        if args.cs:
-            ezpp_set_base_cs(ez, args.cs)
-        if args.ar:
-            ezpp_set_base_ar(ez, args.ar)
-        if args.hp:
-            ezpp_set_base_hp(ez, args.hp)
-        if args.od:
-            ezpp_set_base_od(ez, args.od)
 
         return ezpp_pp(ez)
 
@@ -280,5 +277,6 @@ async def find_closest_pp(beatmap, args):
     # Find the closest pp of our two values, and return the amount of 100s
     closest_pp = min([previous_pp, current_pp], key=lambda v: abs(args.pp - v))
     acc = acc if closest_pp == current_pp else acc + dec
+    ezpp_free(ez)
     return ClosestPPStats(round(acc, 2), closest_pp, totalstars, artist, title,
                           version)
