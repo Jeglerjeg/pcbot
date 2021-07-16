@@ -30,10 +30,10 @@ client = plugins.client  # type: discord.Client
 api_path = "plugins/pokedexlib/pokedex.json"
 sprites_path = "plugins/pokedexlib/sprites/"
 pokedex_config = Config("pokedex", data=defaultdict(dict))
-default_scale_factor = 1.8
+default_scale_factor = 1.0
 min_scale_factor, max_scale_factor = 0.25, 4
 
-pokemon_go_gen = [1, 2, 3]
+pokemon_go_gen = [1, 2, 3, 4, 5, 6]
 
 # Load the Pokedex API
 with open(api_path) as api_file:
@@ -184,12 +184,12 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
     # Format the message
     formatted_message = (
         "**#{id:03} {upper_name} - GEN {generation}**\n"
+        "**{genus}**\n"
         "Weight: `{weight}kg` Height: `{height}m`\n"
         "Type: `{type}`\n"
-        "**{genus} Pokémon**\n"
         "{pokemon_go}"
         "```\n{description}```"
-        "**EVOLUTION**: {formatted_evolution}"
+        "**EVOLUTIONS**: {formatted_evolution}"
     ).format(
         upper_name=pokemon["locale_name"].upper(),
         type=format_type(*pokemon["types"]),
@@ -198,8 +198,10 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
         pokemon_go=pokemon_go_info,
         **pokemon
     )
+    embed = discord.Embed(color=message.author.color)
+    embed.description = formatted_message
 
-    await client.say(message, formatted_message)
+    await client.send_message(message.channel, embed=embed)
 
 
 @pokedex_.command()
