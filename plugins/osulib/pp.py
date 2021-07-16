@@ -116,6 +116,9 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
     # Store max combo for use in create_score_embed_with_pp()
     max_combo = ezpp_max_combo(ez)
 
+    # Calculate the star difficulty
+    totalstars = ezpp_stars(ez)
+
     # Set end of map if failed
     if args.rank == "Frank":
         objects = args.c300 + args.c100 + args.c50 + args.misses
@@ -138,9 +141,6 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
     # Calculate the mod bitmask and apply settings if needed
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
     ezpp_set_mods(ez, mods_bitmask)
-
-    # Calculate the star difficulty
-    totalstars = ezpp_stars(ez)
 
     # Set score version
     ezpp_set_score_version(ez, args.score_version)
