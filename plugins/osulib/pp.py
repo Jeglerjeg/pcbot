@@ -119,6 +119,9 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
         ezpp_set_end(ez, objects)
         noautoacc = True
 
+    # Set number of misses
+    ezpp_set_nmiss(ez, args.misses)
+
     # Set accuracy based on arguments
     if args.acc is not None and noautoacc is not True:
         ezpp_set_accuracy_percent(ez, args.acc)
@@ -136,8 +139,7 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
     # Calculate the star difficulty
     totalstars = ezpp_stars(ez)
 
-    # Set number of misses
-    ezpp_set_nmiss(ez, args.misses)
+
 
     # Set score version
     ezpp_set_score_version(ez, args.score_version)
@@ -193,7 +195,7 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
     if potential:
         ezpp_set_end(ez, total_objects)
         ezpp_set_nmiss(ez, 0)
-        ezpp_set_accuracy_percent(ez, args.acc)
+        ezpp_set_accuracy(ez, args.c100, args.c50)
         ezpp_set_combo(ez, ezpp_max_combo(ez))
         max_pp = ezpp_pp(ez)
 

@@ -1310,7 +1310,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
     score_pp = await calculate_pp(int(score["beatmap"]["id"]), potential=bool(potential_pp),
                                   *"{modslist}{acc:.2%} {c300}x300 {c100}x100 {c50}x50 {scorerank}rank "
                                    "{countmiss}m {maxcombo}x"
-                                  .format(acc=calculate_acc(mode, score, exclude_misses=True), scorerank="F"
+                                  .format(acc=calculate_acc(mode, score), scorerank="F"
                                   if score["passed"] is False else score["rank"],
                                           c300=score["statistics"]["count_300"],
                                           c100=score["statistics"]["count_100"],
