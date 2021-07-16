@@ -1263,7 +1263,6 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
 
     score["pp"] = round(score_pp.pp, 2)
     beatmap["max_combo"] = score_pp.max_combo
-    logging.info(score_pp.stars)
     beatmap["difficulty_rating"] = score_pp.stars
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap),
