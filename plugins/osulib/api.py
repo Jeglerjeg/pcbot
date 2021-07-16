@@ -5,6 +5,7 @@
 """
 import asyncio
 import logging
+import os
 import re
 from collections import namedtuple
 from enum import Enum
@@ -15,6 +16,8 @@ from pcbot import utils
 api_url = "https://osu.ppy.sh/api/v2/"
 access_token = ""
 requests_sent = 0
+
+replay_path = os.path.join("plugins/osulib/", "replay.osr")
 
 mode_names = {
     "Standard": ["standard", "osu", "std"],
@@ -138,7 +141,7 @@ class Mods(Enum):
         return "".join((mod for mod in mods) if mods else ["Nomod"])
 
 
-def def_section(api_name: str, first_element: bool=False):
+def def_section(api_name: str, first_element: bool=False, download=False):
     """ Add a section using a template to simplify adding API functions. """
     async def template(url=api_url, request_tries: int=1, **params):
         global requests_sent
@@ -151,23 +154,27 @@ def def_section(api_name: str, first_element: bool=False):
         # Download using a URL of the given API function name
         for i in range(request_tries):
             try:
-                json = await utils.download_json(url + api_name, headers=headers, **params)
+                if not download:
+                    response = await utils.download_json(url + api_name, headers=headers, **params)
+                else:
+                    response = await utils.download_file(url + api_name, headers=headers, **params)
+
             except ValueError as e:
                 logging.warning("ValueError Calling {}: {}".format(url + api_name, e))
             else:
                 requests_sent += 1
 
-                if json is not None:
+                if response is not None:
                     break
         else:
             return None
 
         # Unless we want to extract the first element, return the entire object (usually a list)
         if not first_element:
-            return json
+            return response
 
         # If the returned value should be the first element, see if we can cut it
-        return json[0] if len(json) > 0 else None
+        return response[0] if len(response) > 0 else None
 
     # Set the correct name of the function and add simple docstring
     template.__name__ = api_name
@@ -180,11 +187,20 @@ beatmap_lookup = def_section("beatmaps/lookup")
 beatmapset_lookup = def_section("beatmapsets/lookup")
 
 
+async def download_replay(mode: str, score_id: int):
+    request = def_section("scores/{}/{}/download".format(mode, score_id), download=True)
+    replay = await request()
+
+    with open(replay_path, "wb") as f:
+        f.write(replay)
+    return replay
+
+
 async def get_user(user, mode=None, params=None):
     if mode:
-        request = def_section("users/" + user + "/" + mode)
+        request = def_section("users/{}/{}".format(user, mode))
     else:
-        request = def_section("users/" + user)
+        request = def_section("users/{}".format(user))
     if params:
         return await request(**params)
     else:
@@ -192,7 +208,8 @@ async def get_user(user, mode=None, params=None):
 
 
 async def get_user_scores(user_id, type, params=None):
-    request = def_section("users/" + user_id + "/scores/" + type)
+
+    request = def_section("users/{}/scores/{}".format(user_id, type))
     if params:
         return await request(**params)
     else:
@@ -200,7 +217,8 @@ async def get_user_scores(user_id, type, params=None):
 
 
 async def get_user_beatmap_score(beatmap_id, user_id, params=None):
-    request = def_section("beatmaps/" + beatmap_id + "/scores/users/" + user_id)
+
+    request = def_section("beatmaps/{}/scores/users/{}".format(beatmap_id, user_id))
     if params:
         result = await request(**params)
     else:
@@ -211,12 +229,13 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
 
 
 async def get_beatmapset(beatmapset_id):
-    request = def_section("beatmapsets/" + beatmapset_id)
+    request = def_section("beatmapsets/{}".format(beatmapset_id)
+    )
     return await request()
 
 
 async def get_user_recent_activity(user):
-    request = def_section("users/" + user + "/recent_activity")
+    request = def_section("users/{}/recent_activity".format(user))
     return await request()
 
 beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
