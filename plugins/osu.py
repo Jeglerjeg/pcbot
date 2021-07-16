@@ -254,9 +254,13 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         count100=score["statistics"]["count_100"],
         count50=score["statistics"]["count_50"],
         countmiss=score["statistics"]["count_miss"],
-        artist=beatmap["beatmapset"]["artist"].replace("_", "\_"),
-        title=beatmap["beatmapset"]["title"].replace("_", "\_"),
-        i="*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else "",
+        artist=score["beatmapset"]["artist"].replace("_", r"\_") if bool("beatmapset" in score) else
+        beatmap["beatmapset"]["artist"].replace("_", r"\_"),
+        title=score["beatmapset"]["title"].replace("_", r"\_") if bool("beatmapset" in score) else
+        beatmap["beatmapset"]["title"].replace("_", r"\_"),
+        i=("*" if "*" not in score["beatmapset"]["artist"] + score["beatmapset"]["title"] else "") if
+        bool("beatmapset" in score) else
+        ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
         # Escaping asterisk doesn't work in italics
         version=beatmap["version"],
         stars=float(beatmap["difficulty_rating"]),
@@ -1257,11 +1261,13 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
                                           maxcombo=score["max_combo"]).split())
 
     score["pp"] = round(score_pp.pp, 2)
+    beatmap["max_combo"] = score_pp.max_combo
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap),
                                       score_pp.max_pp)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
-    embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
+    embed.set_thumbnail(url=score["beatmapset"]["covers"]["list@2x"] if bool(
+        "beatmapset" in score) else beatmap["beatmapset"]["covers"]["list@2x"])
     return embed
 
 
@@ -1283,10 +1289,7 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
     assert scores, "Found no recent score."
 
     score = scores[0]
-    params = {
-        "id": score["beatmap"]["id"],
-    }
-    beatmap = (await api.beatmap_lookup(**params))
+    beatmap = score["beatmap"]
     embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
         bool(score["perfect"]) and bool(score["passed"])))
     await client.send_message(message.channel, embed=embed)

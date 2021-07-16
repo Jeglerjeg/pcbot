@@ -20,7 +20,7 @@ except:
 host = "https://osu.ppy.sh/"
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
-PPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs max_pp")
+PPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs max_pp max_combo")
 MapPPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs aim_pp speed_pp acc_pp aim_stars "
                         "speed_stars")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars artist title version")
@@ -113,6 +113,9 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
     # Store total map objects in case map length is changed
     total_objects = ezpp_nobjects(ez)
 
+    # Store max combo for use in create_score_embed_with_pp()
+    max_combo = ezpp_max_combo(ez)
+
     # Set end of map if failed
     if args.rank == "Frank":
         objects = args.c300 + args.c100 + args.c50 + args.misses
@@ -138,8 +141,6 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
 
     # Calculate the star difficulty
     totalstars = ezpp_stars(ez)
-
-
 
     # Set score version
     ezpp_set_score_version(ez, args.score_version)
@@ -199,7 +200,7 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
         max_pp = ezpp_pp(ez)
 
     ezpp_free(ez)
-    return PPStats(pp, totalstars, artist, title, version, ar, od, hp, cs, max_pp)
+    return PPStats(pp, totalstars, artist, title, version, ar, od, hp, cs, max_pp, max_combo)
 
 
 async def find_closest_pp(beatmap, args):
