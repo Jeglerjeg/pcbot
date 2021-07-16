@@ -1304,20 +1304,25 @@ if can_calc_pp:
     osu.command(name="pp", aliases="oppai")(pp_)
 
 
-async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mode):
+async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mode, potential_pp: bool = False):
     mods = api.Mods.format_mods(score["mods"])
 
-    score_pp = await calculate_pp(int(score["beatmap"]["id"]), *"{modslist}{acc:.2%} {c300}x300 {c100}x100 {c50}x50 "
-                                                                "{scorerank}rank {countmiss}m {maxcombo}x".format(
-        acc=calculate_acc(mode, score), scorerank="F" if score["passed"] is False else score["rank"],
-        c300=score["statistics"]["count_300"], c100=score["statistics"]["count_100"],
-        c50=score["statistics"]["count_50"], modslist="+" + mods + " " if mods != "Nomod" else "",
-        countmiss=score["statistics"]["count_miss"], maxcombo=score["max_combo"]).split())
+    score_pp = await calculate_pp(int(score["beatmap"]["id"]), potential=bool(potential_pp),
+                                  *"{modslist}{acc:.2%} {c300}x300 {c100}x100 {c50}x50 {scorerank}rank "
+                                   "{countmiss}m {maxcombo}x"
+                                  .format(acc=calculate_acc(mode, score, exclude_misses=True), scorerank="F"
+                                  if score["passed"] is False else score["rank"],
+                                          c300=score["statistics"]["count_300"],
+                                          c100=score["statistics"]["count_100"],
+                                          c50=score["statistics"]["count_50"],
+                                          modslist="+" + mods + " " if mods != "Nomod" else "",
+                                          countmiss=score["statistics"]["count_miss"],
+                                          maxcombo=score["max_combo"]).split())
 
-    potential_pp = await get_potential_pp(score, beatmap, member, round(score_pp.pp, 2), use_acc=True)
     score["pp"] = round(score_pp.pp, 2)
 
-    embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap), potential_pp)
+    embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap),
+                                      score_pp.max_pp)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
     embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
     return embed
@@ -1345,8 +1350,8 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
         "id": score["beatmap"]["id"],
     }
     beatmap = (await api.beatmap_lookup(**params))
-
-    embed = await create_score_embed_with_pp(member, score, beatmap, mode)
+    embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
+        bool(score["perfect"]) and bool(score["passed"])))
     await client.send_message(message.channel, embed=embed)
 
 
@@ -1428,7 +1433,8 @@ async def score(message: discord.Message, *options):
     }
     beatmap = (await api.beatmap_lookup(**params))
 
-    embed = await create_score_embed_with_pp(member, score, beatmap, mode)
+    embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
+        bool(score["perfect"]) and bool(score["passed"])))
     await client.send_message(message.channel, embed=embed)
 
 
