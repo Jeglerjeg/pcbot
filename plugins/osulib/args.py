@@ -76,6 +76,7 @@ def mods(s: str):
 
 parser = RegexArgumentParser()
 parser.add("acc", r"([0-9.]+)%", type=float)
+parser.add("potential_acc", r"([0-9.]+)%pot", type=float)
 parser.add("c300", r"(\d+)x300", type=int)
 parser.add("c100", r"(\d+)x100", type=int, default=0)
 parser.add("c50", r"(\d+)x50", type=int, default=0)
@@ -90,10 +91,11 @@ parser.add("cs", r"cs([0-9.]+)", type=float)
 parser.add("od", r"od([0-9.]+)", type=float)
 parser.add("hp", r"hp([0-9.]+)", type=float)
 
-parser.add("hits", "(\d+)hits", type=int)
+parser.add("hits", r"(\d+)hits", type=int)
 parser.add("pp", r"([0-9.]+)pp", type=float)
 
-parser.add("rank", r"([SSH|SS|SH|S|A|B|C|D|F]rank)", type=str)
+parser.add("rank", r"((\w+)rank)", type=str)
+
 
 def parse(*args):
     """ Parse pp arguments. """

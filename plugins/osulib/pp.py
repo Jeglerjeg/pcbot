@@ -20,7 +20,9 @@ except:
 host = "https://osu.ppy.sh/"
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
-PPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs")
+PPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs max_pp max_combo")
+MapPPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs aim_pp speed_pp acc_pp aim_stars "
+                        "speed_stars")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars artist title version")
 
 plugin_path = "plugins/osulib/"
@@ -90,12 +92,15 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
     return beatmap
 
 
-async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False):
+async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, map_calc: bool = False,
+                       potential: bool = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
     :param ignore_cache: When true, the .osu will always be downloaded
+    :param map_calc: When true, calculates and returns more fields in the PPStats tuple
+    :param potential: When true, calculates and returns the potenial PP if FC
     """
     noautoacc = False
     ez = ezpp_new()
@@ -103,13 +108,22 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False):
     beatmap = await parse_map(beatmap_url_or_id, ignore_cache=ignore_cache)
     args = parse_options(*options)
 
-    ezpp_data_dup(ez, beatmap, len(beatmap.encode(errors="replace")))
-    
+    ezpp_data(ez, beatmap, len(beatmap.encode(errors="replace")))
+
+    # Store total map objects in case map length is changed
+    total_objects = ezpp_nobjects(ez)
+
+    # Store max combo for use in create_score_embed_with_pp()
+    max_combo = ezpp_max_combo(ez)
+
     # Set end of map if failed
     if args.rank == "Frank":
         objects = args.c300 + args.c100 + args.c50 + args.misses
         ezpp_set_end(ez, objects)
         noautoacc = True
+
+    # Set number of misses
+    ezpp_set_nmiss(ez, args.misses)
 
     # Set accuracy based on arguments
     if args.acc is not None and noautoacc is not True:
@@ -127,9 +141,6 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False):
 
     # Calculate the star difficulty
     totalstars = ezpp_stars(ez)
-
-    # Set number of misses
-    ezpp_set_nmiss(ez, args.misses)
 
     # Set score version
     ezpp_set_score_version(ez, args.score_version)
@@ -164,10 +175,32 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False):
     hp = ezpp_hp(ez)
     cs = ezpp_cs(ez)
 
+    if map_calc:
+        # Calculate map_calc specific values
+        aim_pp = ezpp_aim_pp(ez)
+        speed_pp = ezpp_speed_pp(ez)
+        acc_pp = ezpp_acc_pp(ez)
+        aim_stars = ezpp_aim_stars(ez)
+        speed_stars = ezpp_speed_stars(ez)
+
+        # Calculate the pp
+        pp = ezpp_pp(ez)
+        ezpp_free(ez)
+        return MapPPStats(pp, totalstars, artist, title, version, ar, od, hp, cs, aim_pp, speed_pp, acc_pp, aim_stars,
+                          speed_stars)
+
     # Calculate the pp
     pp = ezpp_pp(ez)
+    max_pp = None
+    if potential:
+        ezpp_set_end(ez, total_objects)
+        ezpp_set_nmiss(ez, 0)
+        ezpp_set_accuracy_percent(ez, args.potential_acc)
+        ezpp_set_combo(ez, ezpp_max_combo(ez))
+        max_pp = ezpp_pp(ez)
+
     ezpp_free(ez)
-    return PPStats(pp, totalstars, artist, title, version, ar, od, hp, cs)
+    return PPStats(pp, totalstars, artist, title, version, ar, od, hp, cs, max_pp, max_combo)
 
 
 async def find_closest_pp(beatmap, args):

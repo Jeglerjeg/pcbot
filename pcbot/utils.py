@@ -202,6 +202,30 @@ async def retrieve_page(url: str, head=False, call=None, headers=None, **params)
                 return response
 
 
+async def post_request(url: str, call=None, headers=None, data=None, **params):
+    """ Download and return a website with aiohttp.
+
+    :param url: Download url as str.
+    :param call: Any attribute coroutine to call before returning. Eg: "text" would return await response.text().
+                 This may also be a coroutine with the response as parameter.
+    :param headers: A dict of any additional headers.
+    :param params: Any additional url parameters.
+    :return: The byte-like file OR whatever return value of the attribute set in call.
+    """
+    async with aiohttp.ClientSession(loop=client.loop) as session:
+        coro = session.post
+
+        async with coro(url, data=data, params=params, headers=headers) as response:
+            if call is not None:
+                if type(call) is str:
+                    attr = getattr(response, call)
+                    return await attr()
+                else:
+                    return await call(response)
+            else:
+                return response
+
+
 async def retrieve_headers(url: str, headers=None, **params):
     """ Retrieve the headers from a URL.
 

@@ -28,7 +28,7 @@ class Client(discord.Client):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.time_started = datetime.utcnow()
+        self.time_started = datetime.now()
         self.last_deleted_messages = []
 
     async def _handle_event(self, func, event, *args, **kwargs):
