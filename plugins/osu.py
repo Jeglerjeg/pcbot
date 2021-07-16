@@ -408,6 +408,12 @@ async def update_user_data():
                 }
                 scores1 = await api.get_user_scores(profile, "best", params=params)
                 if len(scores1) < score_request_limit / 2:
+                    for score in scores1:
+                        del score["weight"]
+                        del score["beatmap"]["passcount"]
+                        del score["beatmapset"]
+                        del score["beatmap"]["playcount"]
+                        del score["user"]
                     osu_tracking[str(member_id)]["scores"] = scores1
                 else:
                     params = {
@@ -430,7 +436,14 @@ async def update_user_data():
                     "mode": mode.string,
                     "limit": score_request_limit,
                 }
-                osu_tracking[str(member_id)]["scores"] = await api.get_user_scores(profile, "best", params=params)
+                fetched_scores = await api.get_user_scores(profile, "best", params=params)
+                for score in fetched_scores:
+                    del score["weight"]
+                    del score["beatmap"]["passcount"]
+                    del score["beatmapset"]
+                    del score["beatmap"]["playcount"]
+                    del score["user"]
+                osu_tracking[str(member_id)]["scores"] = fetched_scores
 
         # Update the "new" data
         osu_tracking[str(member_id)]["new"] = user_data
