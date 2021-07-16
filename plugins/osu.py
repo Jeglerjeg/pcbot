@@ -879,12 +879,10 @@ async def notify_maps(member_id: str, data: dict):
             for channel in channels:
                 # Do not format difficulties when minimal (or pp) information is specified
                 update_mode = get_update_mode(member_id)
-                if len(beatmapset["beatmaps"]) == 1 and beatmapset["beatmaps"][0]["mode"] == "osu":
-                    embed = await format_map_status(member, status_format, beatmapset,
-                                                    update_mode is not UpdateModes.Full, beatmap=True)
-                else:
-                    embed = await format_map_status(member, status_format, beatmapset,
-                                                    update_mode is not UpdateModes.Full)
+                embed = await format_map_status(member, status_format, beatmapset,
+                                                update_mode is not UpdateModes.Full,
+                                                beatmap=bool(len(beatmapset["beatmaps"]) == 1
+                                                             and beatmapset["beatmaps"][0]["mode"] == "osu"))
 
                 if new_event.count > 1:
                     embed.set_footer(text="updated {} times since".format(new_event.count))
@@ -1392,13 +1390,10 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
         return
 
     status = "[**{artist} - {title}**]({host}s/{id}) submitted by [**{name}**]({host}u/{user_id})"
-    if len(beatmapset["beatmaps"]) == 1 and beatmapset["beatmaps"][0]["mode"] == "osu":
-        embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False,
-                                        member=message.author, user_update=False, beatmap=True)
-    else:
-        embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False,
-                                        member=message.author, user_update=False)
-
+    embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False,
+                                    member=message.author, user_update=False,
+                                    beatmap=bool(len(beatmapset["beatmaps"]) == 1
+                                                 and beatmapset["beatmaps"][0]["mode"] == "osu"))
     await client.send_message(message.channel, embed=embed)
 
 
