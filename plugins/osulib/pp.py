@@ -190,12 +190,11 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
 
     # Calculate the pp
     pp = ezpp_pp(ez)
-    ezpp_free(ez)
     max_pp = None
     if potential:
         ezpp_set_end(ez, total_objects)
         ezpp_set_nmiss(ez, 0)
-        ezpp_set_accuracy(ez, args.c100, args.c50)
+        ezpp_set_accuracy_percent(ez, args.potential_acc)
         ezpp_set_combo(ez, ezpp_max_combo(ez))
         max_pp = ezpp_pp(ez)
 
