@@ -501,7 +501,7 @@ async def get_potential_pp(score, beatmap, member: discord.Member, score_pp: flo
 
         try:
             pp_stats = await calculate_pp("https://osu.ppy.sh/b/{}".format(score["beatmap"]["id"]), *options)
-            potential_pp = pp_stats.pp
+            potential_pp = pp_stats
         except Exception as e:
             logging.error(traceback.format_exc())
             pass
@@ -589,6 +589,7 @@ async def notify_pp(member_id: str, data: dict):
 
         potential_pp = await get_potential_pp(score, beatmap, member, float(score["pp"]))
 
+        beatmap["difficulty_rating"] = potential_pp.stars
         if update_mode is UpdateModes.Minimal:
             m += await format_minimal_score(mode, score, beatmap, scoreboard_rank, member) + "\n"
         else:
@@ -609,7 +610,7 @@ async def notify_pp(member_id: str, data: dict):
 
         # Format the url and the username
         name = get_score_name(member, new["username"])
-        embed = get_formatted_score_embed(member, score, m, potential_pp)
+        embed = get_formatted_score_embed(member, score, m, potential_pp.pp)
         if score:
             embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
 
