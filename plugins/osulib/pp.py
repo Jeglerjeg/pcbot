@@ -166,7 +166,7 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
 
     # If the pp arg is given, return using the closest pp function
     if args.pp is not None:
-        return await find_closest_pp(beatmap, args)
+        return await find_closest_pp(ez, args)
 
     ar = ezpp_ar(ez)
     od = ezpp_od(ez)
@@ -201,36 +201,10 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, 
     return PPStats(pp, totalstars, artist, title, version, ar, od, hp, cs, max_pp, max_combo)
 
 
-async def find_closest_pp(beatmap, args):
+async def find_closest_pp(ez, args):
     """ Find the accuracy required to get the given amount of pp from this map. """
     if not can_calc_pp:
         return None
-    ez = ezpp_new()
-
-    # Set number of misses
-    ezpp_set_nmiss(ez, args.misses)
-
-    # Set args if needed
-    if args.cs:
-        ezpp_set_base_cs(ez, args.cs)
-    if args.ar:
-        ezpp_set_base_ar(ez, args.ar)
-    if args.hp:
-        ezpp_set_base_hp(ez, args.hp)
-    if args.od:
-        ezpp_set_base_od(ez, args.od)
-
-    ezpp_data_dup(ez, beatmap, len(beatmap.encode(errors="replace")))
-    ezpp_set_autocalc(ez, 1)
-
-    # Set mod bitmask
-    mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
-
-    # Apply mods
-    ezpp_set_mods(ez, mods_bitmask)
-
-    # Set score version
-    ezpp_set_score_version(ez, args.score_version)
 
     # Define a partial command for easily setting the pp value by 100s count
     def calc(accuracy: float):
