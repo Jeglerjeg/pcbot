@@ -610,7 +610,8 @@ async def notify_pp(member_id: str, data: dict):
 
         # Format the url and the username
         name = get_score_name(member, new["username"])
-        embed = get_formatted_score_embed(member, score, m, potential_pp.pp)
+        embed = get_formatted_score_embed(member, score, m,
+                                          potential_pp.pp if score["pp"] - potential_pp.pp > 1 else None)
         if score:
             embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
 
@@ -1266,7 +1267,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
     beatmap["difficulty_rating"] = score_pp.stars
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap),
-                                      score_pp.max_pp)
+                                      score_pp.max_pp if score_pp.max_pp - score_pp.pp > 1 else None)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
     embed.set_thumbnail(url=score["beatmapset"]["covers"]["list@2x"] if bool(
         "beatmapset" in score) else beatmap["beatmapset"]["covers"]["list@2x"])
