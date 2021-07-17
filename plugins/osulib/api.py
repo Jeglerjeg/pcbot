@@ -287,7 +287,8 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
         }
         difficulties = await beatmap_lookup(**params)
     else:
-        difficulties = await get_beatmapset(beatmap_info.beatmapset_id)
+        beatmapset = await get_beatmapset(beatmap_info.beatmapset_id)
+        difficulties = beatmapset["beatmaps"]
     # If the beatmap doesn't exist, the operation was unsuccessful
     if not difficulties or "{'error': None}" in str(difficulties):
         raise LookupError("The beatmap with the given URL was not found.")
@@ -301,7 +302,7 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
             beatmap, highest = diff, stars
 
     if return_type == "id":
-        return beatmap["beatmap_id"]
+        return beatmap["id"]
     return beatmap
 
 
