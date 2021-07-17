@@ -80,8 +80,7 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
 
     # Parse from cache or load the .osu and parse new
     if not ignore_cache and beatmap_url_or_id == cached_beatmap.url_or_id:
-        with open(beatmap_path, encoding="utf-8") as fp:
-            beatmap = fp.read()
+        beatmap = cached_beatmap.beatmap
     else:
         await download_beatmap(beatmap_url_or_id)
         with open(beatmap_path, encoding="utf-8") as fp:
