@@ -85,6 +85,9 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
 
     beatmap_path = os.path.join(cache_path, str(beatmap_id) + ".osu")
 
+    if not os.path.exists(cache_path):
+        os.makedirs(cache_path)
+
     # Parse from cache or load the .osu and parse new
     if not ignore_cache and beatmap_url_or_id == cached_beatmap.url_or_id:
         beatmap = cached_beatmap.beatmap
