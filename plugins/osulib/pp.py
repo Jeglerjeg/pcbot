@@ -25,8 +25,7 @@ MapPPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs ai
                         "speed_stars")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars artist title version")
 
-plugin_path = "plugins/osulib/"
-beatmap_path = os.path.join(plugin_path, "map.osu")
+cache_path = "plugins/osulib/mapcache"
 cached_beatmap = CachedBeatmap(url_or_id=None, beatmap=None)
 
 
@@ -60,6 +59,7 @@ async def download_beatmap(beatmap_url_or_id):
     if not beatmap_file:
         raise ValueError("The given URL is invalid.")
 
+    beatmap_path = os.path.join(cache_path, str(beatmap_id) + ".osu")
     with open(beatmap_path, "wb") as f:
         f.write(beatmap_file)
 
@@ -78,9 +78,20 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
     """
     global cached_beatmap
 
+    if type(beatmap_url_or_id) is str:
+        beatmap_id = await api.beatmap_from_url(beatmap_url_or_id, return_type="id")
+    else:
+        beatmap_id = beatmap_url_or_id
+
+    beatmap_path = os.path.join(cache_path, str(beatmap_id) + ".osu")
+
     # Parse from cache or load the .osu and parse new
     if not ignore_cache and beatmap_url_or_id == cached_beatmap.url_or_id:
         beatmap = cached_beatmap.beatmap
+    elif not ignore_cache and os.path.isfile(beatmap_path):
+        with open(beatmap_path, encoding="utf-8") as fp:
+            beatmap = fp.read()
+            cached_beatmap = CachedBeatmap(url_or_id=beatmap_url_or_id, beatmap=beatmap)
     else:
         await download_beatmap(beatmap_url_or_id)
         with open(beatmap_path, encoding="utf-8") as fp:

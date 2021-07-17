@@ -500,7 +500,7 @@ async def get_potential_pp(score, beatmap, member: discord.Member, score_pp: flo
             options.append(str(score["statistics"]["count_50"]) + "x50")
 
         try:
-            pp_stats = await calculate_pp("https://osu.ppy.sh/b/{}".format(score["beatmap"]["id"]), *options)
+            pp_stats = await calculate_pp(score["beatmap"]["id"], *options)
             potential_pp = pp_stats
         except Exception as e:
             logging.error(traceback.format_exc())
