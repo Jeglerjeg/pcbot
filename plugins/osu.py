@@ -1266,8 +1266,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
                                           maxcombo=score["max_combo"]).split())
 
     score["pp"] = round(score_pp.pp, 2)
-    beatmap["max_combo"] = score_pp.max_combo
-    beatmap["difficulty_rating"] = score_pp.stars
+    beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap),
                                       score_pp.max_pp
@@ -1296,7 +1295,12 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
     assert scores, "Found no recent score."
 
     score = scores[0]
-    beatmap = score["beatmap"]
+
+    params = {
+        "id": score["beatmap"]["id"],
+    }
+    beatmap = (await api.beatmap_lookup(**params))
+
     embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
         bool(score["perfect"]) and bool(score["passed"])))
     await client.send_message(message.channel, embed=embed)
