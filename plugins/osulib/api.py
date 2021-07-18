@@ -209,23 +209,14 @@ async def beatmap_lookup(params, map_id: int = None):
 async def beatmapset_lookup(params):
     request = def_section("beatmapsets/lookup")
     result = await request(**params)
-    beatmapset_path = os.path.join(setcache_path, str(result["id"]) + ".json")
+    beatmap_path = os.path.join(setcache_path, str(result["id"]) + ".json")
 
     if not os.path.exists(setcache_path):
         os.makedirs(setcache_path)
 
-    if not os.path.exists(mapcache_path):
-        os.makedirs(mapcache_path)
-
-    if not os.path.isfile(beatmapset_path) and (result["status"] == "ranked" or result["status"] == "approved"):
-        with open(beatmapset_path, "w") as fp:
+    if not os.path.isfile(beatmap_path) and (result["status"] == "ranked" or result["status"] == "approved"):
+        with open(beatmap_path, "w") as fp:
             json.dump(result, fp)
-        for diff in result["beatmaps"]:
-            beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + ".json")
-            if not os.path.isfile(beatmap_path):
-                with open(beatmap_path, "w") as fp:
-                    json.dump(result, fp)
-
     return result
 
 
@@ -271,28 +262,20 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
 
 
 async def get_beatmapset(beatmapset_id):
-    beatmapset_path = os.path.join(setcache_path, str(beatmapset_id) + ".json")
+    beatmap_path = os.path.join(setcache_path, str(beatmapset_id) + ".json")
 
     if not os.path.exists(setcache_path):
         os.makedirs(setcache_path)
 
-    if not os.path.exists(mapcache_path):
-        os.makedirs(mapcache_path)
-
-    if os.path.isfile(beatmapset_path):
-        with open(beatmapset_path, encoding="utf-8") as fp:
+    if os.path.isfile(beatmap_path):
+        with open(beatmap_path, encoding="utf-8") as fp:
             result = json.load(fp)
     else:
         request = def_section("beatmapsets/{}".format(beatmapset_id))
         result = await request()
         if result["status"] == "ranked" or result["status"] == "approved":
-            with open(beatmapset_path, "w") as fp:
+            with open(beatmap_path, "w") as fp:
                 json.dump(result, fp)
-            for diff in result["beatmaps"]:
-                beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + ".json")
-                if not os.path.isfile(beatmap_path):
-                    with open(beatmap_path, "w") as fp:
-                        json.dump(result, fp)
 
     return result
 
