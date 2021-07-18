@@ -512,7 +512,7 @@ async def get_potential_pp(score, beatmap, member: discord.Member, score_pp: flo
         #     in faulty calculation (very often negative relatively). Therefore, I will conclude that the score
         #     was actually an FC and has missed sliderends when the gain is negative.
         if potential_pp.pp - score_pp <= 0:
-            potential_pp.pp = None
+            potential_pp = potential_pp._replace(pp=None)
 
     return potential_pp
 
