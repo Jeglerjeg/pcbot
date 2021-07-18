@@ -4,7 +4,9 @@
     request functions.
 """
 import asyncio
+import json
 import logging
+import os
 import re
 from collections import namedtuple
 from enum import Enum
@@ -15,6 +17,8 @@ from pcbot import utils
 api_url = "https://osu.ppy.sh/api/v2/"
 access_token = ""
 requests_sent = 0
+
+cache_path = "plugins/osulib/mapdatacache"
 
 mode_names = {
     "Standard": ["standard", "osu", "std"],
@@ -176,7 +180,24 @@ def def_section(api_name: str, first_element: bool=False):
 
 
 # Define all osu! API requests using the template
-beatmap_lookup = def_section("beatmaps/lookup")
+async def beatmap_lookup(params, map_id: int = None):
+    beatmap_path = os.path.join(cache_path, str(map_id) + ".json")
+
+    if not os.path.exists(cache_path):
+        os.makedirs(cache_path)
+
+    if os.path.isfile(beatmap_path):
+        with open(beatmap_path, encoding="utf-8") as fp:
+            result = json.load(fp)
+    else:
+        request = def_section("beatmaps/lookup")
+        result = await request(**params)
+        if result["status"] == "ranked" or result["status"] == "approved":
+            with open(beatmap_path, "w") as fp:
+                json.dump(result, fp)
+
+    return result
+
 beatmapset_lookup = def_section("beatmapsets/lookup")
 
 

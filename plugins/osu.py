@@ -580,7 +580,7 @@ async def notify_pp(member_id: str, data: dict):
         params = {
             "id": score["beatmap"]["id"],
         }
-        beatmap = (await api.beatmap_lookup(**params))
+        beatmap = (await api.beatmap_lookup(params=params, map_id=score["beatmap"]["id"]))
 
         # There might not be any events
         scoreboard_rank = None
@@ -1298,7 +1298,7 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
     params = {
         "id": score["beatmap"]["id"],
     }
-    beatmap = (await api.beatmap_lookup(**params))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=int(score["beatmap"]["id"])))
 
     embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
         bool(score["perfect"]) and bool(score["passed"])))
@@ -1381,7 +1381,7 @@ async def score(message: discord.Message, *options):
     params = {
         "id": score["beatmap"]["id"],
     }
-    beatmap = (await api.beatmap_lookup(**params))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=score["beatmap"]["id"]))
 
     embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
         bool(score["perfect"]) and bool(score["passed"])))
