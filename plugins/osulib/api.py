@@ -18,7 +18,8 @@ api_url = "https://osu.ppy.sh/api/v2/"
 access_token = ""
 requests_sent = 0
 
-cache_path = "plugins/osulib/mapdatacache"
+mapcache_path = "plugins/osulib/mapdatacache"
+setcache_path = "plugins/osulib/setdatacache"
 
 replay_path = os.path.join("plugins/osulib/", "replay.osr")
 
@@ -187,10 +188,10 @@ def def_section(api_name: str, first_element: bool=False, download=False):
 
 # Define all osu! API requests using the template
 async def beatmap_lookup(params, map_id: int = None):
-    beatmap_path = os.path.join(cache_path, str(map_id) + ".json")
+    beatmap_path = os.path.join(mapcache_path, str(map_id) + ".json")
 
-    if not os.path.exists(cache_path):
-        os.makedirs(cache_path)
+    if not os.path.exists(mapcache_path):
+        os.makedirs(mapcache_path)
 
     if os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
@@ -204,7 +205,16 @@ async def beatmap_lookup(params, map_id: int = None):
 
     return result
 
-beatmapset_lookup = def_section("beatmapsets/lookup")
+
+async def beatmapset_lookup(params):
+    request = def_section("beatmapsets/lookup")
+    result = await request(**params)
+    beatmap_path = os.path.join(setcache_path, str(result["id"]) + ".json")
+
+    if not os.path.isfile(beatmap_path) and (result["status"] == "ranked" or result["status"] == "approved"):
+        with open(beatmap_path, "w") as fp:
+            json.dump(result, fp)
+    return result
 
 
 async def download_replay(mode: str, score_id: int):
@@ -249,9 +259,22 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
 
 
 async def get_beatmapset(beatmapset_id):
-    request = def_section("beatmapsets/{}".format(beatmapset_id)
-    )
-    return await request()
+    beatmap_path = os.path.join(setcache_path, str(beatmapset_id) + ".json")
+
+    if not os.path.exists(setcache_path):
+        os.makedirs(setcache_path)
+
+    if os.path.isfile(beatmap_path):
+        with open(beatmap_path, encoding="utf-8") as fp:
+            result = json.load(fp)
+    else:
+        request = def_section("beatmapsets/{}".format(beatmapset_id))
+        result = await request()
+        if result["status"] == "ranked" or result["status"] == "approved":
+            with open(beatmap_path, "w") as fp:
+                json.dump(result, fp)
+
+    return result
 
 
 async def get_user_recent_activity(user):
@@ -364,7 +387,7 @@ async def beatmapset_from_url(url: str):
         params = {
             "beatmap_id": beatmap_info.beatmap_id,
         }
-        beatmapset = await beatmapset_lookup(**params)
+        beatmapset = await beatmapset_lookup(params=params)
 
     # Also make sure we get the beatmap
     if not beatmapset:
