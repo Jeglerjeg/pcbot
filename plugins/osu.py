@@ -590,7 +590,8 @@ async def notify_pp(member_id: str, data: dict):
 
         potential_pp = await get_potential_pp(score, beatmap, member, float(score["pp"]))
 
-        beatmap["difficulty_rating"] = potential_pp.stars
+        beatmap["difficulty_rating"] = potential_pp.stars if mode is api.GameMode.Standard else \
+            beatmap["difficulty_rating"]
         if update_mode is UpdateModes.Minimal:
             m += await format_minimal_score(mode, score, beatmap, scoreboard_rank, member) + "\n"
         else:
