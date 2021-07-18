@@ -214,11 +214,14 @@ async def beatmapset_lookup(params):
     if not os.path.isfile(beatmapset_path) and (result["status"] == "ranked" or result["status"] == "approved"):
         with open(beatmapset_path, "w") as fp:
             json.dump(result, fp)
+        beatmapset = result.copy()
+        del beatmapset["beatmaps"]
         for diff in result["beatmaps"]:
             beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + ".json")
             if not os.path.isfile(beatmap_path):
+                diff["beatmapset"] = beatmapset
                 with open(beatmap_path, "w") as fp:
-                    json.dump(result, fp)
+                    json.dump(diff, fp)
 
     return result
 
@@ -271,11 +274,14 @@ async def get_beatmapset(beatmapset_id):
         if result["status"] == "ranked" or result["status"] == "approved":
             with open(beatmapset_path, "w") as fp:
                 json.dump(result, fp)
+            beatmapset = result.copy()
+            del beatmapset["beatmaps"]
             for diff in result["beatmaps"]:
                 beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + ".json")
                 if not os.path.isfile(beatmap_path):
+                    diff["beatmapset"] = beatmapset
                     with open(beatmap_path, "w") as fp:
-                        json.dump(result, fp)
+                        json.dump(diff, fp)
 
     return result
 
