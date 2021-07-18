@@ -11,7 +11,9 @@ docs/_build
 
 # PCBOT specific
 config
-plugins/osulib/oppai
+plugins/osulib/mapcache
+plugins/osulib/mapdatacache
+plugins/osulib/setdatacache
 
 # Additional executable files
 *.bat
