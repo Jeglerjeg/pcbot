@@ -205,6 +205,9 @@ async def beatmapset_lookup(params):
     result = await request(**params)
     beatmap_path = os.path.join(setcache_path, str(result["id"]) + ".json")
 
+    if not os.path.exists(setcache_path):
+        os.makedirs(setcache_path)
+
     if not os.path.isfile(beatmap_path) and (result["status"] == "ranked" or result["status"] == "approved"):
         with open(beatmap_path, "w") as fp:
             json.dump(result, fp)
