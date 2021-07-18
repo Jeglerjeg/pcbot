@@ -510,8 +510,8 @@ async def get_potential_pp(score, beatmap, member: discord.Member, score_pp: flo
         #     The osu! API does not provide info on sliderbreak count and missed sliderend count, which results
         #     in faulty calculation (very often negative relatively). Therefore, I will conclude that the score
         #     was actually an FC and has missed sliderends when the gain is negative.
-        if potential_pp - score_pp <= 0:
-            potential_pp = None
+        if potential_pp.pp - score_pp <= 0:
+            potential_pp.pp = None
 
     return potential_pp
 
