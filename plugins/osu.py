@@ -736,13 +736,16 @@ async def format_map_status(member: discord.Member, status_format: str, beatmaps
     return embed
 
 
-async def calculate_pp_for_beatmapset(beatmapset):
+async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
     """ Calculates the pp for every difficulty in the given mapset, added
     to a "pp" key in the difficulty's dict. """
     # Init the cache of this mapset if it has not been created
     set_id = str(beatmapset["id"])
     if set_id not in osu_config.data["map_cache"]:
         osu_config.data["map_cache"][set_id] = {}
+
+    if not ignore_cache:
+        ignore_cache = not bool(beatmapset["status"] == "ranked" or beatmapset["status"] == "approved")
 
     cached_mapset = osu_config.data["map_cache"][set_id]
 
@@ -768,7 +771,7 @@ async def calculate_pp_for_beatmapset(beatmapset):
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
-            pp_stats = await calculate_pp(int(map_id), ignore_cache=True, map_calc=True)
+            pp_stats = await calculate_pp(int(map_id), ignore_cache=ignore_cache, map_calc=True)
         except ValueError:
             logging.error(traceback.format_exc())
             continue
@@ -854,7 +857,7 @@ async def notify_maps(member_id: str, data: dict):
 
         # Calculate (or retrieve cached info) the pp for every difficulty of this mapset
         try:
-            await calculate_pp_for_beatmapset(beatmapset)
+            await calculate_pp_for_beatmapset(beatmapset, ignore_cache=True)
         except ValueError:
             logging.error(traceback.format_exc())
 
@@ -1252,6 +1255,8 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
     mods = api.Mods.format_mods(score["mods"])
 
     score_pp = await calculate_pp(int(score["beatmap"]["id"]), potential=bool(potential_pp),
+                                  ignore_cache=not bool(beatmap["status"] == "ranked"
+                                                        or beatmap["status"] == "approved"),
                                   *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 {scorerank}rank "
                                    "{countmiss}m {maxcombo}x"
                                   .format(acc=calculate_acc(mode, score),
