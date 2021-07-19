@@ -1260,7 +1260,8 @@ if can_calc_pp:
     osu.command(name="pp", aliases="oppai")(pp_)
 
 
-async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mode, potential_pp: bool = False):
+async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mode, potential_pp: bool = False,
+                                     scoreboard_rank: bool = False):
     mods = api.Mods.format_mods(score["mods"])
 
     score_pp = await calculate_pp(int(score["beatmap"]["id"]), potential=bool(potential_pp),
@@ -1282,8 +1283,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
     beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
 
     # There might not be any events
-    scoreboard_rank = None
-    if str(member.id) in osu_tracking and osu_tracking[str(member.id)]["new"] \
+    if scoreboard_rank is False and str(member.id) in osu_tracking and osu_tracking[str(member.id)]["new"] \
             and osu_tracking[str(member.id)]["new"]["events"]:
         scoreboard_rank = api.rank_from_events(osu_tracking[str(member.id)]["new"]["events"],
                                                str(score["beatmap"]["id"]))
@@ -1455,6 +1455,7 @@ async def score(message: discord.Message, *options):
     assert scores, "Found no scores by **{}**.".format(member.name)
 
     score = scores["score"]
+    scoreboard_rank = scores["position"]
 
     params = {
         "id": score["beatmap"]["id"],
@@ -1462,7 +1463,7 @@ async def score(message: discord.Message, *options):
     beatmap = (await api.beatmap_lookup(params=params, map_id=score["beatmap"]["id"]))
 
     embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
-        bool(score["perfect"]) and bool(score["passed"])))
+        bool(score["perfect"]) and bool(score["passed"])), scoreboard_rank=scoreboard_rank)
     await client.send_message(message.channel, embed=embed)
 
 
