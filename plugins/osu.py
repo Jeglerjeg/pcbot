@@ -236,7 +236,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
     """ Format any score. There should be a member name/mention in front of this string. """
     acc = calculate_acc(mode, score)
     return (
-        "[{i}{artist} - {title} [{version}]{i}]({host}b/{beatmap_id})\n"
+        "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
         "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist}**"
         "```diff\n"
         "  acc     300s  100s  50s  miss  combo\n"
@@ -245,6 +245,8 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
     ).format(
         host=host,
         beatmap_id=score["beatmap"]["id"],
+        beatmapset_id=beatmap["beatmapset_id"],
+        mode=score["mode"],
         sign="!" if acc == 1 else ("+" if score["perfect"] and score["passed"] else "-"),
         modslist=Mods.format_mods(score["mods"]),
         acc=acc,
@@ -277,11 +279,13 @@ async def format_minimal_score(mode: api.GameMode, score: dict, beatmap: dict, r
     There should be a member name/mention in front of this string. """
     acc = calculate_acc(mode, score)
     return (
-        "[*{artist} - {title} [{version}]*]({host}b/{beatmap_id})\n"
+        "[*{artist} - {title} [{version}]*]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
         "**{pp}pp {stars:.2f}\u2605, {rank} {acc:.2%} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
         host=host,
+        beatmapset_id=beatmap["beatmapset_id"],
+        mode=score["mode"],
         mods=Mods.format_mods(score["mods"]),
         acc=acc,
         beatmap_id=score["beatmap"]["id"],
@@ -338,7 +342,7 @@ def get_user_url(member_id: str):
     """ Return the user website URL. """
     user_id = osu_config.data["profiles"][member_id]
 
-    return host + "u/" + user_id
+    return host + "users/" + user_id
 
 
 def is_playing(member: discord.Member):
@@ -846,8 +850,8 @@ async def notify_maps(member_id: str, data: dict):
 
         # Replace shortcuts with proper formats and add url formats
         if status_format:
-            status_format = status_format.replace("<name>", "[**{name}**]({host}u/{user_id})")
-            status_format = status_format.replace("<title>", "[**{artist} - {title}**]({host}s/{id})")
+            status_format = status_format.replace("<name>", "[**{name}**]({host}users/{user_id})")
+            status_format = status_format.replace("<title>", "[**{artist} - {title}**]({host}beatmapsets/{id})")
 
         # We'll sleep for a long while to let the beatmap API catch up with the change
         await asyncio.sleep(45)
@@ -1179,7 +1183,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     update_mode = get_update_mode(str(member.id))
 
     e = discord.Embed(color=member.color)
-    e.set_author(name=member.display_name, icon_url=member.avatar_url, url=host + "u/" + user_id)
+    e.set_author(name=member.display_name, icon_url=member.avatar_url, url=host + "users/" + user_id)
     e.add_field(name="Game Mode", value=mode.name)
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if is_playing(member) else "NO")
@@ -1423,7 +1427,7 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
         await client.say(message, e)
         return
 
-    status = "[**{artist} - {title}**]({host}s/{id}) submitted by [**{name}**]({host}u/{user_id})"
+    status = "[**{artist} - {title}**]({host}beatmapsets/{id}) submitted by [**{name}**]({host}users/{user_id})"
     embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False,
                                     member=message.author, user_update=False,
                                     beatmap=bool(len(beatmapset["beatmaps"]) == 1
