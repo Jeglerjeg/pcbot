@@ -268,7 +268,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         version=beatmap["version"],
         stars=float(beatmap["difficulty_rating"]),
         maxcombo=score["max_combo"],
-        max_combo="/{}".format(beatmap["max_combo"]) if mode is api.GameMode.Standard else "",
+        max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap else "",
         scoreboard_rank="#{} ".format(rank) if rank else "",
         failed="(Failed) " if score["passed"] is False and score["rank"] != "F" else "",
         live=await format_stream(member, score, beatmap) if member else "",
