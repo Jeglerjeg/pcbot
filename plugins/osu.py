@@ -1282,7 +1282,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
                                           countmiss=score["statistics"]["count_miss"],
                                           maxcombo=score["max_combo"]).split())
 
-    score["pp"] = round(score_pp.pp, 2)
+    score["pp"] = round(score_pp.pp, 2) if not score["pp"] else round(score["pp"], 2)
     beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
 
     # There might not be any events
@@ -1293,7 +1293,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap, scoreboard_rank),
                                       score_pp.max_pp
-                                      if score_pp.max_pp is not None and score_pp.max_pp - score_pp.pp > 1 else None)
+                                      if score_pp.max_pp is not None and score_pp.max_pp - score["pp"] > 1 else None)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
     embed.set_thumbnail(url=score["beatmapset"]["covers"]["list@2x"] if bool(
         "beatmapset" in score) else beatmap["beatmapset"]["covers"]["list@2x"])
