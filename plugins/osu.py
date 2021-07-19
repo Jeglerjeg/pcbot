@@ -388,7 +388,12 @@ async def update_user_data():
                 "key": "id"
             }
             user_data = await api.get_user(profile, mode.string, params=params)
-            user_recent = await api.get_user_recent_activity(profile)
+
+            params = {
+                "limit": 20
+            }
+
+            user_recent = await api.get_user_recent_activity(profile, params=params)
         except aiohttp.ServerDisconnectedError:
             continue
         except asyncio.TimeoutError:

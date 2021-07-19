@@ -303,8 +303,10 @@ async def get_beatmapset(beatmapset_id):
     return result
 
 
-async def get_user_recent_activity(user):
+async def get_user_recent_activity(user, params=None):
     request = def_section("users/{}/recent_activity".format(user))
+    if params:
+        return await request(**params)
     return await request()
 
 beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
