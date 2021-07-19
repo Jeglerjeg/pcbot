@@ -92,7 +92,6 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
     if not ignore_cache and beatmap_url_or_id == cached_beatmap.url_or_id:
         beatmap = cached_beatmap.beatmap
     elif not ignore_cache and os.path.isfile(beatmap_path):
-        logging.info("using file cache")
         with open(beatmap_path, encoding="utf-8") as fp:
             beatmap = fp.read()
             cached_beatmap = CachedBeatmap(url_or_id=beatmap_url_or_id, beatmap=beatmap)
