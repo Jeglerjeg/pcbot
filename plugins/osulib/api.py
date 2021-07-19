@@ -172,7 +172,7 @@ def def_section(api_name: str, first_element: bool=False):
             return json
 
         # If the returned value should be the first element, see if we can cut it
-        return response[0] if len(response) > 0 else None
+        return json[0] if len(json) > 0 else None
 
     # Set the correct name of the function and add simple docstring
     template.__name__ = api_name
