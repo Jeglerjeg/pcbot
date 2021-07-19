@@ -172,7 +172,7 @@ def def_section(api_name: str, first_element: bool=False):
             return json
 
         # If the returned value should be the first element, see if we can cut it
-        return json[0] if len(json) > 0 else None
+        return response[0] if len(response) > 0 else None
 
     # Set the correct name of the function and add simple docstring
     template.__name__ = api_name
@@ -286,8 +286,10 @@ async def get_beatmapset(beatmapset_id):
     return result
 
 
-async def get_user_recent_activity(user):
-    request = def_section("users/" + user + "/recent_activity")
+async def get_user_recent_activity(user, params=None):
+    request = def_section("users/{}/recent_activity".format(user))
+    if params:
+        return await request(**params)
     return await request()
 
 beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
