@@ -622,7 +622,7 @@ async def notify_pp(member_id: str, data: dict):
         # Format the url and the username
         name = get_score_name(member, new["username"])
         embed = get_formatted_score_embed(member, score, m,
-                                          potential_pp.pp if potential_pp.pp is not None
+                                          potential_pp.pp if potential_pp is not None and potential_pp.pp is not None
                                           and potential_pp.pp - score["pp"] > 1 else None)
         if score:
             embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
@@ -1267,23 +1267,27 @@ if can_calc_pp:
 async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mode, potential_pp: bool = False,
                                      scoreboard_rank: bool = False):
     mods = api.Mods.format_mods(score["mods"])
+    score_pp = None
+    if mode is api.GameMode.Standard:
+        score_pp = await calculate_pp(int(score["beatmap"]["id"]), potential=bool(potential_pp),
+                                      ignore_cache=not bool(beatmap["status"] == "ranked"
+                                                            or beatmap["status"] == "approved"),
+                                      *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 {scorerank}rank "
+                                       "{countmiss}m {maxcombo}x"
+                                      .format(acc=calculate_acc(mode, score),
+                                              potential_acc=calculate_acc(mode, score, exclude_misses=True),
+                                              scorerank="F" if score["passed"] is False else score["rank"],
+                                              c300=score["statistics"]["count_300"],
+                                              c100=score["statistics"]["count_100"],
+                                              c50=score["statistics"]["count_50"],
+                                              modslist="+" + mods + " " if mods != "Nomod" else "",
+                                              countmiss=score["statistics"]["count_miss"],
+                                              maxcombo=score["max_combo"]).split())
 
-    score_pp = await calculate_pp(int(score["beatmap"]["id"]), potential=bool(potential_pp),
-                                  ignore_cache=not bool(beatmap["status"] == "ranked"
-                                                        or beatmap["status"] == "approved"),
-                                  *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 {scorerank}rank "
-                                   "{countmiss}m {maxcombo}x"
-                                  .format(acc=calculate_acc(mode, score),
-                                          potential_acc=calculate_acc(mode, score, exclude_misses=True),
-                                          scorerank="F" if score["passed"] is False else score["rank"],
-                                          c300=score["statistics"]["count_300"],
-                                          c100=score["statistics"]["count_100"],
-                                          c50=score["statistics"]["count_50"],
-                                          modslist="+" + mods + " " if mods != "Nomod" else "",
-                                          countmiss=score["statistics"]["count_miss"],
-                                          maxcombo=score["max_combo"]).split())
-
-    score["pp"] = round(score_pp.pp, 2) if not score["pp"] else round(score["pp"], 2)
+    if score_pp is not None and score["pp"] is None:
+        score["pp"] = round(score_pp.pp, 2)
+    elif score["pp"] is None:
+        score["pp"] = 0
     beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
 
     # There might not be any events
@@ -1294,7 +1298,8 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap, scoreboard_rank),
                                       score_pp.max_pp
-                                      if score_pp.max_pp is not None and score_pp.max_pp - score["pp"] > 1 else None)
+                                      if score_pp is not None and score_pp.max_pp is not None and
+                                      score_pp.max_pp - score["pp"] > 1 else None)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
     embed.set_thumbnail(url=score["beatmapset"]["covers"]["list@2x"] if bool(
         "beatmapset" in score) else beatmap["beatmapset"]["covers"]["list@2x"])

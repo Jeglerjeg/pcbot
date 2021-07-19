@@ -192,14 +192,25 @@ async def beatmap_lookup(params, map_id, mode):
 
     if not os.path.exists(mapcache_path):
         os.makedirs(mapcache_path)
-
+    result = None
     if os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
             result = json.load(fp)
     else:
-        await beatmapset_lookup(params=params)
-        with open(beatmap_path, encoding="utf-8") as fp:
-            result = json.load(fp)
+        response = await beatmapset_lookup(params=params)
+        beatmapset = response.copy()
+        del beatmapset["beatmaps"]
+        del beatmapset["converts"]
+
+        for diff in response["beatmaps"]:
+            if str(diff["id"]) == str(map_id) and diff["mode"] == mode:
+                diff["beatmapset"] = beatmapset
+                result = diff
+        if not result:
+            for convert in response["converts"]:
+                if str(convert["id"]) == str(map_id) and convert["mode"] == mode:
+                    convert["beatmapset"] = beatmapset
+                    result = convert
     return result
 
 
