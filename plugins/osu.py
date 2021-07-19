@@ -756,19 +756,20 @@ async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
         if int(diff["mode_int"]) != api.GameMode.Standard.value:
             continue
 
-        # If the diff is cached and unchanged, use the cached pp
-        if map_id in cached_mapset:
-            if diff["checksum"] == cached_mapset[map_id]["md5"] and "speed_pp" in cached_mapset[map_id]:
-                diff["pp"] = cached_mapset[map_id]["pp"]
-                diff["aim_pp"] = cached_mapset[map_id]["aim_pp"]
-                diff["speed_pp"] = cached_mapset[map_id]["speed_pp"]
-                diff["acc_pp"] = cached_mapset[map_id]["acc_pp"]
-                diff["aim_stars"] = cached_mapset[map_id]["aim_stars"]
-                diff["speed_stars"] = cached_mapset[map_id]["speed_stars"]
-                continue
+        if ignore_cache:
+            # If the diff is cached and unchanged, use the cached pp
+            if map_id in cached_mapset:
+                if diff["checksum"] == cached_mapset[map_id]["md5"] and "speed_pp" in cached_mapset[map_id]:
+                    diff["pp"] = cached_mapset[map_id]["pp"]
+                    diff["aim_pp"] = cached_mapset[map_id]["aim_pp"]
+                    diff["speed_pp"] = cached_mapset[map_id]["speed_pp"]
+                    diff["acc_pp"] = cached_mapset[map_id]["acc_pp"]
+                    diff["aim_stars"] = cached_mapset[map_id]["aim_stars"]
+                    diff["speed_stars"] = cached_mapset[map_id]["speed_stars"]
+                    continue
 
-            # If it was changed, add an asterisk to the beatmap name (this is a really stupid place to do this)
-            diff["version"] = "*" + diff["version"]
+                # If it was changed, add an asterisk to the beatmap name (this is a really stupid place to do this)
+                diff["version"] = "*" + diff["version"]
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
@@ -784,17 +785,19 @@ async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
         diff["aim_stars"] = pp_stats.aim_stars
         diff["speed_stars"] = pp_stats.speed_stars
 
-        # Cache the difficulty
-        osu_config.data["map_cache"][set_id][map_id] = {
-            "md5": diff["checksum"],
-            "pp": pp_stats.pp,
-            "aim_stars": pp_stats.aim_stars,
-            "speed_stars": pp_stats.speed_stars,
-            "aim_pp": pp_stats.aim_pp,
-            "speed_pp": pp_stats.speed_pp,
-            "acc_pp": pp_stats.acc_pp,
-        }
-    await osu_config.asyncsave()
+        if ignore_cache:
+            # Cache the difficulty
+            osu_config.data["map_cache"][set_id][map_id] = {
+                "md5": diff["checksum"],
+                "pp": pp_stats.pp,
+                "aim_stars": pp_stats.aim_stars,
+                "speed_stars": pp_stats.speed_stars,
+                "aim_pp": pp_stats.aim_pp,
+                "speed_pp": pp_stats.speed_pp,
+                "acc_pp": pp_stats.acc_pp,
+            }
+    if ignore_cache:
+        await osu_config.asyncsave()
 
 
 async def notify_maps(member_id: str, data: dict):
