@@ -181,8 +181,8 @@ def def_section(api_name: str, first_element: bool=False):
 
 
 # Define all osu! API requests using the template
-async def beatmap_lookup(params, map_id: int = None):
-    beatmap_path = os.path.join(mapcache_path, str(map_id) + ".json")
+async def beatmap_lookup(params, map_id, mode):
+    beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
 
     if not os.path.exists(mapcache_path):
         os.makedirs(mapcache_path)
@@ -191,12 +191,9 @@ async def beatmap_lookup(params, map_id: int = None):
         with open(beatmap_path, encoding="utf-8") as fp:
             result = json.load(fp)
     else:
-        request = def_section("beatmaps/lookup")
-        result = await request(**params)
-        if result["status"] == "ranked" or result["status"] == "approved":
-            with open(beatmap_path, "w") as fp:
-                json.dump(result, fp)
-
+        await beatmapset_lookup(params=params)
+        with open(beatmap_path, encoding="utf-8") as fp:
+            result = json.load(fp)
     return result
 
 
@@ -212,17 +209,24 @@ async def beatmapset_lookup(params):
         os.makedirs(mapcache_path)
 
     if not os.path.isfile(beatmapset_path) and (result["status"] == "ranked" or result["status"] == "approved"):
-        with open(beatmapset_path, "w") as fp:
-            json.dump(result, fp)
+        with open(beatmapset_path, "w") as file:
+            json.dump(result, file)
         beatmapset = result.copy()
         del beatmapset["beatmaps"]
+        del beatmapset["converts"]
         for diff in result["beatmaps"]:
-            beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + ".json")
+            beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
             if not os.path.isfile(beatmap_path):
                 diff["beatmapset"] = beatmapset
-                with open(beatmap_path, "w") as fp:
-                    json.dump(diff, fp)
-
+                with open(beatmap_path, "w") as f:
+                    json.dump(diff, f)
+        if result["converts"]:
+            for convert in result["converts"]:
+                convert_path = os.path.join(mapcache_path, str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
+                if not os.path.isfile(convert_path):
+                    convert["beatmapset"] = beatmapset
+                    with open(convert_path, "w") as fp:
+                        json.dump(convert, fp)
     return result
 
 
@@ -272,16 +276,25 @@ async def get_beatmapset(beatmapset_id):
         request = def_section("beatmapsets/{}".format(beatmapset_id))
         result = await request()
         if result["status"] == "ranked" or result["status"] == "approved":
-            with open(beatmapset_path, "w") as fp:
-                json.dump(result, fp)
+            with open(beatmapset_path, "w") as file:
+                json.dump(result, file)
             beatmapset = result.copy()
             del beatmapset["beatmaps"]
+            del beatmapset["converts"]
             for diff in result["beatmaps"]:
-                beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + ".json")
+                beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
                 if not os.path.isfile(beatmap_path):
                     diff["beatmapset"] = beatmapset
-                    with open(beatmap_path, "w") as fp:
-                        json.dump(diff, fp)
+                    with open(beatmap_path, "w") as f:
+                        json.dump(diff, f)
+            if result["converts"]:
+                for convert in result["converts"]:
+                    convert_path = os.path.join(mapcache_path,
+                                                str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
+                    if not os.path.isfile(convert_path):
+                        convert["beatmapset"] = beatmapset
+                        with open(convert_path, "w") as fp:
+                            json.dump(convert, fp)
 
     return result
 
@@ -399,6 +412,7 @@ async def beatmapset_from_url(url: str):
             "beatmap_id": beatmap_info.beatmap_id,
         }
         beatmapset = await beatmapset_lookup(params=params)
+        logging.info(beatmapset)
 
     # Also make sure we get the beatmap
     if not beatmapset:

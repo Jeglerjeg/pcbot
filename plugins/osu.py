@@ -267,7 +267,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         version=beatmap["version"],
         stars=float(beatmap["difficulty_rating"]),
         maxcombo=score["max_combo"],
-        max_combo="/{}".format(beatmap["max_combo"]) if mode in (api.GameMode.Standard, api.GameMode.Catch) else "",
+        max_combo="/{}".format(beatmap["max_combo"]) if mode is api.GameMode.Standard else "",
         scoreboard_rank="#{} ".format(rank) if rank else "",
         failed="(Failed) " if score["passed"] is False and score["rank"] != "F" else "",
         live=await format_stream(member, score, beatmap) if member else "",
@@ -587,9 +587,9 @@ async def notify_pp(member_id: str, data: dict):
     # If a new score was found, format the score
     if score:
         params = {
-            "id": score["beatmap"]["id"],
+            "beatmap_id": score["beatmap"]["id"],
         }
-        beatmap = (await api.beatmap_lookup(params=params, map_id=score["beatmap"]["id"]))
+        beatmap = (await api.beatmap_lookup(params=params, map_id=score["beatmap"]["id"], mode=mode.string))
 
         # There might not be any events
         scoreboard_rank = None
@@ -1320,9 +1320,9 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
     score = scores[0]
 
     params = {
-        "id": score["beatmap"]["id"],
+        "beatmap_id": score["beatmap"]["id"],
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=int(score["beatmap"]["id"])))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=int(score["beatmap"]["id"]), mode=mode.string))
 
     embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
         bool(score["perfect"]) and bool(score["passed"])))
@@ -1406,9 +1406,9 @@ async def score(message: discord.Message, *options):
     scoreboard_rank = scores["position"]
 
     params = {
-        "id": score["beatmap"]["id"],
+        "beatmap_id": score["beatmap"]["id"],
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=score["beatmap"]["id"]))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=score["beatmap"]["id"], mode=mode.string))
 
     embed = await create_score_embed_with_pp(member, score, beatmap, mode, potential_pp=not bool(
         bool(score["perfect"]) and bool(score["passed"])), scoreboard_rank=scoreboard_rank)
