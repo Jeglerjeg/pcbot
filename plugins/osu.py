@@ -1460,7 +1460,7 @@ async def debug(message: discord.Message):
                               "Members registered as playing: {}\n"
                               "Total members tracked: `{}`".format(
         api.requests_sent, client.time_started.ctime(),
-        round(api.requests_sent / ((datetime.now() - client.time_started).total_seconds() / 60.0),
+        round(api.requests_sent / ((datetime.utcnow() - client.time_started).total_seconds() / 60.0),
               2) if api.requests_sent > 0 else 0,
         time_elapsed,
         utils.format_objects(*[d["member"] for d in osu_tracking.values() if is_playing(d["member"])], dec="`"),
