@@ -1436,6 +1436,8 @@ async def score(message: discord.Message, *options):
             match_v2_beatmap = api.beatmap_url_pattern_v2.search(to_search)
             if match_v2_beatmap:
                 beatmap_id = match_v2_beatmap.group("beatmap_id")
+                match = True
+                break
 
         if not match:
             await client.say(message, "No beatmap link found")
