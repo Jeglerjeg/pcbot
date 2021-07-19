@@ -35,7 +35,7 @@ async def is_osu_file(url: str):
     return "text/plain" in headers.get("Content-Type", "") and ".osu" in headers.get("Content-Disposition", "")
 
 
-async def download_beatmap(beatmap_url_or_id):
+async def download_beatmap(beatmap_url_or_id, ignore_cache: bool = False):
     """ Download the .osu file of the beatmap with the given url, and save it to beatmap_path.
     :param beatmap_url_or_id: beatmap_url as str or the id as int
     """
@@ -60,6 +60,10 @@ async def download_beatmap(beatmap_url_or_id):
         raise ValueError("The given URL is invalid.")
 
     beatmap_path = os.path.join(cache_path, str(beatmap_id) + ".osu")
+
+    if ignore_cache:
+        return beatmap_file
+
     with open(beatmap_path, "wb") as f:
         f.write(beatmap_file)
 
@@ -88,7 +92,7 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
     if not os.path.exists(cache_path):
         os.makedirs(cache_path)
 
-    # Parse from cache or load the .osu and parse new
+    # Parse from cache or load the .osu and parse new>r
     if not ignore_cache and beatmap_url_or_id == cached_beatmap.url_or_id:
         beatmap = cached_beatmap.beatmap
     elif not ignore_cache and os.path.isfile(beatmap_path):
@@ -96,9 +100,12 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
             beatmap = fp.read()
             cached_beatmap = CachedBeatmap(url_or_id=beatmap_url_or_id, beatmap=beatmap)
     else:
-        await download_beatmap(beatmap_url_or_id)
-        with open(beatmap_path, encoding="utf-8") as fp:
-            beatmap = fp.read()
+        downloaded_beatmap = await download_beatmap(beatmap_url_or_id, ignore_cache=ignore_cache)
+        if ignore_cache:
+            beatmap = downloaded_beatmap.decode("utf-8")
+        else:
+            with open(beatmap_path, encoding="utf-8") as fp:
+                beatmap = fp.read()
 
         cached_beatmap = CachedBeatmap(url_or_id=beatmap_url_or_id, beatmap=beatmap)
 
