@@ -473,7 +473,7 @@ def lookup_beatmap(beatmaps: list, **lookup):
         return None
 
 
-def rank_from_events(events: dict, beatmap_id: str):
+def rank_from_events(events: dict, beatmap_id: str, score):
     """ Return the rank of the first score of given beatmap_id from a
     list of events gathered via get_user().
     """
@@ -481,7 +481,7 @@ def rank_from_events(events: dict, beatmap_id: str):
         if event["type"] == "rank":
             beatmap_url = "https://osu.ppy.sh" + event["beatmap"]["url"]
             beatmap_info = parse_beatmap_url(beatmap_url)
-            if beatmap_info.beatmap_id == beatmap_id:
+            if beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == score["rank"]:
                 return event["rank"]
     else:
         return None
