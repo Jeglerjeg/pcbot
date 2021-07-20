@@ -599,8 +599,8 @@ async def notify_pp(member_id: str, data: dict):
 
         potential_pp = await get_potential_pp(score, beatmap, member, float(score["pp"]))
 
-        beatmap["difficulty_rating"] = potential_pp.stars if mode is api.GameMode.Standard else \
-            beatmap["difficulty_rating"]
+        beatmap["difficulty_rating"] = potential_pp.stars if potential_pp is not None \
+            and potential_pp.stars is not None and mode is api.GameMode.Standard else beatmap["difficulty_rating"]
         if update_mode is UpdateModes.Minimal:
             m += await format_minimal_score(mode, score, beatmap, scoreboard_rank, member) + "\n"
         else:
@@ -1288,7 +1288,10 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
         score["pp"] = round(score_pp.pp, 2)
     elif score["pp"] is None:
         score["pp"] = 0
-    beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
+    elif score["pp"] is not None:
+        score["pp"] = round(score["pp"], 2)
+    if score_pp is not None:
+        beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
 
     # There might not be any events
     if scoreboard_rank is False and str(member.id) in osu_tracking and osu_tracking[str(member.id)]["new"] \
