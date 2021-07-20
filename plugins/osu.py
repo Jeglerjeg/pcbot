@@ -1287,6 +1287,8 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
         score["pp"] = round(score_pp.pp, 2)
     elif score["pp"] is None:
         score["pp"] = 0
+    elif score["pp"] is not None:
+        score["pp"] = round(score["pp"], 2)
     if score_pp is not None:
         beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
 
