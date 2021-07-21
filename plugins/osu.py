@@ -1128,6 +1128,10 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
     # The member might not be linked to any profile
     assert str(member.id) in osu_config.data["profiles"], "No osu! profile assigned to **{}**!".format(member.name)
 
+    # Clear the tracking data when unlinking user
+    if str(member.id) in osu_tracking:
+        del osu_tracking[str(member.id)]
+
     # Unlink the given member (usually the message author)
     del osu_config.data["profiles"][str(member.id)]
     await osu_config.asyncsave()
