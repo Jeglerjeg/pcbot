@@ -1510,36 +1510,38 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
     score_pp = None
     mode = get_mode(str(member.id))
     if str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)]:
-        for i, osu_scores in enumerate(osu_tracking[str(member.id)]["scores"]):
+        for i, osu_score in enumerate(osu_tracking[str(member.id)]["scores"]):
             if i > 4:
                 break
-            mods = api.Mods.format_mods(osu_scores["mods"])
+            mods = api.Mods.format_mods(osu_score["mods"])
             params = {
-                "beatmap_id": osu_scores["beatmap"]["id"]
+                "beatmap_id": osu_score["beatmap"]["id"]
             }
-            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_scores["beatmap"]["id"], mode=mode.string))
+            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
             if mode is api.GameMode.Standard:
-                score_pp = await calculate_pp(int(osu_scores["beatmap"]["id"]),
+                score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]),
                                               ignore_cache=not bool(beatmap["status"] == "ranked"
                                                                     or beatmap["status"] == "approved"),
                                               *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 "
                                                "{scorerank}rank {countmiss}m {maxcombo}x"
-                                              .format(acc=calculate_acc(mode, osu_scores),
-                                                      potential_acc=calculate_acc(mode, osu_scores, exclude_misses=True),
-                                                      scorerank="F" if osu_scores["passed"] is False
-                                                      else osu_scores["rank"],
-                                                      c300=osu_scores["statistics"]["count_300"],
-                                                      c100=osu_scores["statistics"]["count_100"],
-                                                      c50=osu_scores["statistics"]["count_50"],
+                                              .format(acc=calculate_acc(mode, osu_score),
+                                                      potential_acc=calculate_acc(mode, osu_score, exclude_misses=True),
+                                                      scorerank="F" if osu_score["passed"] is False
+                                                      else osu_score["rank"],
+                                                      c300=osu_score["statistics"]["count_300"],
+                                                      c100=osu_score["statistics"]["count_100"],
+                                                      c50=osu_score["statistics"]["count_50"],
                                                       modslist="+" + mods + " " if mods != "Nomod" else "",
-                                                      countmiss=osu_scores["statistics"]["count_miss"],
-                                                      maxcombo=osu_scores["max_combo"]).split())
+                                                      countmiss=osu_score["statistics"]["count_miss"],
+                                                      maxcombo=osu_score["max_combo"]).split())
             if score_pp is not None:
                 beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap[
                     "difficulty_rating"]
+            if osu_score["pp"] is not None:
+                osu_score["pp"] = round(osu_score["pp"], 2)
 
             m += "{}. ".format(str(i+1)) + \
-                 await format_minimal_score(mode, osu_scores, beatmap, rank=None,
+                 await format_minimal_score(mode, osu_score, beatmap, rank=None,
                                             member=osu_tracking[str(member.id)]["member"]) + "\n\n"
     else:
         await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
