@@ -1461,7 +1461,7 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
             }
             beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
             if mode is api.GameMode.Standard:
-                score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]),
+                score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=not osu_score["perfect"],
                                               ignore_cache=not bool(beatmap["status"] == "ranked"
                                                                     or beatmap["status"] == "approved"),
                                               *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 "
@@ -1481,10 +1481,16 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
                     "difficulty_rating"]
             if osu_score["pp"] is not None:
                 osu_score["pp"] = round(osu_score["pp"], 2)
+            potential_string = None
+            # Add potential pp to the score
+            if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1:
+                potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
+                                                                              score_pp.max_pp - float(osu_score["pp"]))
 
             m += "{}. ".format(str(i+1)) + \
                  await format_minimal_score(mode, osu_score, beatmap, rank=None,
-                                            member=osu_tracking[str(member.id)]["member"]) + "\n\n"
+                                            member=osu_tracking[str(member.id)]["member"]) + "\n" + \
+                 (potential_string + "\n" if potential_string is not None else "") + "\n"
     else:
         await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
         return None
