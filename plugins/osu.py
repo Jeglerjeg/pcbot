@@ -1440,7 +1440,7 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
 
 @osu.command()
 async def top(message: discord.Message, member: Annotate.Member = Annotate.Self):
-    """ Displays your or the selected member's 5 highest rated plays by PP with minimal score formatting. """
+    """ Displays your or the selected member's 5 highest rated plays by PP. """
     assert str(member.id) in osu_config.data["profiles"], \
         "No osu! profile assigned to **{}**!".format(member.name)
 
@@ -1483,9 +1483,9 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
                 potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
                                                                               score_pp.max_pp - float(osu_score["pp"]))
 
-            m += "{}. ".format(str(i+1)) + \
-                 await format_minimal_score(mode, osu_score, beatmap, rank=None,
-                                            member=osu_tracking[str(member.id)]["member"]) + "\n" + \
+            m += "{}.\n".format(str(i+1)) + \
+                 await format_new_score(mode, osu_score, beatmap, rank=None,
+                                        member=osu_tracking[str(member.id)]["member"]) + \
                  (potential_string + "\n" if potential_string is not None else "") + "\n"
     else:
         await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
