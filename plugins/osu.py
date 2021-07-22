@@ -281,7 +281,7 @@ async def format_minimal_score(mode: api.GameMode, score: dict, beatmap: dict, r
     acc = calculate_acc(mode, score)
     return (
         "[*{artist} - {title} [{version}]*]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-        "**{pp}pp {stars:.2f}\u2605, {rank} {acc:.2%} {scoreboard_rank}+{mods}**"
+        "**{pp}pp {stars:.2f}\u2605, {maxcombo}{max_combo} {rank} {acc:.2%} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
         host=host,
@@ -293,6 +293,8 @@ async def format_minimal_score(mode: api.GameMode, score: dict, beatmap: dict, r
         artist=beatmap["beatmapset"]["artist"].replace("*", "\*").replace("_", "\_"),
         title=beatmap["beatmapset"]["title"].replace("*", "\*").replace("_", "\_"),
         version=beatmap["version"],
+        maxcombo=score["max_combo"],
+        max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap else "",
         rank=score["rank"],
         stars=float(beatmap["difficulty_rating"]),
         scoreboard_rank="#{} ".format(rank) if rank else "",
