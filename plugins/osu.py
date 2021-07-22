@@ -1500,6 +1500,35 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
     await client.send_message(message.channel, embed=embed)
 
 
+@osu.command()
+async def top(message: discord.Message, member: Annotate.Member = Annotate.Self):
+    assert str(member.id) in osu_config.data["profiles"], \
+        "No osu! profile assigned to **{}**!".format(member.name)
+
+    m = ""
+    mode = get_mode(str(member.id))
+    if str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)]:
+        for i, osu_scores in enumerate(osu_tracking[str(member.id)]["scores"]):
+            if i > 4:
+                break
+            logging.info(osu_scores)
+            params = {
+                "beatmap_id": osu_scores["beatmap"]["id"],
+            }
+            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_scores["beatmap"]["id"], mode=mode.string))
+            m += "{}. ".format(str(i+1)) + \
+                 await format_minimal_score(mode, osu_scores, beatmap, rank=None,
+                                            member=osu_tracking[str(member.id)]["member"]) + "\n\n"
+    else:
+        await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
+        return None
+    e = discord.Embed(color=message.author.color)
+    e.description = m
+    e.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
+    e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
+    await client.send_message(message.channel, embed=e)
+
+
 def init_guild_config(guild: discord.Guild):
     """ Initializes the config when it's not already set. """
     if str(guild.id) not in osu_config.data["guild"]:
