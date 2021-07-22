@@ -1478,8 +1478,8 @@ async def score(message: discord.Message, *options):
     await client.send_message(message.channel, embed=embed)
 
 
-plugins.command(name="score", usage="<member> <url>")(score)
-osu.command(name="score", usage="<member> <url>")(score)
+plugins.command(name="score", usage="[member] <url>")(score)
+osu.command(name="score", usage="[member] <url>")(score)
 
 
 @osu.command(aliases="map")
