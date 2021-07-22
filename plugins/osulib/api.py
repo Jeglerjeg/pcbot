@@ -4,7 +4,7 @@
     request functions.
 """
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 import os
@@ -181,17 +181,57 @@ def def_section(api_name: str, first_element: bool=False):
     return template
 
 
+def cache_beatmapset(beatmap: dict, map_id: int):
+    beatmapset_path = os.path.join(setcache_path, str(map_id) + ".json")
+
+    if not os.path.exists(setcache_path):
+        os.makedirs(setcache_path)
+
+    if not os.path.exists(mapcache_path):
+        os.makedirs(mapcache_path)
+
+    beatmapset = beatmap.copy()
+    beatmap["time_cached"] = datetime.utcnow().isoformat()
+    with open(beatmapset_path, "w") as file:
+        json.dump(beatmap, file)
+    del beatmapset["beatmaps"]
+    del beatmapset["converts"]
+    for diff in beatmap["beatmaps"]:
+        beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
+        if not os.path.isfile(beatmap_path):
+            diff["time_cached"] = datetime.utcnow().isoformat()
+            diff["beatmapset"] = beatmapset
+            with open(beatmap_path, "w") as f:
+                json.dump(diff, f)
+    if beatmap["converts"]:
+        for convert in beatmap["converts"]:
+            convert_path = os.path.join(mapcache_path, str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
+            if not os.path.isfile(convert_path):
+                convert["time_cached"] = datetime.utcnow().isoformat()
+                convert["beatmapset"] = beatmapset
+                with open(convert_path, "w") as fp:
+                    json.dump(convert, fp)
+
+
 # Define all osu! API requests using the template
 async def beatmap_lookup(params, map_id, mode):
     beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
-
+    valid_result = True
     if not os.path.exists(mapcache_path):
         os.makedirs(mapcache_path)
     result = None
     if os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
             result = json.load(fp)
+        if result["status"] == "loved":
+            cached_time = datetime.fromisoformat(result["time_cached"])
+            time_now = datetime.utcnow()
+            diff = time_now - cached_time
+            if diff.days > 30:
+                valid_result = False
     else:
+        valid_result = False
+    if not valid_result:
         response = await beatmapset_lookup(params=params)
         beatmapset = response.copy()
         del beatmapset["beatmaps"]
@@ -212,36 +252,9 @@ async def beatmap_lookup(params, map_id, mode):
 async def beatmapset_lookup(params):
     request = def_section("beatmapsets/lookup")
     result = await request(**params)
-    beatmapset_path = os.path.join(setcache_path, str(result["id"]) + ".json")
 
-    if not os.path.exists(setcache_path):
-        os.makedirs(setcache_path)
-
-    if not os.path.exists(mapcache_path):
-        os.makedirs(mapcache_path)
-
-    if not os.path.isfile(beatmapset_path) and (result["status"] == "ranked" or result["status"] == "approved"):
-        beatmapset = result.copy()
-        result["time_cached"] = datetime.utcnow().isoformat()
-        with open(beatmapset_path, "w") as file:
-            json.dump(result, file)
-        del beatmapset["beatmaps"]
-        del beatmapset["converts"]
-        for diff in result["beatmaps"]:
-            beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
-            if not os.path.isfile(beatmap_path):
-                diff["time_cached"] = datetime.utcnow().isoformat()
-                diff["beatmapset"] = beatmapset
-                with open(beatmap_path, "w") as f:
-                    json.dump(diff, f)
-        if result["converts"]:
-            for convert in result["converts"]:
-                convert_path = os.path.join(mapcache_path, str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
-                if not os.path.isfile(convert_path):
-                    convert["time_cached"] = datetime.utcnow().isoformat()
-                    convert["beatmapset"] = beatmapset
-                    with open(convert_path, "w") as fp:
-                        json.dump(convert, fp)
+    if result["status"] == "ranked" or result["status"] == "approved" or result["status"] == "loved":
+        cache_beatmapset(result, result["id"])
     return result
 
 
@@ -277,42 +290,25 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
 
 async def get_beatmapset(beatmapset_id):
     beatmapset_path = os.path.join(setcache_path, str(beatmapset_id) + ".json")
+    result = None
 
-    if not os.path.exists(setcache_path):
-        os.makedirs(setcache_path)
-
-    if not os.path.exists(mapcache_path):
-        os.makedirs(mapcache_path)
-
+    valid_result = True
     if os.path.isfile(beatmapset_path):
         with open(beatmapset_path, encoding="utf-8") as fp:
             result = json.load(fp)
+        if result["status"] == "loved":
+            cached_time = datetime.fromisoformat(result["time_cached"])
+            time_now = datetime.utcnow()
+            diff = time_now - cached_time
+            if diff.days > 30:
+                valid_result = False
     else:
+        valid_result = False
+    if not valid_result:
         request = def_section("beatmapsets/{}".format(beatmapset_id))
         result = await request()
-        if result["status"] == "ranked" or result["status"] == "approved":
-            beatmapset = result.copy()
-            result["time_cached"] = datetime.utcnow().isoformat()
-            with open(beatmapset_path, "w") as file:
-                json.dump(result, file)
-            del beatmapset["beatmaps"]
-            del beatmapset["converts"]
-            for diff in result["beatmaps"]:
-                beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
-                if not os.path.isfile(beatmap_path):
-                    diff["time_cached"] = datetime.utcnow().isoformat()
-                    diff["beatmapset"] = beatmapset
-                    with open(beatmap_path, "w") as f:
-                        json.dump(diff, f)
-            if result["converts"]:
-                for convert in result["converts"]:
-                    convert_path = os.path.join(mapcache_path,
-                                                str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
-                    if not os.path.isfile(convert_path):
-                        convert["time_cached"] = datetime.utcnow().isoformat()
-                        convert["beatmapset"] = beatmapset
-                        with open(convert_path, "w") as fp:
-                            json.dump(convert, fp)
+        if result["status"] == "ranked" or result["status"] == "approved" or result["status"] == "loved":
+            cache_beatmapset(result, result["id"])
 
     return result
 
