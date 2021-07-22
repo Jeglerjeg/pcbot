@@ -1502,6 +1502,7 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
 
 @osu.command()
 async def top(message: discord.Message, member: Annotate.Member = Annotate.Self):
+    """ Displays your or the selected member's 5 highest rated plays by PP with minimal score formatting. """
     assert str(member.id) in osu_config.data["profiles"], \
         "No osu! profile assigned to **{}**!".format(member.name)
 
