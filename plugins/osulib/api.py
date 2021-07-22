@@ -423,7 +423,6 @@ async def beatmapset_from_url(url: str):
             "beatmap_id": beatmap_info.beatmap_id,
         }
         beatmapset = await beatmapset_lookup(params=params)
-        logging.info(beatmapset)
 
     # Also make sure we get the beatmap
     if not beatmapset:
