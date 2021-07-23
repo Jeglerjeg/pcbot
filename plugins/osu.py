@@ -746,7 +746,7 @@ async def format_map_status(member: discord.Member, status_format: str, beatmaps
     return embed
 
 
-async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
+async def calculate_pp_for_beatmapset(beatmapset, ignore_osu_cache: bool = False, ignore_memory_cache: bool = False):
     """ Calculates the pp for every difficulty in the given mapset, added
     to a "pp" key in the difficulty's dict. """
     # Init the cache of this mapset if it has not been created
@@ -754,8 +754,11 @@ async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
     if set_id not in osu_config.data["map_cache"]:
         osu_config.data["map_cache"][set_id] = {}
 
-    if not ignore_cache:
-        ignore_cache = not bool(beatmapset["status"] == "ranked" or beatmapset["status"] == "approved")
+    if not ignore_osu_cache:
+        ignore_osu_cache = not bool(beatmapset["status"] == "ranked" or beatmapset["status"] == "approved")
+    if not ignore_memory_cache:
+        ignore_osu_cache = not bool(beatmapset["status"] == "ranked" or beatmapset["status"] == "approved" or
+                                    beatmapset["status"] == "loved")
 
     cached_mapset = osu_config.data["map_cache"][set_id]
 
@@ -765,7 +768,7 @@ async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
         if int(diff["mode_int"]) != api.GameMode.Standard.value:
             continue
 
-        if ignore_cache:
+        if ignore_osu_cache:
             # If the diff is cached and unchanged, use the cached pp
             if map_id in cached_mapset:
                 if diff["checksum"] == cached_mapset[map_id]["md5"] and "speed_pp" in cached_mapset[map_id]:
@@ -782,7 +785,7 @@ async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
-            pp_stats = await calculate_pp(int(map_id), ignore_cache=ignore_cache, map_calc=True)
+            pp_stats = await calculate_pp(int(map_id), ignore_osu_cache=ignore_osu_cache, map_calc=True)
         except ValueError:
             logging.error(traceback.format_exc())
             continue
@@ -794,7 +797,7 @@ async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
         diff["aim_stars"] = pp_stats.aim_stars
         diff["speed_stars"] = pp_stats.speed_stars
 
-        if ignore_cache:
+        if ignore_osu_cache:
             # Cache the difficulty
             osu_config.data["map_cache"][set_id][map_id] = {
                 "md5": diff["checksum"],
@@ -805,7 +808,7 @@ async def calculate_pp_for_beatmapset(beatmapset, ignore_cache=False):
                 "speed_pp": pp_stats.speed_pp,
                 "acc_pp": pp_stats.acc_pp,
             }
-    if ignore_cache:
+    if ignore_osu_cache:
         await osu_config.asyncsave()
 
 
@@ -870,7 +873,7 @@ async def notify_maps(member_id: str, data: dict):
 
         # Calculate (or retrieve cached info) the pp for every difficulty of this mapset
         try:
-            await calculate_pp_for_beatmapset(beatmapset, ignore_cache=True)
+            await calculate_pp_for_beatmapset(beatmapset, ignore_osu_cache=True, ignore_memory_cache=True)
         except ValueError:
             logging.error(traceback.format_exc())
 
@@ -1280,8 +1283,11 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
     score_pp = None
     if mode is api.GameMode.Standard:
         score_pp = await calculate_pp(int(score["beatmap"]["id"]), potential=bool(potential_pp),
-                                      ignore_cache=not bool(beatmap["status"] == "ranked"
-                                                            or beatmap["status"] == "approved"),
+                                      ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                or beatmap["status"] == "approved"),
+                                      ignore_memory_cache=not bool(beatmap["status"] == "ranked"
+                                                                   or beatmap["status"] == "approved"
+                                                                   or beatmap["status"] == "loved"),
                                       *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 "
                                        "{scorerank}rank {countmiss}m {maxcombo}x"
                                       .format(acc=calculate_acc(mode, score),
@@ -1471,8 +1477,11 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
             beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
             if mode is api.GameMode.Standard:
                 score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=not osu_score["perfect"],
-                                              ignore_cache=not bool(beatmap["status"] == "ranked"
-                                                                    or beatmap["status"] == "approved"),
+                                              ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                        or beatmap["status"] == "approved"),
+                                              ignore_memory_cache=not bool(beatmap["status"] == "ranked"
+                                                                           or beatmap["status"] == "approved"
+                                                                           or beatmap["status"] == "loved"),
                                               *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 "
                                                "{scorerank}rank {countmiss}m {maxcombo}x"
                                               .format(acc=calculate_acc(mode, osu_score),
