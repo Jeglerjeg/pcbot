@@ -40,7 +40,9 @@ async def help_(message: discord.Message, command: str.lower = None, *args):
 
         # Get the specific command with arguments and send the help
         cmd = plugins.get_sub_command(cmd, *args)
-        await client.say(message, plugins.format_help(cmd, message.guild))
+        embed = discord.Embed(color=message.author.color)
+        embed.description = plugins.format_help(cmd, message.guild)
+        await client.send_message(message.channel, embed=embed)
 
     # Display every command
     else:
@@ -61,7 +63,9 @@ async def help_(message: discord.Message, command: str.lower = None, *args):
         m = "**Commands**: ```{0}```Use `{1}help <command>`, `{1}<command> {2}` or " \
             "`{1}<command> {3}` for command specific help.".format(
             commands, command_prefix, *config.help_arg)
-        await client.say(message, m)
+        embed = discord.Embed(color=message.author.color)
+        embed.description = m
+        await client.send_message(message.channel, embed=embed)
 
 
 @plugins.command(hidden=True)
