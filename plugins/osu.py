@@ -463,6 +463,7 @@ async def get_new_score(member_id: str):
             if i == 0:
                 logging.info(f"a #1 score was set: check plugins.osu.osu_tracking['{member_id}']['debug']")
                 osu_tracking[member_id]["debug"] = dict(scores=user_scores,
+                                                        old_scores=osu_tracking[member_id]["scores"],
                                                         old=dict(osu_tracking[member_id]["old"]),
                                                         new=dict(osu_tracking[member_id]["new"]))
             osu_tracking[member_id]["scores"] = user_scores
