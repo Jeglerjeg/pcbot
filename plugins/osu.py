@@ -250,7 +250,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         sign="!" if acc == 1 else ("+" if score["perfect"] and score["passed"] else "-"),
         modslist=Mods.format_mods(score["mods"]),
         acc=acc,
-        pp=score["pp"],
+        pp=round(score["pp"], 2),
         rank=score["rank"],
         count300=score["statistics"]["count_300"],
         count100=score["statistics"]["count_100"],
@@ -1485,8 +1485,6 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
             if score_pp is not None:
                 beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap[
                     "difficulty_rating"]
-            if osu_score["pp"] is not None:
-                osu_score["pp"] = round(osu_score["pp"], 2)
             potential_string = None
             # Add potential pp to the score
             if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
