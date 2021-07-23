@@ -37,7 +37,9 @@ async def is_osu_file(url: str):
 
 async def download_beatmap(beatmap_url_or_id, ignore_cache: bool = False):
     """ Download the .osu file of the beatmap with the given url, and save it to beatmap_path.
+
     :param beatmap_url_or_id: beatmap_url as str or the id as int
+    :param ignore_cache: whether or not to ignore the in-memory cache
     """
     # Parse the url and find the link to the .osu file
     try:
@@ -74,11 +76,12 @@ async def download_beatmap(beatmap_url_or_id, ignore_cache: bool = False):
         raise ValueError("Could not download the .osu file.")
 
 
-async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
+async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False, ignore_memory_cache: bool = False):
     """ Download and parse the map with the given url or id, or return a newly parsed cached version.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
-    :param ignore_cache: When true, the .osu will always be downloaded
+    :param ignore_osu_cache: When true, the .osu won't be downloaded
+    :param ignore_memory_cache: When true, the in-memory beatmap cache will be ignored
     """
     global cached_beatmap
 
@@ -93,15 +96,15 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
         os.makedirs(cache_path)
 
     # Parse from cache or load the .osu and parse new>r
-    if not ignore_cache and beatmap_url_or_id == cached_beatmap.url_or_id:
+    if not ignore_memory_cache and beatmap_url_or_id == cached_beatmap.url_or_id:
         beatmap = cached_beatmap.beatmap
-    elif not ignore_cache and os.path.isfile(beatmap_path):
+    elif not ignore_osu_cache and os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
             beatmap = fp.read()
             cached_beatmap = CachedBeatmap(url_or_id=beatmap_url_or_id, beatmap=beatmap)
     else:
-        downloaded_beatmap = await download_beatmap(beatmap_url_or_id, ignore_cache=ignore_cache)
-        if ignore_cache:
+        downloaded_beatmap = await download_beatmap(beatmap_url_or_id, ignore_cache=ignore_osu_cache)
+        if ignore_osu_cache:
             beatmap = downloaded_beatmap.decode("utf-8")
         else:
             with open(beatmap_path, encoding="utf-8") as fp:
@@ -112,19 +115,21 @@ async def parse_map(beatmap_url_or_id, ignore_cache: bool = False):
     return beatmap
 
 
-async def calculate_pp(beatmap_url_or_id, *options, ignore_cache: bool = False, map_calc: bool = False,
-                       potential: bool = False):
+async def calculate_pp(beatmap_url_or_id, *options, ignore_osu_cache: bool = False, map_calc: bool = False,
+                       potential: bool = False, ignore_memory_cache: bool = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
-    :param ignore_cache: When true, the .osu will always be downloaded
+    :param ignore_osu_cache: When false, the .osu will always be downloaded
     :param map_calc: When true, calculates and returns more fields in the PPStats tuple
     :param potential: When true, calculates and returns the potenial PP if FC
+    :param ignore_memory_cache: When true, the in-memory beatmap cache will be ignored
     """
     noautoacc = False
     ez = ezpp_new()
-    beatmap = await parse_map(beatmap_url_or_id, ignore_cache=ignore_cache)
+    beatmap = await parse_map(beatmap_url_or_id, ignore_osu_cache=ignore_osu_cache,
+                              ignore_memory_cache=ignore_memory_cache)
     args = parse_options(*options)
 
     # Set number of misses
