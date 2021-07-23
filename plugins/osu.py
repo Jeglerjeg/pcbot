@@ -27,7 +27,7 @@ Commands:
     osu
     pp
 """
-
+import importlib
 import logging
 import re
 import traceback
@@ -972,6 +972,10 @@ async def on_reload(name: str):
     local_tracking = osu_tracking
     local_events = recent_map_events
 
+    importlib.reload(plugins.osulib.api)
+    importlib.reload(plugins.osulib.pp)
+    importlib.reload(plugins.osulib.ordr)
+    importlib.reload(plugins.osulib.args)
     await plugins.reload(name)
 
     osu_tracking = local_tracking
