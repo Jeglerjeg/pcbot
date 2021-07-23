@@ -971,6 +971,7 @@ async def on_reload(name: str):
     global osu_tracking, recent_map_events
     local_tracking = osu_tracking
     local_events = recent_map_events
+    local_requests = api.requests_sent
 
     importlib.reload(plugins.osulib.api)
     importlib.reload(plugins.osulib.pp)
@@ -978,6 +979,7 @@ async def on_reload(name: str):
     importlib.reload(plugins.osulib.args)
     await plugins.reload(name)
 
+    api.requests_sent = local_requests
     osu_tracking = local_tracking
     recent_map_events = local_events
 
