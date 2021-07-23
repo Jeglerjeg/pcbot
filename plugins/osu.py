@@ -874,11 +874,11 @@ async def notify_maps(member_id: str, data: dict):
         except ValueError:
             logging.error(traceback.format_exc())
 
-        new_event = MapEvent(text=str(event["beatmapset"]["title"] + event["type"] + event["approval"] if
-                                      event["type"] == "beatmapsetApprove" else ""))
+        new_event = MapEvent(text=str(event["beatmapset"]["title"] + event["type"] + (event["approval"] if
+                                      event["type"] == "beatmapsetApprove" else "")))
         prev = discord.utils.get(recent_map_events, text=str(event["beatmapset"]["title"] + event["type"] +
-                                                             event["approval"] if
-                                                             event["type"] == "beatmapsetApprove" else ""))
+                                                             (event["approval"] if
+                                                             event["type"] == "beatmapsetApprove" else "")))
         to_delete = []
 
         if prev:
