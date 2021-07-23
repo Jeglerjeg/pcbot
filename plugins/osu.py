@@ -973,7 +973,6 @@ async def on_reload(name: str):
 
     importlib.reload(plugins.osulib.api)
     importlib.reload(plugins.osulib.pp)
-    importlib.reload(plugins.osulib.ordr)
     importlib.reload(plugins.osulib.args)
     await plugins.reload(name)
 
