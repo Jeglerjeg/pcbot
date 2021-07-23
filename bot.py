@@ -443,8 +443,10 @@ async def parse_command(command: plugins.Command, cmd_args: list, message: disco
             else:
                 if len(cmd_args) == 1:
                     send_help = True
-                await client.say(message, plugins.format_help(command, message.guild,
-                                                              no_subcommand=False if send_help else True))
+                embed = discord.Embed(color=message.author.color)
+                embed.description = plugins.format_help(command, message.guild,
+                                                        no_subcommand=False if send_help else True)
+                await client.send_message(message.channel, embed=embed)
 
         command = None
 
