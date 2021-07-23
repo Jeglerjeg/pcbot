@@ -4,7 +4,6 @@
     request functions.
 """
 import asyncio
-import importlib
 from datetime import datetime
 import json
 import logging
@@ -457,13 +456,6 @@ def lookup_beatmap(beatmaps: list, **lookup):
             return beatmap
     else:
         return None
-
-
-async def on_reload():
-    global requests_sent
-    local_request = requests_sent
-
-
 
 
 def rank_from_events(events: dict, beatmap_id: str, score):
