@@ -173,11 +173,11 @@ def format_user_diff(mode: api.GameMode, pp: float, rank: int, country_rank: int
                                                                      int(country_rank))))
     rounded_acc = round(accuracy, 3)
     if rounded_acc > 0:
-        formatted += " \U0001f4c8"  # Graph with upwards trend
+        formatted += "\n\U0001f4c8"  # Graph with upwards trend
     elif rounded_acc < 0:
-        formatted += " \U0001f4c9"  # Graph with downwards trend
+        formatted += "\n\U0001f4c9"  # Graph with downwards trend
     else:
-        formatted += " \U0001f3af"  # Dart
+        formatted += "\n\U0001f3af"  # Dart
 
     formatted += "`{:.3f}%".format(float(data["statistics"]["hit_accuracy"]))
     if not rounded_acc == 0:
