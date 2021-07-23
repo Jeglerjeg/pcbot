@@ -1079,6 +1079,11 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
         "key": "username",
     }
     osu_user = await api.get_user(name, params=params)
+
+    # Check if the osu! user exists
+    assert "id" in osu_user, "osu! user `{}` does not exist.".format(name)
+    user_id = osu_user["id"]
+
     if osu_user["playmode"] == "osu":
         mode = api.GameMode.Standard
     elif osu_user["playmode"] == "taiko":
@@ -1089,10 +1094,6 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
         mode = api.GameMode.Mania
     else:
         mode = api.GameMode.Standard
-
-    # Check if the osu! user exists
-    assert osu_user, "osu! user `{}` does not exist.".format(name)
-    user_id = osu_user["id"]
 
     # Make sure the user has more pp than the minimum limit defined in config
     if float(osu_user["statistics"]["pp"]) < minimum_pp_required:
