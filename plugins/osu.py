@@ -863,7 +863,8 @@ async def notify_maps(member_id: str, data: dict):
         # Try returning the beatmap info 6 times with a span of a minute
         # This might be needed when new maps are submitted
         for _ in range(6):
-            beatmapset = await api.beatmapset_from_url("https://osu.ppy.sh" + event["beatmapset"]["url"])
+            beatmapset = await api.beatmapset_from_url("https://osu.ppy.sh" + event["beatmapset"]["url"],
+                                                       force_redownload=True)
             if beatmapset:
                 break
             await asyncio.sleep(60)
