@@ -251,7 +251,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         sign="!" if acc == 1 else ("+" if score["perfect"] and score["passed"] else "-"),
         modslist=Mods.format_mods(score["mods"]),
         acc=acc,
-        pp=round(score["pp"], 2),
+        pp=round(score["pp"], 3),
         rank=score["rank"],
         count300=score["statistics"]["count_300"],
         count100=score["statistics"]["count_100"],
@@ -301,7 +301,7 @@ async def format_minimal_score(mode: api.GameMode, score: dict, beatmap: dict, r
         stars=float(beatmap["difficulty_rating"]),
         scoreboard_rank="#{} ".format(rank) if rank else "",
         live=await format_stream(member, score, beatmap),
-        pp=score["pp"]
+        pp=round(score["pp"], 3)
     )
 
 
@@ -1306,8 +1306,6 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
         score["pp"] = round(score_pp.pp, 2)
     elif score["pp"] is None:
         score["pp"] = 0
-    elif score["pp"] is not None:
-        score["pp"] = round(score["pp"], 2)
     if score_pp is not None:
         beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
 
