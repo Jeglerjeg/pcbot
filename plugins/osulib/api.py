@@ -235,6 +235,13 @@ async def beatmap_lookup(params, map_id, mode):
             diff = time_now - cached_time
             if diff.days > 30:
                 valid_result = False
+        if result["status"] == "pending" or result["status"] == "graveyard" or result["status"] == "wip" \
+                or result["status"] == "qualified":
+            cached_time = datetime.fromisoformat(result["time_cached"])
+            time_now = datetime.utcnow()
+            diff = time_now - cached_time
+            if diff.days > 7:
+                valid_result = False
     else:
         valid_result = False
     if not valid_result:
@@ -259,8 +266,7 @@ async def beatmapset_lookup(params):
     request = def_section("beatmapsets/lookup")
     result = await request(**params)
 
-    if result["status"] == "ranked" or result["status"] == "approved" or result["status"] == "loved":
-        cache_beatmapset(result, result["id"])
+    cache_beatmapset(result, result["id"])
     return result
 
 
@@ -305,12 +311,17 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
     return result
 
 
-async def get_beatmapset(beatmapset_id):
+async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     beatmapset_path = os.path.join(setcache_path, str(beatmapset_id) + ".json")
     result = None
 
     valid_result = True
-    if os.path.isfile(beatmapset_path):
+    if force_redownload:
+        request = def_section("beatmapsets/{}".format(beatmapset_id))
+        result = await request()
+
+        cache_beatmapset(result, result["id"])
+    elif os.path.isfile(beatmapset_path):
         with open(beatmapset_path, encoding="utf-8") as fp:
             result = json.load(fp)
         if result["status"] == "loved":
@@ -319,13 +330,20 @@ async def get_beatmapset(beatmapset_id):
             diff = time_now - cached_time
             if diff.days > 30:
                 valid_result = False
+        if result["status"] == "pending" or result["status"] == "graveyard" or result["status"] == "wip" \
+                or result["status"] == "qualified":
+            cached_time = datetime.fromisoformat(result["time_cached"])
+            time_now = datetime.utcnow()
+            diff = time_now - cached_time
+            if diff.days > 7:
+                valid_result = False
     else:
         valid_result = False
     if not valid_result:
         request = def_section("beatmapsets/{}".format(beatmapset_id))
         result = await request()
-        if result["status"] == "ranked" or result["status"] == "approved" or result["status"] == "loved":
-            cache_beatmapset(result, result["id"])
+
+        cache_beatmapset(result, result["id"])
 
     return result
 
@@ -428,10 +446,11 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
     return beatmap
 
 
-async def beatmapset_from_url(url: str):
+async def beatmapset_from_url(url: str, force_redownload: bool = False):
     """ Takes a url and returns the beatmapset of the specified beatmap.
 
     :param url: The osu! beatmap url to lookup.
+    :param force_redownload: Whether or not to force a redownload of the map
     :raise SyntaxError: The URL is neither a v1 or v2 osu! url.
     :raise LookupError: The beatmap linked in the URL was not found.
     """
@@ -442,7 +461,7 @@ async def beatmapset_from_url(url: str):
 
         beatmapset_id = beatmap_info.beatmapset_id
 
-        beatmapset = await get_beatmapset(beatmapset_id)
+        beatmapset = await get_beatmapset(beatmapset_id, force_redownload=force_redownload)
     else:
         params = {
             "beatmap_id": beatmap_info.beatmap_id,
