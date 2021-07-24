@@ -86,7 +86,13 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False, ignore_me
     global cached_beatmap
 
     if type(beatmap_url_or_id) is str:
-        beatmap_id = await api.beatmap_from_url(beatmap_url_or_id, return_type="id")
+        beatmap = await api.beatmap_from_url(beatmap_url_or_id)
+        beatmap_id = beatmap["id"]
+        if not ignore_memory_cache:
+            ignore_memory_cache = not bool(beatmap["status"] == "ranked" or beatmap["status"] == "approved" or
+                                           beatmap["status"] == "loved")
+        if not ignore_osu_cache:
+            ignore_osu_cache = not bool(beatmap["status"] == "ranked" or beatmap["status"] == "approved")
     else:
         beatmap_id = beatmap_url_or_id
 

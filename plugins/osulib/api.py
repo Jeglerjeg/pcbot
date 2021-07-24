@@ -400,12 +400,14 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
             return beatmap_info.beatmap_id
             # Only download the beatmap of the id, so that only this beatmap will be returned
         params = {
-            "id": beatmap_info.beatmap_id,
+            "beatmap_id": beatmap_info.beatmap_id,
         }
-        difficulties = await beatmap_lookup(**params)
+        difficulties = await beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode="osu")
+        beatmapset = False
     else:
         beatmapset = await get_beatmapset(beatmap_info.beatmapset_id)
         difficulties = beatmapset["beatmaps"]
+        beatmapset = True
     # If the beatmap doesn't exist, the operation was unsuccessful
     if not difficulties or "{'error': None}" in str(difficulties):
         raise LookupError("The beatmap with the given URL was not found.")
@@ -413,10 +415,13 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
     # Find the most difficult beatmap
     beatmap = None
     highest = -1
-    for diff in difficulties:
-        stars = diff["difficulty_rating"]
-        if stars > highest:
-            beatmap, highest = diff, stars
+    if beatmapset:
+        for diff in difficulties:
+            stars = diff["difficulty_rating"]
+            if stars > highest:
+                beatmap, highest = diff, stars
+    else:
+        beatmap = difficulties
 
     if return_type == "id":
         return beatmap["id"]
