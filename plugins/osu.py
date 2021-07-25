@@ -985,8 +985,8 @@ async def on_reload(name: str):
     local_requests = api.requests_sent
 
     importlib.reload(plugins.osulib.api)
-    importlib.reload(plugins.osulib.pp)
     importlib.reload(plugins.osulib.args)
+    importlib.reload(plugins.osulib.pp)
     await plugins.reload(name)
 
     api.requests_sent = local_requests
@@ -1257,7 +1257,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
     argument in the options, formatted like `[pp_value]pp`
     """
     try:
-        pp_stats = await calculate_pp(beatmap_url, *options)
+        pp_stats = await calculate_pp(beatmap_url, *options, ignore_osu_cache=True)
     except ValueError as e:
         await client.say(message, str(e))
         return
