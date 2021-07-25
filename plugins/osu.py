@@ -534,14 +534,15 @@ def get_score_name(member: discord.Member, username: str):
     return "{member.mention} [`{name}`]({url})".format(member=member, name=username, url=user_url)
 
 
-def get_formatted_score_embed(member: discord.Member, score: dict, formatted_score: str, potential_pp: float = None):
+def get_formatted_score_embed(member: discord.Member, score: dict, formatted_score: str, potential_pp: tuple = None):
     embed = discord.Embed(color=member.color, url=get_user_url(str(member.id)))
     embed.description = formatted_score
     footer = ""
 
     # Add potential pp in the footer
     if potential_pp:
-        footer += "Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp, potential_pp - float(score["pp"]))
+        footer += "Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp.max_pp,
+                                                             potential_pp.max_pp - float(score["pp"]))
 
     # Add completion rate to footer if score is failed
     if score["passed"] is False:
@@ -549,8 +550,9 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
                   score["statistics"]["count_50"] + score["statistics"]["count_miss"]
 
         beatmap_objects = score["beatmap"]["count_circles"] + score["beatmap"]["count_sliders"] \
-                          + score["beatmap"]["count_spinners"]
-        footer += "\nCompletion rate: {completion_rate:.2f}%".format(completion_rate=(objects / beatmap_objects) * 100)
+                                                            + score["beatmap"]["count_spinners"]
+        footer += "\nCompletion rate: {completion_rate:.2f}% ({partial_sr}\u2605)".format(
+            completion_rate=(objects / beatmap_objects) * 100, partial_sr=round(potential_pp.partial_stars, 2))
 
     embed.set_footer(text=footer)
     return embed
@@ -623,8 +625,7 @@ async def notify_pp(member_id: str, data: dict):
 
         # Format the url and the username
         name = get_score_name(member, new["username"])
-        embed = get_formatted_score_embed(member, score, m,
-                                          potential_pp.max_pp if potential_pp is not None
+        embed = get_formatted_score_embed(member, score, m, potential_pp if potential_pp is not None
                                           and potential_pp.max_pp is not None and potential_pp.max_pp - score["pp"] > 1
                                           and not bool(score["perfect"] and score["passed"]) else None)
         if score:
@@ -1293,8 +1294,7 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
         beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap, scoreboard_rank),
-                                      score_pp.max_pp
-                                      if score_pp is not None and score_pp.max_pp is not None and
+                                      score_pp if score_pp is not None and score_pp.max_pp is not None and
                                       score_pp.max_pp - score["pp"] > 1 and not bool(score["perfect"]
                                                                                      and score["passed"]) else None)
     embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
