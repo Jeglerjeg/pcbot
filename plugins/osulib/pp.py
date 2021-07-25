@@ -20,7 +20,7 @@ except:
 host = "https://osu.ppy.sh/"
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
-PPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs max_pp max_combo")
+PPStats = namedtuple("PPStats", "pp stars partial_stars artist title version ar od hp cs max_pp max_combo")
 MapPPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs aim_pp speed_pp acc_pp aim_stars "
                         "speed_stars")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars artist title version")
@@ -173,6 +173,8 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_osu_cache: bool = Fal
         ezpp_set_end(ez, objects)
         noautoacc = True
 
+    partial_stars = ezpp_stars(ez)
+
     # Set accuracy based on arguments
     if args.acc is not None and noautoacc is not True:
         ezpp_set_accuracy_percent(ez, args.acc)
@@ -229,7 +231,7 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_osu_cache: bool = Fal
         max_pp = ezpp_pp(ez)
 
     ezpp_free(ez)
-    return PPStats(pp, totalstars, artist, title, version, ar, od, hp, cs, max_pp, max_combo)
+    return PPStats(pp, totalstars, partial_stars, artist, title, version, ar, od, hp, cs, max_pp, max_combo)
 
 
 async def find_closest_pp(ez, args):
