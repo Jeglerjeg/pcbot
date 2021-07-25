@@ -80,19 +80,13 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False, ignore_me
     """ Download and parse the map with the given url or id, or return a newly parsed cached version.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
-    :param ignore_osu_cache: When true, the .osu won't be downloaded
+    :param ignore_osu_cache: When true, does not download or use .osu file cache
     :param ignore_memory_cache: When true, the in-memory beatmap cache will be ignored
     """
     global cached_beatmap
 
     if type(beatmap_url_or_id) is str:
-        beatmap = await api.beatmap_from_url(beatmap_url_or_id)
-        beatmap_id = beatmap["id"]
-        if not ignore_memory_cache:
-            ignore_memory_cache = not bool(beatmap["status"] == "ranked" or beatmap["status"] == "approved" or
-                                           beatmap["status"] == "loved")
-        if not ignore_osu_cache:
-            ignore_osu_cache = not bool(beatmap["status"] == "ranked" or beatmap["status"] == "approved")
+        beatmap_id = await api.beatmap_from_url(beatmap_url_or_id, return_type="id")
     else:
         beatmap_id = beatmap_url_or_id
 
@@ -127,7 +121,7 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_osu_cache: bool = Fal
     when [pp_value]pp is given in the options.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
-    :param ignore_osu_cache: When false, the .osu will always be downloaded
+    :param ignore_osu_cache: When true, does not download or use .osu file cache
     :param map_calc: When true, calculates and returns more fields in the PPStats tuple
     :param potential: When true, calculates and returns the potenial PP if FC
     :param ignore_memory_cache: When true, the in-memory beatmap cache will be ignored
