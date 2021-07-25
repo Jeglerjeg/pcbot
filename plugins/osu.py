@@ -499,23 +499,33 @@ def get_notify_channels(guild: discord.Guild, data_type: str):
             if guild.get_channel(int(s))]
 
 
-async def get_potential_pp(score, member: discord.Member):
-    """ Returns the potential pp or None if it shouldn't display """
-    potential_pp = None
-
-    # Find the potentially gained pp in standard when not FC
-    if get_mode(str(member.id)) is api.GameMode.Standard and get_update_mode(str(member.id)) is not UpdateModes.PP:
-        options = ["+" + Mods.format_mods(score["mods"]), str(score["statistics"]["count_100"]) + "x100",
-                   str(score["statistics"]["count_50"]) + "x50"]
-
+async def get_score_pp(osu_score, beatmap, member: discord.Member):
+    mode = get_mode(str(member.id))
+    mods = Mods.format_mods(osu_score["mods"])
+    score_pp = None
+    if mode is api.GameMode.Standard:
         try:
-            pp_stats = await calculate_pp(score["beatmap"]["id"], *options)
-            potential_pp = pp_stats
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=True,
+                                          ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                    or beatmap["status"] == "approved"),
+                                          ignore_memory_cache=not bool(beatmap["status"] == "ranked"
+                                                                       or beatmap["status"] == "approved"
+                                                                       or beatmap["status"] == "loved"),
+                                          *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 "
+                                          "{scorerank}rank {countmiss}m {maxcombo}x"
+                                           .format(acc=calculate_acc(mode, osu_score),
+                                                   potential_acc=calculate_acc(mode, osu_score, exclude_misses=True),
+                                                   scorerank="F" if osu_score["passed"] is False else osu_score["rank"],
+                                                   c300=osu_score["statistics"]["count_300"],
+                                                   c100=osu_score["statistics"]["count_100"],
+                                                   c50=osu_score["statistics"]["count_50"],
+                                                   modslist="+" + mods + " " if mods != "Nomod" else "",
+                                                   countmiss=osu_score["statistics"]["count_miss"],
+                                                   maxcombo=osu_score["max_combo"]).split())
         except Exception as e:
             logging.error(e)
             pass
-
-    return potential_pp
+    return score_pp
 
 
 def get_score_name(member: discord.Member, username: str):
@@ -588,8 +598,8 @@ async def notify_pp(member_id: str, data: dict):
         scoreboard_rank = None
         if new["events"]:
             scoreboard_rank = api.rank_from_events(new["events"], str(score["beatmap"]["id"]), score)
-
-        potential_pp = await get_potential_pp(score, member)
+        if update_mode is not UpdateModes.PP:
+            potential_pp = await get_score_pp(score, beatmap, member)
 
         beatmap["difficulty_rating"] = potential_pp.stars if potential_pp is not None \
             and potential_pp.stars is not None and mode is api.GameMode.Standard else beatmap["difficulty_rating"]
@@ -614,10 +624,9 @@ async def notify_pp(member_id: str, data: dict):
         # Format the url and the username
         name = get_score_name(member, new["username"])
         embed = get_formatted_score_embed(member, score, m,
-                                          potential_pp.pp if potential_pp is not None and potential_pp.pp is not None
-                                          and potential_pp.pp - score["pp"] > 1 and not bool(score["perfect"]
-                                                                                             and score["passed"])
-                                          else None)
+                                          potential_pp.max_pp if potential_pp is not None
+                                          and potential_pp.max_pp is not None and potential_pp.max_pp - score["pp"] > 1
+                                          and not bool(score["perfect"] and score["passed"]) else None)
         if score:
             embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
 
@@ -1274,26 +1283,7 @@ if can_calc_pp:
 
 async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mode, potential_pp: bool = False,
                                      scoreboard_rank: bool = False):
-    mods = api.Mods.format_mods(score["mods"])
-    score_pp = None
-    if mode is api.GameMode.Standard:
-        score_pp = await calculate_pp(int(score["beatmap"]["id"]), potential=bool(potential_pp),
-                                      ignore_osu_cache=not bool(beatmap["status"] == "ranked"
-                                                                or beatmap["status"] == "approved"),
-                                      ignore_memory_cache=not bool(beatmap["status"] == "ranked"
-                                                                   or beatmap["status"] == "approved"
-                                                                   or beatmap["status"] == "loved"),
-                                      *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 "
-                                       "{scorerank}rank {countmiss}m {maxcombo}x"
-                                      .format(acc=calculate_acc(mode, score),
-                                              potential_acc=calculate_acc(mode, score, exclude_misses=True),
-                                              scorerank="F" if score["passed"] is False else score["rank"],
-                                              c300=score["statistics"]["count_300"],
-                                              c100=score["statistics"]["count_100"],
-                                              c50=score["statistics"]["count_50"],
-                                              modslist="+" + mods + " " if mods != "Nomod" else "",
-                                              countmiss=score["statistics"]["count_miss"],
-                                              maxcombo=score["max_combo"]).split())
+    score_pp = await get_score_pp(score, beatmap, member)
 
     if score_pp is not None and score["pp"] is None:
         score["pp"] = round(score_pp.pp, 2)
@@ -1457,36 +1447,16 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
         "No osu! profile assigned to **{}**!".format(member.name)
 
     m = ""
-    score_pp = None
     mode = get_mode(str(member.id))
     if str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)]:
         for i, osu_score in enumerate(osu_tracking[str(member.id)]["scores"]):
             if i > 4:
                 break
-            mods = api.Mods.format_mods(osu_score["mods"])
             params = {
                 "beatmap_id": osu_score["beatmap"]["id"]
             }
             beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
-            if mode is api.GameMode.Standard:
-                score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=not osu_score["perfect"],
-                                              ignore_osu_cache=not bool(beatmap["status"] == "ranked"
-                                                                        or beatmap["status"] == "approved"),
-                                              ignore_memory_cache=not bool(beatmap["status"] == "ranked"
-                                                                           or beatmap["status"] == "approved"
-                                                                           or beatmap["status"] == "loved"),
-                                              *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 "
-                                               "{scorerank}rank {countmiss}m {maxcombo}x"
-                                              .format(acc=calculate_acc(mode, osu_score),
-                                                      potential_acc=calculate_acc(mode, osu_score, exclude_misses=True),
-                                                      scorerank="F" if osu_score["passed"] is False
-                                                      else osu_score["rank"],
-                                                      c300=osu_score["statistics"]["count_300"],
-                                                      c100=osu_score["statistics"]["count_100"],
-                                                      c50=osu_score["statistics"]["count_50"],
-                                                      modslist="+" + mods + " " if mods != "Nomod" else "",
-                                                      countmiss=osu_score["statistics"]["count_miss"],
-                                                      maxcombo=osu_score["max_combo"]).split())
+            score_pp = await get_score_pp(osu_score, beatmap, member)
             if score_pp is not None:
                 beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap[
                     "difficulty_rating"]
