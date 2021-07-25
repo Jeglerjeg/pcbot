@@ -499,26 +499,20 @@ def get_notify_channels(guild: discord.Guild, data_type: str):
             if guild.get_channel(int(s))]
 
 
-async def get_potential_pp(score, beatmap, member: discord.Member, score_pp: float, use_acc: bool = False):
+async def get_potential_pp(score, member: discord.Member):
     """ Returns the potential pp or None if it shouldn't display """
     potential_pp = None
 
     # Find the potentially gained pp in standard when not FC
-    if get_mode(str(member.id)) is api.GameMode.Standard and get_update_mode(str(member.id)) is not UpdateModes.PP \
-            and int(score["max_combo"]) < int(beatmap["max_combo"]):
-        options = ["+" + Mods.format_mods(score["mods"])]
-
-        if use_acc:
-            options.append("{acc:.2%}".format(acc=calculate_acc(api.GameMode.Standard, score, exclude_misses=True)))
-        else:
-            options.append(str(score["statistics"]["count_100"]) + "x100")
-            options.append(str(score["statistics"]["count_50"]) + "x50")
+    if get_mode(str(member.id)) is api.GameMode.Standard and get_update_mode(str(member.id)) is not UpdateModes.PP:
+        options = ["+" + Mods.format_mods(score["mods"]), str(score["statistics"]["count_100"]) + "x100",
+                   str(score["statistics"]["count_50"]) + "x50"]
 
         try:
             pp_stats = await calculate_pp(score["beatmap"]["id"], *options)
             potential_pp = pp_stats
         except Exception as e:
-            logging.error(traceback.format_exc())
+            logging.error(e)
             pass
 
     return potential_pp
@@ -595,7 +589,7 @@ async def notify_pp(member_id: str, data: dict):
         if new["events"]:
             scoreboard_rank = api.rank_from_events(new["events"], str(score["beatmap"]["id"]), score)
 
-        potential_pp = await get_potential_pp(score, beatmap, member, float(score["pp"]))
+        potential_pp = await get_potential_pp(score, member)
 
         beatmap["difficulty_rating"] = potential_pp.stars if potential_pp is not None \
             and potential_pp.stars is not None and mode is api.GameMode.Standard else beatmap["difficulty_rating"]
