@@ -395,18 +395,16 @@ async def update_user_data():
             params = {
                 "key": "id"
             }
-            try:
-                user_data = await api.get_user(profile, mode.string, params=params)
-            except ValueError:
+            user_data = await api.get_user(profile, mode.string, params=params)
+            if user_data is None:
                 user_data = osu_tracking[str(member_id)]["new"]
 
             params = {
                 "limit": 20
             }
 
-            try:
-                user_recent = await api.get_user_recent_activity(profile, params=params)
-            except ValueError:
+            user_recent = await api.get_user_recent_activity(profile, params=params)
+            if user_recent is None:
                 user_recent = osu_tracking[str(member_id)]["new"]["events"]
         except aiohttp.ServerDisconnectedError:
             continue
