@@ -507,7 +507,9 @@ def rank_from_events(events: dict, beatmap_id: str, score):
         if event["type"] == "rank":
             beatmap_url = "https://osu.ppy.sh" + event["beatmap"]["url"]
             beatmap_info = parse_beatmap_url(beatmap_url)
-            if beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == score["rank"]:
+            time_diff = datetime.fromisoformat(score["created_at"]) - datetime.fromisoformat(event["created_at"])
+            if (beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == score["rank"]) and \
+                    (time_diff.total_seconds() < 60):
                 return event["rank"]
     else:
         return None

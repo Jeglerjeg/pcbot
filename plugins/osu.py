@@ -32,6 +32,7 @@ import logging
 import re
 import traceback
 from datetime import datetime, timedelta
+import pytz
 from enum import Enum
 from typing import List
 
@@ -1300,6 +1301,12 @@ async def create_score_embed_with_pp(member: discord.Member, score, beatmap, mod
         score["pp"] = 0
     if score_pp is not None:
         beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap["difficulty_rating"]
+
+    # There might not be any events
+    if scoreboard_rank is False and str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)] \
+            and osu_tracking[str(member.id)]["new"]["events"]:
+        scoreboard_rank = api.rank_from_events(osu_tracking[str(member.id)]["new"]["events"],
+                                               str(score["beatmap"]["id"]), score)
 
     embed = get_formatted_score_embed(member, score, await format_new_score(mode, score, beatmap, scoreboard_rank),
                                       score_pp if score_pp is not None and score_pp.max_pp is not None and
