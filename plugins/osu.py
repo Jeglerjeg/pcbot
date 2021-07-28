@@ -252,7 +252,7 @@ async def format_new_score(mode: api.GameMode, score: dict, beatmap: dict, rank:
         sign="!" if acc == 1 else ("+" if score["perfect"] and score["passed"] else "-"),
         modslist=Mods.format_mods(score["mods"]),
         acc=acc,
-        pp=round(score["pp"], 3),
+        pp=round(score["pp"], 2),
         rank=score["rank"],
         count300=score["statistics"]["count_300"],
         count100=score["statistics"]["count_100"],
@@ -302,7 +302,7 @@ async def format_minimal_score(mode: api.GameMode, score: dict, beatmap: dict, r
         stars=float(beatmap["difficulty_rating"]),
         scoreboard_rank="#{} ".format(rank) if rank else "",
         live=await format_stream(member, score, beatmap),
-        pp=round(score["pp"], 3)
+        pp=round(score["pp"], 2)
     )
 
 
@@ -429,12 +429,8 @@ async def update_user_data():
                 "limit": score_request_limit,
             }
             fetched_scores = await api.get_user_scores(profile, "best", params=params)
-            for score in fetched_scores:
-                del score["weight"]
-                del score["beatmap"]["passcount"]
-                del score["beatmapset"]
-                del score["beatmap"]["playcount"]
-                del score["user"]
+            if fetched_scores is None:
+                fetched_scores = osu_tracking[str(member_id)]["scores"]
             osu_tracking[str(member_id)]["scores"] = fetched_scores
 
         # Update the "new" data
@@ -455,16 +451,17 @@ async def get_new_score(member_id: str):
     }
     await asyncio.sleep(10)
     user_scores = await api.get_user_scores(profile, "best", params=params)
-    for score in user_scores:
-        del score["weight"]
-        del score["beatmap"]["passcount"]
-        del score["beatmapset"]
-        del score["beatmap"]["playcount"]
-        del score["user"]
+    if user_scores is None:
+        return None
+
+    old_best_id = []
+
+    for old_score in osu_tracking[member_id]["scores"]:
+        old_best_id.append(old_score["best_id"])
 
     # Compare the scores from top to bottom and try to find a new one
     for i, score in enumerate(user_scores):
-        if score not in osu_tracking[member_id]["scores"]:
+        if score["best_id"] not in old_best_id:
             if i == 0:
                 logging.info(f"a #1 score was set: check plugins.osu.osu_tracking['{member_id}']['debug']")
                 osu_tracking[member_id]["debug"] = dict(scores=user_scores,
