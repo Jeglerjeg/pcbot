@@ -39,6 +39,7 @@ from typing import List
 import aiohttp
 import asyncio
 import discord
+import pendulum
 
 import plugins
 from pcbot import Config, utils, Annotate, config as botconfig
@@ -1531,6 +1532,11 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
             if score_pp is not None:
                 beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap[
                     "difficulty_rating"]
+
+            # Add time since play to the score
+            time_since_play = "{} ago".format(
+                pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"])).in_words())
+
             potential_string = None
             # Add potential pp to the score
             if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
@@ -1540,8 +1546,8 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
 
             m += "{}.\n".format(str(i+1)) + \
                  await format_new_score(mode, osu_score, beatmap, rank=None,
-                                        member=osu_tracking[str(member.id)]["member"]) + \
-                 (potential_string + "\n" if potential_string is not None else "") + "\n"
+                                        member=osu_tracking[str(member.id)]["member"]) + time_since_play + "\n" \
+                 + (potential_string + "\n" if potential_string is not None else "") + "\n"
     else:
         await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
         return None
