@@ -1503,8 +1503,8 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
 
             m += "{}.\n".format(str(i+1)) + \
                  await format_new_score(mode, osu_score, beatmap, rank=None,
-                                        member=osu_tracking[str(member.id)]["member"]) + time_since_string + "\n" \
-                 + (potential_string + "\n" if potential_string is not None else "") + "\n"
+                                        member=osu_tracking[str(member.id)]["member"]) \
+                 + (potential_string + "\n" if potential_string is not None else "") + time_since_string + "\n\n"
     else:
         await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
         return None
