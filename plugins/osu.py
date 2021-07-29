@@ -357,7 +357,9 @@ def is_playing(member: discord.Member):
     # See if the member is playing
     for activity in member.activities:
         if activity is not None and activity.name is not None:
-            if "osu" in activity.name.lower() or rank_regex.search(activity.name):
+            if "osu" in activity.name.lower():
+                return True
+            elif activity is discord.ActivityType.streaming and "osu" in activity.game.lower():
                 return True
     else:
         return False
