@@ -352,6 +352,22 @@ def get_user_url(member_id: str):
     return host + "users/" + user_id
 
 
+def get_formatted_score_time(score_time: pendulum.period):
+    if score_time.in_seconds() < 60:
+        return "{} ago".format(str(score_time.in_seconds()) + (" seconds" if score_time.in_seconds() > 1 else " second"))
+    elif score_time.in_minutes() < 60:
+        return "{} ago".format(str(score_time.in_minutes()) + (" minutes" if score_time.in_minutes() > 1
+                                                               else " minute"))
+    elif score_time.in_hours() < 24:
+        return "{} ago".format(str(score_time.in_hours()) + (" hours" if score_time.in_hours() > 1 else " hour"))
+    elif score_time.in_days() < 30:
+        return "{} ago".format(str(score_time.in_days()) + (" days" if score_time.in_days() > 1 else " day"))
+    elif score_time.in_months() < 12:
+        return "{} ago".format(str(score_time.in_months()) + (" months" if score_time.in_months() > 1 else " month"))
+    else:
+        return "{} ago".format(str(score_time.in_years()) + (" years" if score_time.in_years() > 1 else " year"))
+
+
 def is_playing(member: discord.Member):
     """ Check if a member has "osu!" in their Game name. """
     # See if the member is playing
@@ -1475,8 +1491,8 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
                     "difficulty_rating"]
 
             # Add time since play to the score
-            time_since_play = "{} ago".format(
-                pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"])).in_words())
+            time_since_play = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
+            time_since_string = get_formatted_score_time(time_since_play)
 
             potential_string = None
             # Add potential pp to the score
@@ -1487,7 +1503,7 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
 
             m += "{}.\n".format(str(i+1)) + \
                  await format_new_score(mode, osu_score, beatmap, rank=None,
-                                        member=osu_tracking[str(member.id)]["member"]) + time_since_play + "\n" \
+                                        member=osu_tracking[str(member.id)]["member"]) + time_since_string + "\n" \
                  + (potential_string + "\n" if potential_string is not None else "") + "\n"
     else:
         await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
