@@ -567,7 +567,7 @@ def get_formatted_score_embed(member: discord.Member, score: dict, formatted_sco
                                                              potential_pp.max_pp - float(score["pp"]))
 
     # Add completion rate to footer if score is failed
-    if score["passed"] is False:
+    if score is not None and score["passed"] is False:
         objects = score["statistics"]["count_300"] + score["statistics"]["count_100"] + \
                   score["statistics"]["count_50"] + score["statistics"]["count_miss"]
 
