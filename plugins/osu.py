@@ -32,7 +32,6 @@ import logging
 import re
 import traceback
 from datetime import datetime, timedelta
-import pytz
 from enum import Enum
 from typing import List
 
