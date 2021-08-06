@@ -4,6 +4,7 @@
     request functions.
 """
 import asyncio
+from datetime import datetime
 import json
 import logging
 import os
@@ -186,30 +187,8 @@ def def_section(api_name: str, first_element: bool=False, download=False):
     return template
 
 
-# Define all osu! API requests using the template
-async def beatmap_lookup(params, map_id: int = None):
-    beatmap_path = os.path.join(mapcache_path, str(map_id) + ".json")
-
-    if not os.path.exists(mapcache_path):
-        os.makedirs(mapcache_path)
-
-    if os.path.isfile(beatmap_path):
-        with open(beatmap_path, encoding="utf-8") as fp:
-            result = json.load(fp)
-    else:
-        request = def_section("beatmaps/lookup")
-        result = await request(**params)
-        if result["status"] == "ranked" or result["status"] == "approved":
-            with open(beatmap_path, "w") as fp:
-                json.dump(result, fp)
-
-    return result
-
-
-async def beatmapset_lookup(params):
-    request = def_section("beatmapsets/lookup")
-    result = await request(**params)
-    beatmapset_path = os.path.join(setcache_path, str(result["id"]) + ".json")
+def cache_beatmapset(beatmap: dict, map_id: int):
+    beatmapset_path = os.path.join(setcache_path, str(map_id) + ".json")
 
     if not os.path.exists(setcache_path):
         os.makedirs(setcache_path)
@@ -217,18 +196,77 @@ async def beatmapset_lookup(params):
     if not os.path.exists(mapcache_path):
         os.makedirs(mapcache_path)
 
-    if not os.path.isfile(beatmapset_path) and (result["status"] == "ranked" or result["status"] == "approved"):
-        with open(beatmapset_path, "w") as fp:
-            json.dump(result, fp)
-        beatmapset = result.copy()
-        del beatmapset["beatmaps"]
-        for diff in result["beatmaps"]:
-            beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + ".json")
-            if not os.path.isfile(beatmap_path):
-                diff["beatmapset"] = beatmapset
-                with open(beatmap_path, "w") as fp:
-                    json.dump(diff, fp)
+    beatmapset = beatmap.copy()
+    beatmap["time_cached"] = datetime.utcnow().isoformat()
+    with open(beatmapset_path, "w") as file:
+        json.dump(beatmap, file)
+    del beatmapset["beatmaps"]
+    del beatmapset["converts"]
+    for diff in beatmap["beatmaps"]:
+        beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
+        if not os.path.isfile(beatmap_path):
+            diff["time_cached"] = datetime.utcnow().isoformat()
+            diff["beatmapset"] = beatmapset
+            with open(beatmap_path, "w") as f:
+                json.dump(diff, f)
+    if beatmap["converts"]:
+        for convert in beatmap["converts"]:
+            convert_path = os.path.join(mapcache_path, str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
+            if not os.path.isfile(convert_path):
+                convert["time_cached"] = datetime.utcnow().isoformat()
+                convert["beatmapset"] = beatmapset
+                with open(convert_path, "w") as fp:
+                    json.dump(convert, fp)
 
+
+# Define all osu! API requests using the template
+async def beatmap_lookup(params, map_id, mode):
+    beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
+    valid_result = True
+    if not os.path.exists(mapcache_path):
+        os.makedirs(mapcache_path)
+    result = None
+    if os.path.isfile(beatmap_path):
+        with open(beatmap_path, encoding="utf-8") as fp:
+            result = json.load(fp)
+        if result["status"] == "loved":
+            cached_time = datetime.fromisoformat(result["time_cached"])
+            time_now = datetime.utcnow()
+            diff = time_now - cached_time
+            if diff.days > 30:
+                valid_result = False
+        if result["status"] == "pending" or result["status"] == "graveyard" or result["status"] == "wip" \
+                or result["status"] == "qualified":
+            cached_time = datetime.fromisoformat(result["time_cached"])
+            time_now = datetime.utcnow()
+            diff = time_now - cached_time
+            if diff.days > 7:
+                valid_result = False
+    else:
+        valid_result = False
+    if not valid_result:
+        response = await beatmapset_lookup(params=params)
+        beatmapset = response.copy()
+        del beatmapset["beatmaps"]
+        del beatmapset["converts"]
+
+        for diff in response["beatmaps"]:
+            if str(diff["id"]) == str(map_id) and diff["mode"] == mode:
+                diff["beatmapset"] = beatmapset
+                result = diff
+        if not result:
+            for convert in response["converts"]:
+                if str(convert["id"]) == str(map_id) and convert["mode"] == mode:
+                    convert["beatmapset"] = beatmapset
+                    result = convert
+    return result
+
+
+async def beatmapset_lookup(params):
+    request = def_section("beatmapsets/lookup")
+    result = await request(**params)
+
+    cache_beatmapset(result, result["id"])
     return result
 
 
@@ -273,43 +311,52 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
     return result
 
 
-async def get_beatmapset(beatmapset_id):
+async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     beatmapset_path = os.path.join(setcache_path, str(beatmapset_id) + ".json")
+    result = None
 
-    if not os.path.exists(setcache_path):
-        os.makedirs(setcache_path)
-
-    if not os.path.exists(mapcache_path):
-        os.makedirs(mapcache_path)
-
-    if os.path.isfile(beatmapset_path):
-        with open(beatmapset_path, encoding="utf-8") as fp:
-            result = json.load(fp)
-    else:
+    valid_result = True
+    if force_redownload:
         request = def_section("beatmapsets/{}".format(beatmapset_id))
         result = await request()
-        if result["status"] == "ranked" or result["status"] == "approved":
-            with open(beatmapset_path, "w") as fp:
-                json.dump(result, fp)
-            beatmapset = result.copy()
-            del beatmapset["beatmaps"]
-            for diff in result["beatmaps"]:
-                beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + ".json")
-                if not os.path.isfile(beatmap_path):
-                    diff["beatmapset"] = beatmapset
-                    with open(beatmap_path, "w") as fp:
-                        json.dump(diff, fp)
+
+        cache_beatmapset(result, result["id"])
+    elif os.path.isfile(beatmapset_path):
+        with open(beatmapset_path, encoding="utf-8") as fp:
+            result = json.load(fp)
+        if result["status"] == "loved":
+            cached_time = datetime.fromisoformat(result["time_cached"])
+            time_now = datetime.utcnow()
+            diff = time_now - cached_time
+            if diff.days > 30:
+                valid_result = False
+        if result["status"] == "pending" or result["status"] == "graveyard" or result["status"] == "wip" \
+                or result["status"] == "qualified":
+            cached_time = datetime.fromisoformat(result["time_cached"])
+            time_now = datetime.utcnow()
+            diff = time_now - cached_time
+            if diff.days > 7:
+                valid_result = False
+    else:
+        valid_result = False
+    if not valid_result:
+        request = def_section("beatmapsets/{}".format(beatmapset_id))
+        result = await request()
+
+        cache_beatmapset(result, result["id"])
 
     return result
 
 
-async def get_user_recent_activity(user):
+async def get_user_recent_activity(user, params=None):
     request = def_section("users/{}/recent_activity".format(user))
+    if params:
+        return await request(**params)
     return await request()
 
 beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
-beatmapset_url_pattern_v2 = re.compile(r"https?://osu\.ppy\.sh/beatmapsets/"
-                                       r"(?P<beatmapset_id>\d+)(?:#(?P<mode>\w+)/(?P<beatmap_id>\d+))?")
+beatmapset_url_pattern_v2 = \
+    re.compile(r"https?://osu\.ppy\.sh/beatmapsets/(?P<beatmapset_id>\d+)/?(?:#(?P<mode>\w+)/(?P<beatmap_id>\d+))?")
 beatmap_url_pattern_v2 = re.compile(r"https?://osu\.ppy\.sh/beatmaps/(?P<beatmap_id>\d+)(?:\?mode=(?P<mode>\w+))?")
 
 BeatmapURLInfo = namedtuple("BeatmapURLInfo", "beatmapset_id beatmap_id gamemode")
@@ -371,12 +418,14 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
             return beatmap_info.beatmap_id
             # Only download the beatmap of the id, so that only this beatmap will be returned
         params = {
-            "id": beatmap_info.beatmap_id,
+            "beatmap_id": beatmap_info.beatmap_id,
         }
-        difficulties = await beatmap_lookup(**params)
+        difficulties = await beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode="osu")
+        beatmapset = False
     else:
         beatmapset = await get_beatmapset(beatmap_info.beatmapset_id)
         difficulties = beatmapset["beatmaps"]
+        beatmapset = True
     # If the beatmap doesn't exist, the operation was unsuccessful
     if not difficulties or "{'error': None}" in str(difficulties):
         raise LookupError("The beatmap with the given URL was not found.")
@@ -384,20 +433,24 @@ async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
     # Find the most difficult beatmap
     beatmap = None
     highest = -1
-    for diff in difficulties:
-        stars = diff["difficulty_rating"]
-        if stars > highest:
-            beatmap, highest = diff, stars
+    if beatmapset:
+        for diff in difficulties:
+            stars = diff["difficulty_rating"]
+            if stars > highest:
+                beatmap, highest = diff, stars
+    else:
+        beatmap = difficulties
 
     if return_type == "id":
         return beatmap["id"]
     return beatmap
 
 
-async def beatmapset_from_url(url: str):
+async def beatmapset_from_url(url: str, force_redownload: bool = False):
     """ Takes a url and returns the beatmapset of the specified beatmap.
 
     :param url: The osu! beatmap url to lookup.
+    :param force_redownload: Whether or not to force a redownload of the map
     :raise SyntaxError: The URL is neither a v1 or v2 osu! url.
     :raise LookupError: The beatmap linked in the URL was not found.
     """
@@ -408,7 +461,7 @@ async def beatmapset_from_url(url: str):
 
         beatmapset_id = beatmap_info.beatmapset_id
 
-        beatmapset = await get_beatmapset(beatmapset_id)
+        beatmapset = await get_beatmapset(beatmapset_id, force_redownload=force_redownload)
     else:
         params = {
             "beatmap_id": beatmap_info.beatmap_id,
@@ -446,7 +499,7 @@ def lookup_beatmap(beatmaps: list, **lookup):
         return None
 
 
-def rank_from_events(events: dict, beatmap_id: str):
+def rank_from_events(events: dict, beatmap_id: str, score):
     """ Return the rank of the first score of given beatmap_id from a
     list of events gathered via get_user().
     """
@@ -454,7 +507,9 @@ def rank_from_events(events: dict, beatmap_id: str):
         if event["type"] == "rank":
             beatmap_url = "https://osu.ppy.sh" + event["beatmap"]["url"]
             beatmap_info = parse_beatmap_url(beatmap_url)
-            if beatmap_info.beatmap_id == beatmap_id:
+            time_diff = datetime.fromisoformat(score["created_at"]) - datetime.fromisoformat(event["created_at"])
+            if (beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == score["rank"]) and \
+                    (time_diff.total_seconds() < 60):
                 return event["rank"]
     else:
         return None
