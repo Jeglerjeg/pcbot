@@ -609,6 +609,7 @@ async def notify_pp(member_id: str, data: dict):
     update_mode = get_update_mode(member_id)
     m = ""
     potential_pp = None
+    thumbnail_url = None
 
     # Since the user got pp they probably have a new score in their own top 100
     # If there is a score, there is also a beatmap
@@ -623,6 +624,7 @@ async def notify_pp(member_id: str, data: dict):
             "beatmap_id": osu_score["beatmap"]["id"],
         }
         beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
+        thumbnail_url = beatmap["beatmapset"]["covers"]["list@2x"]
 
         # There might not be any events
         scoreboard_rank = None
@@ -658,7 +660,7 @@ async def notify_pp(member_id: str, data: dict):
                                           potential_pp.max_pp - osu_score["pp"] > 1
                                           and not bool(osu_score["perfect"] and osu_score["passed"]) else None)
         if osu_score:
-            embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
+            embed.set_thumbnail(url=thumbnail_url)
 
         # The top line of the format will differ depending on whether we found a score or not
         if osu_score:
@@ -1305,7 +1307,8 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
 
     await client.say(message,
                      "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`."
-                     .format(" ".join(options), **pp_stats._asdict()))
+                     .format(" ".join(options), artist=pp_stats.artist, title=pp_stats.title, version=pp_stats.version,
+                             stars=pp_stats.stars, pp=pp_stats.pp))
 
 
 if can_calc_pp:
