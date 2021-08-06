@@ -971,7 +971,7 @@ async def on_ready():
             await asyncio.sleep(float(update_interval), loop=client.loop)
             started = datetime.now()
 
-            for member_id, profile in osu_config.data["profiles"].items():
+            for member_id, profile in list(osu_config.data["profiles"].items()):
                 # First, update the user's data
                 await update_user_data(member_id, profile)
                 if str(member_id) in osu_tracking:
