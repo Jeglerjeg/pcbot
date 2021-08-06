@@ -1517,7 +1517,7 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
     else:
         await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
         return None
-    e = discord.Embed(color=message.author.color)
+    e = discord.Embed(color=member.color)
     e.description = m
     e.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
     e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
