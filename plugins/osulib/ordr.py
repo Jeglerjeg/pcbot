@@ -2,13 +2,10 @@
 
     Can render replays and fetch replays by ID
 """
-import logging
-from io import BytesIO
 
 from aiohttp import FormData
 
 from pcbot import utils, config, Config
-from . import api
 
 host = "https://ordr-api.issou.best/"
 
