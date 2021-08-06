@@ -465,7 +465,7 @@ async def get_new_score(member_id: str):
         "mode": get_mode(member_id).string,
         "limit": score_request_limit,
     }
-    await asyncio.sleep(10)
+    await asyncio.sleep(5)
     user_scores = await api.get_user_scores(profile, "best", params=params)
     if user_scores is None:
         return None
