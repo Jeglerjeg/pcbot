@@ -14,7 +14,11 @@ import pendulum
 
 from pcbot import config, Annotate, identifier_prefix, format_exception
 
-plugins = {}
+loaded_plugins = {}
+plugin_list = ["builtin", "pcbot"]
+for plugin in os.listdir("plugins/"):
+    plugin_list.append(os.path.splitext(plugin)[0])
+
 events = defaultdict(list)
 Command = namedtuple("Command", "name name_prefix aliases owner permissions roles guilds "
                                 "usage description function parent sub_commands depth hidden error pos_check "
@@ -24,6 +28,11 @@ lengthy_annotations = (Annotate.Content, Annotate.CleanContent, Annotate.LowerCo
 argument_format = "{open}{name}{suffix}{close}"
 
 owner_cfg = config.Config("owner")
+default_config = {}
+for plugin in plugin_list:
+    if not plugin.endswith("lib") and not (plugin.startswith("__") or plugin.endswith("__")):
+        default_config[plugin] = False
+disabled_plugins_config = config.Config("disabled_plugins", pretty=True, data=default_config)
 CoolDown = namedtuple("CoolDown", "date command specific")
 cooldown_data = defaultdict(list)  # member: []
 
@@ -38,25 +47,25 @@ def set_client(c: discord.Client):
 
 def get_plugin(name):
     """ Return the loaded plugin by name or None. """
-    if name in plugins:
-        return plugins[name]
+    if name in loaded_plugins:
+        return loaded_plugins[name]
 
     return None
 
 
 def all_items():
     """ Return a view object of every loaded plugin by key, value. """
-    return plugins.items()
+    return loaded_plugins.items()
 
 
 def all_keys():
     """ Return a view object of every loaded plugin by key. """
-    return plugins.keys()
+    return loaded_plugins.keys()
 
 
 def all_values():
     """ Return a view object of every loaded plugin by value. """
-    return plugins.values()
+    return loaded_plugins.values()
 
 
 def _format_usage(func, pos_check):
@@ -74,16 +83,16 @@ def _format_usage(func, pos_check):
 
         param_format = getattr(param.annotation, "argument", argument_format)
         name = param.name
-        open, close, suffix = "[", "]", ""
+        opened, closed, suffix = "[", "]", ""
 
         if param.default is param.empty and (param.kind is not param.VAR_POSITIONAL or pos_check is True):
-            open, close = "<", ">"
+            opened, closed = "<", ">"
 
         if param.kind is param.VAR_POSITIONAL or param.annotation in lengthy_annotations \
                 or getattr(param.annotation, "allow_spaces", False):
             suffix = " ..."
 
-        usage.append(param_format.format(open=open, close=close, name=name, suffix=suffix))
+        usage.append(param_format.format(open=opened, close=closed, name=name, suffix=suffix))
     else:
         return " ".join(usage)
 
@@ -165,9 +174,9 @@ def command(**options):
 
         # Convert to a function that uses the name_prefix
         if usage_suffix is not None:
-            usage = lambda guild: name_prefix(guild) + " " + usage_suffix
+            def usage(guild): return name_prefix(guild) + " " + usage_suffix
         else:
-            usage = lambda guild: None
+            def usage(guild): return None
 
         # Properly format description when using docstrings
         # Kinda like markdown; new line = (blank line) or (/ at end of line)
@@ -203,8 +212,8 @@ def command(**options):
                 ", ".join(roles))
 
         # Load the plugin the function is from, so that we can modify the __commands attribute
-        plugin = inspect.getmodule(func)
-        commands = getattr(plugin, "__commands", list())
+        loaded_plugin = inspect.getmodule(func)
+        commands = getattr(loaded_plugin, "__commands", list())
 
         # Assert that __commands is usable and that this command doesn't already exist
         if type(commands) is not list:
@@ -227,7 +236,7 @@ def command(**options):
             commands.append(cmd)
 
         # Update the plugin's __commands attribute
-        setattr(plugin, "__commands", commands)
+        setattr(loaded_plugin, "__commands", commands)
 
         # Create a decorator for the command function that automatically assigns the parent
         setattr(func, "command", partial(command, parent=cmd))
@@ -236,7 +245,7 @@ def command(**options):
         setattr(func, "cmd", cmd)
 
         logging.debug("Registered {} {} from plugin {}".format("subcommand" if parent else "command",
-                                                               name, plugin.__name__))
+                                                               name, loaded_plugin.__name__))
         return func
 
     return decorator
@@ -268,11 +277,11 @@ def event(name=None, bot=False, self=False):
     return decorator
 
 
-def argument(format=argument_format, *, pass_message=False, allow_spaces=False):
+def argument(arg_format=argument_format, *, pass_message=False, allow_spaces=False):
     """ Decorator for easily setting custom argument usage formats. """
 
     def decorator(func):
-        func.argument = format
+        func.argument = arg_format
         func.pass_message = pass_message
         func.allow_spaces = allow_spaces
         return func
@@ -359,14 +368,14 @@ def get_command(trigger: str, case_sensitive: bool = True):
     :param trigger: a str representing the command name or alias.
     :param case_sensitive: When True, case is preserved in command name triggers.
     """
-    for plugin in all_values():
-        commands = getattr(plugin, "__commands", None)
+    for loaded_plugin in all_values():
+        commands = getattr(loaded_plugin, "__commands", None)
 
         # Skip any plugin with no commands
         if not commands:
             continue
 
-        for cmd in plugin.__commands:
+        for cmd in loaded_plugin.__commands:
             if compare_command_name(trigger, cmd, case_sensitive):
                 return cmd
         else:
@@ -505,17 +514,17 @@ def load_plugin(name: str, package: str = "plugins"):
 
     Any loaded plugin is imported and stored in the self.plugins dictionary.
     """
-    if not name.startswith("__") or not name.endswith("__"):
+    if (not name.startswith("__") or not name.endswith("__")) and disabled_plugins_config.data[name] is False:
         try:
-            plugin = importlib.import_module("{package}.{plugin}".format(plugin=name, package=package))
+            loaded_plugin = importlib.import_module("{package}.{plugin}".format(plugin=name, package=package))
         except ImportError as e:
             logging.error("An error occurred when loading plugin {}:\n{}".format(name, format_exception(e)))
             return False
-        except:
-            logging.error("An error occurred when loading plugin {}:\n{}".format(name, format_exc()))
+        except Exception as e:
+            logging.error("An error occurred when loading plugin {}:\n{}".format(name, format_exc(e)))
             return False
 
-        plugins[name] = plugin
+        loaded_plugins[name] = loaded_plugin
         logging.debug("LOADED PLUGIN " + name)
         return True
 
@@ -533,10 +542,10 @@ async def reload(name: str):
 
     This must be called from an on_reload function or coroutine.
     """
-    if name in plugins:
+    if name in loaded_plugins:
         # Remove all registered commands
-        if hasattr(plugins[name], "__commands"):
-            delattr(plugins[name], "__commands")
+        if hasattr(loaded_plugins[name], "__commands"):
+            delattr(loaded_plugins[name], "__commands")
 
         # Remove all registered events from the given plugin
         for event_name, funcs in events.items():
@@ -544,7 +553,7 @@ async def reload(name: str):
                 if func.__module__.endswith(name):
                     events[event_name].remove(func)
 
-        plugins[name] = importlib.reload(plugins[name])
+        loaded_plugins[name] = importlib.reload(loaded_plugins[name])
 
         logging.debug("Reloaded plugin {}".format(name))
 
@@ -552,9 +561,9 @@ async def reload(name: str):
 async def call_reload(name: str):
     """ Initiates reload of plugin. """
     # See if the plugin has an on_reload() function, and call that
-    if hasattr(plugins[name], "on_reload"):
-        if callable(plugins[name].on_reload):
-            result = plugins[name].on_reload(name)
+    if hasattr(loaded_plugins[name], "on_reload"):
+        if callable(loaded_plugins[name].on_reload):
+            result = loaded_plugins[name].on_reload(name)
             if inspect.isawaitable(result):
                 await result
     else:
@@ -563,8 +572,8 @@ async def call_reload(name: str):
 
 def unload_plugin(name: str):
     """ Unload a plugin by removing it from the plugin dictionary. """
-    if name in plugins:
-        del plugins[name]
+    if name in loaded_plugins:
+        del loaded_plugins[name]
         logging.debug("Unloaded plugin {}".format(name))
 
 
@@ -573,8 +582,8 @@ def load_plugins():
     if not os.path.exists("plugins/"):
         os.mkdir("plugins/")
 
-    for plugin in os.listdir("plugins/"):
-        name = os.path.splitext(plugin)[0]
+    for plugin_name in os.listdir("plugins/"):
+        name = os.path.splitext(plugin_name)[0]
 
         if not name.endswith("lib"):  # Exclude libraries
             load_plugin(name)
@@ -583,13 +592,13 @@ def load_plugins():
 async def save_plugin(name):
     """ Save a plugin's files if it has a save function. """
     if name in all_keys():
-        plugin = get_plugin(name)
+        loaded_plugin = get_plugin(name)
 
-        if callable(getattr(plugin, "save", False)):
+        if callable(getattr(loaded_plugin, "save", False)):
             try:
-                await plugin.save(plugins)
-            except:
-                logging.error("An error occurred when saving plugin {}:\n{}".format(name, format_exc()))
+                await loaded_plugin.save(loaded_plugins)
+            except Exception as e:
+                logging.error("An error occurred when saving plugin {}:\n{}".format(name, format_exc(e)))
 
 
 async def save_plugins():
@@ -600,7 +609,7 @@ async def save_plugins():
         await save_plugin(name)
 
 
-@argument(format="{open}on | off{close}")
+@argument(arg_format="{open}on | off{close}")
 def true_or_false(arg: str):
     """ Return True or False flexibly based on the input. """
     if arg.lower() in ("yes", "true", "enable", "1", "on"):
