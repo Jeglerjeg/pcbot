@@ -381,6 +381,14 @@ def parse_beatmap_url(url: str):
             return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"),
                                   gamemode=GameMode.get_mode((match_v2_beatmap.group("mode"))))
 
+    match_v2_beatmap = beatmap_url_pattern_v2.match(url)
+    if match_v2_beatmap:
+        if match_v2_beatmap.group("mode") is None:
+            return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"), gamemode=None)
+        else:
+            return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"),
+                                  gamemode=GameMode.get_mode((match_v2_beatmap.group("mode"))))
+
     raise SyntaxError("The given URL is invalid.")
 
 
