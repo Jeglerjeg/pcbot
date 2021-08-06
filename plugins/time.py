@@ -5,17 +5,18 @@
         countdown
 """
 
+import asyncio
+from operator import itemgetter
+
 import discord
 import pendulum
-from operator import itemgetter
 from pytz import all_timezones
 
-import asyncio
-
+import bot
 import plugins
 from pcbot import Config, Annotate
 
-client = plugins.client  # type: discord.Client
+client = plugins.client  # type: bot.Client
 
 time_cfg = Config("time", data=dict(countdown={}, timezone={}))
 dt_format = "%A, %d %B %Y %H:%M:%S"

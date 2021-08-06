@@ -14,7 +14,6 @@ from enum import Enum
 
 from pcbot import utils
 
-
 api_url = "https://osu.ppy.sh/api/v2/"
 access_token = ""
 requests_sent = 0
