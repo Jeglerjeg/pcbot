@@ -194,7 +194,10 @@ def format_user_diff(mode: api.GameMode, pp: float, rank: int, country_rank: int
 
 async def format_stream(member: discord.Member, score: dict, beatmap: dict):
     """ Format the stream url and a VOD button when possible. """
-    stream_url = getattr(member.activity, "url", None)
+    stream_url = None
+    for activity in member.activities:
+        if activity is discord.ActivityType.streaming:
+            stream_url = activity.url
     if not stream_url:
         return ""
 
