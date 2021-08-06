@@ -354,7 +354,8 @@ def get_user_url(member_id: str):
 
 def get_formatted_score_time(score_time: pendulum.period):
     if score_time.in_seconds() < 60:
-        return "{} ago".format(str(score_time.in_seconds()) + (" seconds" if score_time.in_seconds() > 1 else " second"))
+        return "{} ago".format(str(score_time.in_seconds()) + (" seconds"
+                                                               if score_time.in_seconds() > 1 else " second"))
     elif score_time.in_minutes() < 60:
         return "{} ago".format(str(score_time.in_minutes()) + (" minutes" if score_time.in_minutes() > 1
                                                                else " minute"))
@@ -381,81 +382,76 @@ def is_playing(member: discord.Member):
         return False
 
 
-async def update_user_data():
+async def update_user_data(member_id: str, profile: str):
     """ Go through all registered members playing osu!, and update their data. """
     global osu_tracking
 
     # Go through each member playing and give them an "old" and a "new" subsection
     # for their previous and latest user data
-    for member_id, profile in osu_config.data["profiles"].items():
-        # Skip members who disabled tracking
-        if get_update_mode(str(member_id)) is UpdateModes.Disabled:
-            continue
 
-        member = discord.utils.get(client.get_all_members(), id=int(member_id))
-        if member is None:
-            continue
+    # Skip members who disabled tracking
+    if get_update_mode(str(member_id)) is UpdateModes.Disabled:
+        return
 
-        # Add the member to tracking
-        if member_id not in osu_tracking:
-            osu_tracking[member_id] = dict(member=member, ticks=-1)
+    member = discord.utils.get(client.get_all_members(), id=int(member_id))
+    if member is None:
+        return
 
-        osu_tracking[str(member_id)]["ticks"] += 1
+    # Add the member to tracking
+    if member_id not in osu_tracking:
+        osu_tracking[member_id] = dict(member=member, ticks=-1)
 
-        # Only update members not tracked ingame every nth update
-        if not is_playing(member) and osu_tracking[str(member_id)]["ticks"] % not_playing_skip > 0:
-            # Update their old data to match their new one in order to avoid duplicate posts
-            if "new" in osu_tracking[str(member_id)]:
-                osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
-            continue
+    osu_tracking[str(member_id)]["ticks"] += 1
 
-        # Get the user data for the player
-        mode = get_mode(str(member_id))
-        try:
-            params = {
-                "key": "id"
-            }
-            user_data = await api.get_user(profile, mode.string, params=params)
-            if user_data is None:
-                user_data = osu_tracking[str(member_id)]["new"]
-
-            params = {
-                "limit": 20
-            }
-
-            user_recent = await api.get_user_recent_activity(profile, params=params)
-            if user_recent is None:
-                user_recent = osu_tracking[str(member_id)]["new"]["events"]
-        except aiohttp.ServerDisconnectedError:
-            continue
-        except asyncio.TimeoutError:
-            logging.warning("Timed out when retrieving osu! info from {} ({})".format(member, profile))
-            continue
-
-        # Just in case something goes wrong, we skip this member (these things are usually one-time occurrences)
-        if user_data is None:
-            logging.info("Could not retrieve osu! info from {} ({})".format(member, profile))
-            continue
-
-        # User is already tracked
+    # Only update members not tracked ingame every nth update
+    if not is_playing(member) and osu_tracking[str(member_id)]["ticks"] % not_playing_skip > 0:
+        # Update their old data to match their new one in order to avoid duplicate posts
         if "new" in osu_tracking[str(member_id)]:
-            # Move the "new" data into the "old" data of this user
             osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
-        else:
-            # If this is the first time, update the user's list of scores for later
-            params = {
-                "mode": mode.string,
-                "limit": score_request_limit,
-            }
-            fetched_scores = await api.get_user_scores(profile, "best", params=params)
-            if fetched_scores is None:
-                fetched_scores = osu_tracking[str(member_id)]["scores"]
-            osu_tracking[str(member_id)]["scores"] = fetched_scores
+        return
 
-        # Update the "new" data
-        osu_tracking[str(member_id)]["new"] = user_data
-        osu_tracking[str(member_id)]["new"]["events"] = user_recent
-        await asyncio.sleep(3)
+    # Get the user data for the player
+    mode = get_mode(str(member_id))
+    try:
+        params = {
+            "key": "id"
+        }
+        user_data = await api.get_user(profile, mode.string, params=params)
+
+        params = {
+            "limit": 20
+        }
+        user_recent = await api.get_user_recent_activity(profile, params=params)
+    except aiohttp.ServerDisconnectedError:
+        return
+    except asyncio.TimeoutError:
+        logging.warning("Timed out when retrieving osu! info from {} ({})".format(member, profile))
+        return
+
+    # Just in case something goes wrong, we skip this member (these things are usually one-time occurrences)
+    if user_data is None or user_recent is None:
+        logging.info("Could not retrieve osu! info from {} ({})".format(member, profile))
+        return
+
+    # User is already tracked
+    if "new" in osu_tracking[str(member_id)]:
+        # Move the "new" data into the "old" data of this user
+        osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
+    else:
+        # If this is the first time, update the user's list of scores for later
+        params = {
+            "mode": mode.string,
+            "limit": score_request_limit,
+        }
+        fetched_scores = await api.get_user_scores(profile, "best", params=params)
+        if fetched_scores is None:
+            fetched_scores = osu_tracking[str(member_id)]["scores"]
+        osu_tracking[str(member_id)]["scores"] = fetched_scores
+
+    # Update the "new" data
+    osu_tracking[str(member_id)]["new"] = user_data
+    osu_tracking[str(member_id)]["new"]["events"] = user_recent
+    await asyncio.sleep(3)
 
 
 async def get_new_score(member_id: str):
@@ -971,27 +967,28 @@ async def on_ready():
             await asyncio.sleep(float(update_interval), loop=client.loop)
             started = datetime.now()
 
-            # First, update every user's data
-            await update_user_data()
-
-            # Next, check for any differences in pp between the "old" and the "new" subsections
-            # and notify any guilds
-            # NOTE: This used to also be ensure_future before adding the potential pp check.
-            # The reason for this change is to ensure downloading and running the .osu files won't happen twice
-            # at the same time, which would cause problems retrieving the correct potential pp.
-            for member_id, data in osu_tracking.items():
-                await notify_pp(str(member_id), data)
-
-            # Check for any differences in the users' events and post about map updates
-            # NOTE: the same applies to this now. These can't be concurrent as they also calculate pp.
-            for member_id, data in osu_tracking.items():
-                await notify_maps(str(member_id), data)
+            for member_id, profile in osu_config.data["profiles"].items():
+                # First, update the user's data
+                await update_user_data(member_id, profile)
+                if str(member_id) in osu_tracking:
+                    data = osu_tracking[str(member_id)]
+                    # Next, check for any differences in pp between the "old" and the "new" subsections
+                    # and notify any guilds
+                    # NOTE: This used to also be ensure_future before adding the potential pp check.
+                    # The reason for this change is to ensure downloading and running the .osu files won't happen twice
+                    # at the same time, which would cause problems retrieving the correct potential pp.
+                    await notify_pp(str(member_id), data)
+                    # Check for any differences in the users' events and post about map updates
+                    # NOTE: the same applies to this now. These can't be concurrent as they also calculate pp.
+                    await notify_maps(str(member_id), data)
+                else:
+                    continue
         except aiohttp.ClientOSError as e:
-            logging.error(str(e))
+            logging.error(traceback.format_exc(e))
         except asyncio.CancelledError:
             return
-        except:
-            logging.error(traceback.format_exc())
+        except Exception as e:
+            logging.error(traceback.format_exc(e))
         finally:
             pass
             # TODO: setup logging
@@ -1296,8 +1293,8 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
         options.insert(0, "{}%".format(pp_stats.acc))
 
     await client.say(message,
-                     "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`.".format(
-                         " ".join(options), **pp_stats._asdict()))
+                     "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`."
+                     .format(" ".join(options), **pp_stats._asdict()))
 
 
 if can_calc_pp:
@@ -1421,7 +1418,7 @@ async def score(message: discord.Message, *options):
             beatmap_info = api.parse_beatmap_url(beatmap_url)
             beatmap_id = beatmap_info.beatmap_id
         except SyntaxError as e:
-            await client.say(message, e)
+            await client.say(message, str(e))
             return
 
     user_id = osu_config.data["profiles"][str(member.id)]
@@ -1458,7 +1455,7 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
         beatmapset = await api.beatmapset_from_url(beatmap_url)
         await calculate_pp_for_beatmapset(beatmapset)
     except Exception as e:
-        await client.say(message, e)
+        await client.say(message, str(e))
         return
 
     status = "[**{artist} - {title}**]({host}beatmapsets/{id}) submitted by [**{name}**]({host}users/{user_id})"
@@ -1556,10 +1553,12 @@ async def debug(message: discord.Message):
                               "Spent `{:.3f}` seconds last update.\n"
                               "Members registered as playing: {}\n"
                               "Total members tracked: `{}`".format(
-        api.requests_sent, client.time_started.ctime(),
-        round(api.requests_sent / ((datetime.utcnow() - client.time_started).total_seconds() / 60.0),
-              2) if api.requests_sent > 0 else 0,
-        time_elapsed,
-        utils.format_objects(*[d["member"] for d in osu_tracking.values() if is_playing(d["member"])], dec="`"),
-        len(osu_tracking)
-    ))
+                               api.requests_sent, client.time_started.ctime(),
+                               round(api.requests_sent / ((datetime.utcnow() -
+                                                           client.time_started).total_seconds() / 60.0), 2)
+                               if api.requests_sent > 0 else 0,
+                               time_elapsed,
+                               utils.format_objects(*[d["member"] for d in osu_tracking.values()
+                                                      if is_playing(d["member"])], dec="`"), len(osu_tracking)
+                               )
+                     )
