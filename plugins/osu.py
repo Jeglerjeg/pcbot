@@ -402,6 +402,12 @@ async def update_user_data(member_id: str, profile: str):
     if member is None:
         return
 
+    # Check if profile exists on file (profile might have been unlinked or changed during iteration)
+    if member_id not in osu_config.data["profiles"] or profile not in osu_config.data["profiles"][member_id]:
+        if member_id in osu_tracking:
+            del osu_tracking[member_id]
+        return
+
     # Add the member to tracking
     if member_id not in osu_tracking:
         osu_tracking[member_id] = dict(member=member, ticks=-1)
