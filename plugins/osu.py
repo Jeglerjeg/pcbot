@@ -66,6 +66,8 @@ osu_config = Config("osu", pretty=True, data=dict(
     update_mode={},  # Member's notification update mode as member_id: UpdateModes.name
     primary_guild={},  # Member's primary guild; defines where they should be mentioned: member_id: guild_id
     map_cache={},  # Cache for map events, primarily used for calculating and caching pp of the difficulties
+    score_update_delay=5,  # Seconds to wait before fetching a new score (apiv2 can be slow at updating top100)
+    user_update_delay=2,  # Seconds to wait after updating user data (for ratelimiting purposes)
 ))
 
 osu_tracking = {}  # Saves the requested data or deletes whenever the user stops playing (for comparisons)
@@ -462,7 +464,7 @@ async def update_user_data(member_id: str, profile: str):
     # Update the "new" data
     osu_tracking[str(member_id)]["new"] = user_data
     osu_tracking[str(member_id)]["new"]["events"] = user_recent
-    await asyncio.sleep(3)
+    await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
 async def get_new_score(member_id: str):
@@ -475,7 +477,7 @@ async def get_new_score(member_id: str):
         "mode": get_mode(member_id).string,
         "limit": score_request_limit,
     }
-    await asyncio.sleep(5)
+    await asyncio.sleep(osu_config.data["score_update_delay"])
     user_scores = await api.get_user_scores(profile, "best", params=params)
     if user_scores is None:
         return None
