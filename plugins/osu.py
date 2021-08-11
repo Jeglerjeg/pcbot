@@ -536,6 +536,7 @@ def get_notify_channels(guild: discord.Guild, data_type: str):
 
 
 async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
+    """ Return PP for a given score. """
     mode = get_mode(str(member.id))
     mods = Mods.format_mods(osu_score["mods"])
     score_pp = None
@@ -1042,6 +1043,7 @@ def get_timestamps_with_url(content: str):
 
 @plugins.event()
 async def on_message(message):
+    """ Automatically post editor timestamps with URL. """
     # Ignore commands
     if message.content.startswith("!"):
         return
