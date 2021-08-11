@@ -160,17 +160,21 @@ def calculate_acc(mode: api.GameMode, osu_score: dict, exclude_misses: bool = Fa
     return total_points_of_hits / (total_number_of_hits * 300)
 
 
-def format_user_diff(mode: api.GameMode, pp: float, rank: int, country_rank: int, accuracy: float, iso: str,
-                     data: dict):
+def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
     """ Get a bunch of differences and return a formatted string to send.
     iso is the country code. """
-    pp_rank = int(data["statistics"]["global_rank"])
-    pp_country_rank = int(data["statistics"]["country_rank"])
+    pp_rank = int(data_new["statistics"]["global_rank"])
+    pp_country_rank = int(data_new["statistics"]["country_rank"])
+    iso = data_new["country"]["code"]
+    rank = -int(get_diff(data_old, data_new, "global_rank", statistics=True))
+    country_rank = -int(get_diff(data_old, data_new, "country_rank", statistics=True))
+    accuracy = get_diff(data_old, data_new, "hit_accuracy", statistics=True)
+    pp = get_diff(data_old, data_new, "pp", statistics=True)
 
     # Find the performance page number of the respective ranks
 
-    formatted = "\u2139`{} {:.2f}pp {:+.2f}pp`".format(mode.name.replace("Standard", "osu!"), float(data["statistics"]
-                                                                                                    ["pp"]), pp)
+    formatted = "\u2139`{} {:.2f}pp {:+.2f}pp`".format(mode.name.replace("Standard", "osu!"),
+                                                       float(data_new["statistics"]["pp"]), pp)
     formatted += (" [\U0001f30d]({}?page={})`#{:,}{}`".format(rankings_url, pp_rank // 50 + 1, pp_rank,
                                                               "" if int(rank) == 0 else " {:+}".format(int(rank))))
     formatted += (" [{}]({}?country={}&page={})`#{:,}{}`".format(utils.text_to_emoji(iso), rankings_url, iso,
@@ -185,7 +189,7 @@ def format_user_diff(mode: api.GameMode, pp: float, rank: int, country_rank: int
     else:
         formatted += "\n\U0001f3af"  # Dart
 
-    formatted += "`{:.3f}%".format(float(data["statistics"]["hit_accuracy"]))
+    formatted += "`{:.3f}%".format(float(data_new["statistics"]["hit_accuracy"]))
     if not rounded_acc == 0:
         formatted += " {:+}%`".format(rounded_acc)
     else:
@@ -360,20 +364,21 @@ def get_user_url(member_id: str):
 
 
 def get_formatted_score_time(score_time: pendulum.period):
+    """ Returns formatted time since score was set. """
     if score_time.in_seconds() < 60:
         return "{} ago".format(str(score_time.in_seconds()) + (" seconds"
                                                                if score_time.in_seconds() > 1 else " second"))
-    elif score_time.in_minutes() < 60:
+    if score_time.in_minutes() < 60:
         return "{} ago".format(str(score_time.in_minutes()) + (" minutes" if score_time.in_minutes() > 1
                                                                else " minute"))
-    elif score_time.in_hours() < 24:
+    if score_time.in_hours() < 24:
         return "{} ago".format(str(score_time.in_hours()) + (" hours" if score_time.in_hours() > 1 else " hour"))
-    elif score_time.in_days() < 30:
+    if score_time.in_days() < 30:
         return "{} ago".format(str(score_time.in_days()) + (" days" if score_time.in_days() > 1 else " day"))
-    elif score_time.in_months() < 12:
+    if score_time.in_months() < 12:
         return "{} ago".format(str(score_time.in_months()) + (" months" if score_time.in_months() > 1 else " month"))
-    else:
-        return "{} ago".format(str(score_time.in_years()) + (" years" if score_time.in_years() > 1 else " year"))
+
+    return "{} ago".format(str(score_time.in_years()) + (" years" if score_time.in_years() > 1 else " year"))
 
 
 def is_playing(member: discord.Member):
@@ -383,10 +388,10 @@ def is_playing(member: discord.Member):
         if activity is not None and activity.name is not None:
             if "osu!" in activity.name.lower():
                 return True
-            elif activity is discord.ActivityType.streaming and "osu!" in activity.game.lower():
+            if activity is discord.ActivityType.streaming and "osu!" in activity.game.lower():
                 return True
-    else:
-        return False
+
+    return False
 
 
 async def update_user_data(member_id: str, profile: str):
@@ -438,12 +443,12 @@ async def update_user_data(member_id: str, profile: str):
     except aiohttp.ServerDisconnectedError:
         return
     except asyncio.TimeoutError:
-        logging.warning("Timed out when retrieving osu! info from {} ({})".format(member, profile))
+        logging.warning("Timed out when retrieving osu! info from %s (%s)", member, profile)
         return
 
     # Just in case something goes wrong, we skip this member (these things are usually one-time occurrences)
     if user_data is None or user_recent is None:
-        logging.info("Could not retrieve osu! info from {} ({})".format(member, profile))
+        logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
 
     # User is already tracked
@@ -491,7 +496,7 @@ async def get_new_score(member_id: str):
     for i, osu_score in enumerate(user_scores):
         if osu_score["best_id"] not in old_best_id:
             if i == 0:
-                logging.info(f"a #1 score was set: check plugins.osu.osu_tracking['{member_id}']['debug']")
+                logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=user_scores,
                                                         old_scores=osu_tracking[member_id]["scores"],
                                                         old=dict(osu_tracking[member_id]["old"]),
@@ -505,17 +510,17 @@ async def get_new_score(member_id: str):
             else:
                 diff = 0
             return dict(osu_score, pos=i + 1, diff=diff)
-    else:
-        logging.info(f"{member_id} gained PP, but no new score was found")
-        return None
+
+    logging.info("%s gained PP, but no new score was found", member_id)
+    return None
 
 
 def get_diff(old, new, value, statistics=False):
     """ Get the difference between old and new osu! user data. """
     if statistics:
         return float(new["statistics"][value]) - float(old["statistics"][value])
-    else:
-        return float(new[value]) - float(old[value])
+
+    return float(new[value]) - float(old[value])
 
 
 def get_notify_channels(guild: discord.Guild, data_type: str):
@@ -542,7 +547,7 @@ async def get_score_pp(osu_score, beatmap, member: discord.Member):
                                           ignore_memory_cache=not bool(beatmap["status"] == "ranked"
                                                                        or beatmap["status"] == "approved"
                                                                        or beatmap["status"] == "loved"),
-                                          *"{modslist}{acc:.2%} {acc: .2%}pot {c300}x300 {c100}x100 {c50}x50 "
+                                          *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
                                           "{scorerank}rank {countmiss}m {maxcombo}x"
                                            .format(acc=calculate_acc(mode, osu_score),
                                                    potential_acc=calculate_acc(mode, osu_score, exclude_misses=True),
@@ -555,7 +560,6 @@ async def get_score_pp(osu_score, beatmap, member: discord.Member):
                                                    maxcombo=osu_score["max_combo"]).split())
         except Exception as e:
             logging.error(e)
-            pass
     return score_pp
 
 
@@ -566,6 +570,7 @@ def get_score_name(member: discord.Member, username: str):
 
 
 def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, potential_pp):
+    """ Return a formatted score as an embed """
     embed = discord.Embed(color=member.color, url=get_user_url(str(member.id)))
     embed.description = formatted_score
     footer = ""
@@ -602,10 +607,6 @@ async def notify_pp(member_id: str, data: dict):
     # If the difference is too small or nothing, move on
     if pp_threshold > pp_diff > -pp_threshold:
         return
-
-    rank_diff = -int(get_diff(old, new, "global_rank", statistics=True))
-    country_rank_diff = -int(get_diff(old, new, "country_rank", statistics=True))
-    accuracy_diff = get_diff(old, new, "hit_accuracy", statistics=True)  # Percent points difference
 
     member = data["member"]
     mode = get_mode(member_id)
@@ -644,7 +645,7 @@ async def notify_pp(member_id: str, data: dict):
             m += await format_new_score(mode, osu_score, beatmap, scoreboard_rank, member)
 
     # Always add the difference in pp along with the ranks
-    m += format_user_diff(mode, pp_diff, rank_diff, country_rank_diff, accuracy_diff, old["country"]["code"], new)
+    m += format_user_diff(mode, old, new)
 
     # Send the message to all guilds
     for guild in client.guilds:
@@ -654,7 +655,7 @@ async def notify_pp(member_id: str, data: dict):
             continue
 
         primary_guild = get_primary_guild(str(member.id))
-        is_primary = True if primary_guild is None else (True if primary_guild == str(guild.id) else False)
+        is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
 
         # Format the url and the username
         name = get_score_name(member, new["username"])
@@ -727,7 +728,7 @@ async def format_beatmap_info(beatmapset):
 
     for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
-        pass_rate = "Not passed yet"
+        pass_rate = "Not passed"
         if not diff["passcount"] == 0 and not diff["playcount"] == 0:
             pass_rate = "{:.2f}%".format((diff["passcount"] / diff["playcount"]) * 100)
 
@@ -735,7 +736,6 @@ async def format_beatmap_info(beatmapset):
              "{cs: <5}{ar: <5}{hp: <5}{maxcombo}\n\nAim PP  Speed PP  Acc PP  Total PP\n{aim_pp: <8}{speed_pp: <10}" \
              "{acc_pp: <8}{pp}\n\nAim Stars  Speed Stars  Total Stars\n{aim_stars: <11}{speed_stars: <13}" \
              "{stars}".format(
-              gamemode=api.GameMode(int(diff["mode_int"])).name[0],
               name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 2] + "...",
               diff_len=diff_length,
               stars="{:.2f}\u2605".format(float(diff["difficulty_rating"])),
@@ -801,7 +801,7 @@ async def calculate_pp_for_beatmapset(beatmapset, ignore_osu_cache: bool = False
 
     cached_mapset = osu_config.data["map_cache"][set_id]
 
-    for i, diff in enumerate(beatmapset["beatmaps"]):
+    for diff in beatmapset["beatmaps"]:
         map_id = str(diff["id"])
         # Skip any diff that's not standard osu!
         if int(diff["mode_int"]) != api.GameMode.Standard.value:
@@ -980,7 +980,7 @@ async def on_ready():
 
     while not client.loop.is_closed():
         try:
-            await asyncio.sleep(float(update_interval), loop=client.loop)
+            await asyncio.sleep(float(update_interval))
             started = datetime.now()
 
             for member_id, profile in list(osu_config.data["profiles"].items()):
@@ -1006,7 +1006,6 @@ async def on_ready():
         except Exception as e:
             logging.error(traceback.format_exc(e))
         finally:
-            pass
             # TODO: setup logging
 
             # Save the time elapsed since we started the update
@@ -1070,8 +1069,8 @@ async def osu(message: discord.Message, *options):
         member = utils.find_member(guild=message.guild, name=value)
         if member:
             continue
-        else:
-            mode = api.GameMode.get_mode(value)
+
+        mode = api.GameMode.get_mode(value)
 
     if member is None:
         member = message.author
@@ -1300,7 +1299,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
         return
 
     options = list(options)
-    if type(pp_stats) is ClosestPPStats:
+    if isinstance(pp_stats, ClosestPPStats):
         # Remove any accuracy percentage from options as we're setting this manually, and remove unused options
         for opt in options:
             if opt.endswith("%") or opt.endswith("pp") or opt.endswith("x300") or opt.endswith("x100") or opt.endswith(
@@ -1321,6 +1320,7 @@ if can_calc_pp:
 
 
 async def create_score_embed_with_pp(member: discord.Member, osu_score, beatmap, mode, scoreboard_rank: bool = False):
+    """ Returns a score embed for use outside of automatic score notifications. """
     score_pp = await get_score_pp(osu_score, beatmap, member)
 
     if score_pp is not None and osu_score["pp"] is None:
