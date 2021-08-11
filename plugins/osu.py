@@ -44,7 +44,7 @@ import pendulum
 import bot
 import plugins
 from pcbot import Config, utils, Annotate, config as botconfig
-from plugins.osulib import api, Mods, calculate_pp, can_calc_pp, ClosestPPStats, ordr
+from plugins.osulib import api, Mods, calculate_pp, oppai, ClosestPPStats, ordr
 from plugins.twitchlib import twitch
 
 client = plugins.client  # type: bot.Client
@@ -1314,7 +1314,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
                              stars=pp_stats.stars, pp=pp_stats.pp))
 
 
-if can_calc_pp:
+if oppai:
     plugins.command(name="pp", aliases="oppai")(pp_)
     osu.command(name="pp", aliases="oppai")(pp_)
 

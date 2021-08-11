@@ -42,6 +42,7 @@ async def set_oauth_client(b: str, s: str):
 
 
 async def get_access_token(client_id, client_secret):
+    """ Retrieves access token from API and refreshes token after it expires. """
     params = {
         "grant_type": "client_credentials",
         "client_id": int(client_id),
@@ -49,7 +50,7 @@ async def get_access_token(client_id, client_secret):
         "scope": "public"
     }
 
-    result = await utils.post_request("https://osu.ppy.sh/oauth/token", call=utils._convert_json, data=params)
+    result = await utils.post_request("https://osu.ppy.sh/oauth/token", call=utils.convert_to_json, data=params)
     global requests_sent
     requests_sent += 1
     global access_token
@@ -138,16 +139,17 @@ class Mods(Enum):
 
         mods is either a bitwise or a list of mod enums.
         """
-        if type(mods) is int:
+        if isinstance(mods, int):
             mods = cls.list_mods(mods)
-        assert type(mods) is list
+        assert isinstance(mods, list)
 
         return "".join((mod for mod in mods) if mods else ["Nomod"])
 
 
-def def_section(api_name: str, first_element: bool=False, download=False):
+def def_section(api_name: str, first_element: bool = False, download=False):
     """ Add a section using a template to simplify adding API functions. """
-    async def template(url=api_url, request_tries: int=1, **params):
+
+    async def template(url=api_url, request_tries: int = 1, **params):
         global requests_sent
 
         # Add the API key
@@ -164,7 +166,7 @@ def def_section(api_name: str, first_element: bool=False, download=False):
                     response = await utils.download_file(url + api_name, headers=headers, **params)
 
             except ValueError as e:
-                logging.warning("ValueError Calling {}: {}".format(url + api_name, e))
+                logging.warning("ValueError Calling %s: %s", url + api_name, e)
             else:
                 requests_sent += 1
 
@@ -187,6 +189,7 @@ def def_section(api_name: str, first_element: bool=False, download=False):
 
 
 def cache_beatmapset(beatmap: dict, map_id: int):
+    """ Saves beatmapsets to cache. """
     beatmapset_path = os.path.join(setcache_path, str(map_id) + ".json")
 
     if not os.path.exists(setcache_path):
@@ -220,6 +223,7 @@ def cache_beatmapset(beatmap: dict, map_id: int):
 
 # Define all osu! API requests using the template
 async def beatmap_lookup(params, map_id, mode):
+    """ Looks up a beatmap unless cache exists"""
     beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
     valid_result = True
     if not os.path.exists(mapcache_path):
@@ -262,6 +266,7 @@ async def beatmap_lookup(params, map_id, mode):
 
 
 async def beatmapset_lookup(params):
+    """ Looks up a beatmapset using a beatmap ID"""
     request = def_section("beatmapsets/lookup")
     result = await request(**params)
 
@@ -270,6 +275,7 @@ async def beatmapset_lookup(params):
 
 
 async def download_replay(mode: str, score_id: int):
+    """ Downloads a replay using the API (Currently doesn't seem to authenticate correctly). """
     request = def_section("scores/{}/{}/download".format(mode, score_id), download=True)
     replay = await request()
 
@@ -279,27 +285,28 @@ async def download_replay(mode: str, score_id: int):
 
 
 async def get_user(user, mode=None, params=None):
+    """ Return a user from the API"""
     if mode:
         request = def_section("users/{}/{}".format(user, mode))
     else:
         request = def_section("users/{}".format(user))
     if params:
         return await request(**params)
-    else:
-        return await request()
+
+    return await request()
 
 
-async def get_user_scores(user_id, type, params=None):
-
-    request = def_section("users/{}/scores/{}".format(user_id, type))
+async def get_user_scores(user_id, score_type, params=None):
+    """ Returns a user's best, recent or #1 scores. """
+    request = def_section("users/{}/scores/{}".format(user_id, score_type))
     if params:
         return await request(**params)
-    else:
-        return await request("")
+
+    return await request("")
 
 
 async def get_user_beatmap_score(beatmap_id, user_id, params=None):
-
+    """ Returns a user's score on a beatmap. """
     request = def_section("beatmaps/{}/scores/users/{}".format(beatmap_id, user_id))
     if params:
         result = await request(**params)
@@ -311,6 +318,7 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
 
 
 async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
+    """ Returns a beatmapset using beatmapset ID"""
     beatmapset_path = os.path.join(setcache_path, str(beatmapset_id) + ".json")
     result = None
 
@@ -348,10 +356,12 @@ async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
 
 
 async def get_user_recent_activity(user, params=None):
+    """ Return a user's recent activity. """
     request = def_section("users/{}/recent_activity".format(user))
     if params:
         return await request(**params)
     return await request()
+
 
 beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
 beatmapset_url_pattern_v2 = \
@@ -377,30 +387,31 @@ def parse_beatmap_url(url: str):
 
         if match_v1.group("type") == "b":
             return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v1.group("id"), gamemode=mode)
-        else:
-            return BeatmapURLInfo(beatmapset_id=match_v1.group("id"), beatmap_id=None, gamemode=mode)
+
+        return BeatmapURLInfo(beatmapset_id=match_v1.group("id"), beatmap_id=None, gamemode=mode)
 
     match_v2_beatmapset = beatmapset_url_pattern_v2.match(url)
     if match_v2_beatmapset:
         if match_v2_beatmapset.group("mode") is None:
-            return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"), beatmap_id=None, gamemode=None)
-        else:
-            return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"),
-                                  beatmap_id=match_v2_beatmapset.group("beatmap_id"),
-                                  gamemode=GameMode.get_mode(match_v2_beatmapset.group("mode")))
+            return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"), beatmap_id=None,
+                                  gamemode=None)
+
+        return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"),
+                              beatmap_id=match_v2_beatmapset.group("beatmap_id"),
+                              gamemode=GameMode.get_mode(match_v2_beatmapset.group("mode")))
 
     match_v2_beatmap = beatmap_url_pattern_v2.match(url)
     if match_v2_beatmap:
         if match_v2_beatmap.group("mode") is None:
             return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"), gamemode=None)
-        else:
-            return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"),
-                                  gamemode=GameMode.get_mode((match_v2_beatmap.group("mode"))))
+
+        return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"),
+                              gamemode=GameMode.get_mode((match_v2_beatmap.group("mode"))))
 
     raise SyntaxError("The given URL is invalid.")
 
 
-async def beatmap_from_url(url: str, *, return_type: str="beatmap"):
+async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
     """ Takes a url and returns the beatmap in the specified gamemode.
     If a url for a submission is given, it will find the most difficult map.
 
@@ -494,8 +505,8 @@ def lookup_beatmap(beatmaps: list, **lookup):
 
         if match:
             return beatmap
-    else:
-        return None
+
+    return None
 
 
 def rank_from_events(events: dict, beatmap_id: str, score):
@@ -510,5 +521,5 @@ def rank_from_events(events: dict, beatmap_id: str, score):
             if (beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == score["rank"]) and \
                     (time_diff.total_seconds() < 60):
                 return event["rank"]
-    else:
-        return None
+
+    return None

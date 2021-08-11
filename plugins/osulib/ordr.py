@@ -141,7 +141,7 @@ async def send_render_job(option):
         data.add_field(value, params[value])
 
     try:
-        results = await utils.post_request(url=host + "renders", call=utils._convert_json, data=data)
+        results = await utils.post_request(url=host + "renders", call=utils.convert_to_json, data=data)
     except ValueError as e:
         results = e
 
