@@ -34,6 +34,7 @@ import logging
 import re
 import traceback
 from datetime import datetime, timedelta
+from textwrap import wrap
 from enum import Enum
 from typing import List
 
@@ -535,7 +536,7 @@ def get_notify_channels(guild: discord.Guild, data_type: str):
             if guild.get_channel(int(s))]
 
 
-async def get_score_pp(osu_score, beatmap, member: discord.Member):
+async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
     mode = get_mode(str(member.id))
     mods = Mods.format_mods(osu_score["mods"])
     score_pp = None
@@ -1439,16 +1440,19 @@ async def render(message: discord.Message, *options):
 
 
 async def score(message: discord.Message, *options):
-    """ Display your own or the member's score on a beatmap.
+    """ Display your own or the member's score on a beatmap. Add mods to simulate the beatmap score with those mods.
     If URL is not provided it searches the last 10 messages for a URL. """
     member = None
     beatmap_url = None
+    mods = None
 
     for value in options:
-        if not utils.http_url_pattern.match(value):
-            member = utils.find_member(guild=message.guild, name=value)
-        else:
+        if utils.http_url_pattern.match(value):
             beatmap_url = value
+        elif value.startswith("+"):
+            mods = value.replace("+", "")
+        else:
+            member = utils.find_member(guild=message.guild, name=value)
 
     if not member:
         member = message.author
@@ -1509,18 +1513,21 @@ async def score(message: discord.Message, *options):
 
     osu_score = osu_scores["score"]
     scoreboard_rank = osu_scores["position"]
+    if mods:
+        osu_score["mods"] = wrap(mods, 2)
+        osu_score["pp"] = None
 
     params = {
         "beatmap_id": osu_score["beatmap"]["id"],
     }
     beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
 
-    embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, scoreboard_rank=scoreboard_rank)
+    embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, scoreboard_rank)
     await client.send_message(message.channel, embed=embed)
 
 
-plugins.command(name="score", usage="[member] <url>")(score)
-osu.command(name="score", usage="[member] <url>")(score)
+plugins.command(name="score", usage="[member] <url> +<mods>")(score)
+osu.command(name="score", usage="[member] <url> +<mods>")(score)
 
 
 @osu.command(aliases="map")
