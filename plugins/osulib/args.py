@@ -15,11 +15,11 @@ class RegexArgumentParser:
     def __init__(self):
         self.arguments = {}
 
-    def add(self, name, pattern, type, default=None):
+    def add(self, name, pattern, arg_type, default=None):
         """ Adds an argument. The pattern must have a group. """
         self.arguments[name] = Argument(pattern=re.compile(pattern, flags=re.IGNORECASE),
                                         kwarg_pattern=re.compile(kwarg.format(name)),
-                                        type=type, default=default)
+                                        type=arg_type, default=default)
 
     def parse(self, *args):
         """ Parse arguments.
@@ -74,26 +74,26 @@ def mods(s: str):
 
 
 parser = RegexArgumentParser()
-parser.add("acc", r"([0-9.]+)%", type=float)
-parser.add("potential_acc", r"([0-9.]+)%pot", type=float)
-parser.add("c300", r"(\d+)x300", type=int)
-parser.add("c100", r"(\d+)x100", type=int, default=0)
-parser.add("c50", r"(\d+)x50", type=int, default=0)
+parser.add("acc", r"([0-9.]+)%", arg_type=float)
+parser.add("potential_acc", r"([0-9.]+)%pot", arg_type=float)
+parser.add("c300", r"(\d+)x300", arg_type=int)
+parser.add("c100", r"(\d+)x100", arg_type=int, default=0)
+parser.add("c50", r"(\d+)x50", arg_type=int, default=0)
 
-parser.add("misses", r"(\d+)(?:m|xm(?:iss)?)", type=int, default=0)
-parser.add("combo", r"(\d+)x", type=int)
-parser.add("mods", r"\+(\w+)", type=mods)
-parser.add("score_version", r"(?:score)?v([12])", type=int, default=1)
+parser.add("misses", r"(\d+)(?:m|xm(?:iss)?)", arg_type=int, default=0)
+parser.add("combo", r"(\d+)x", arg_type=int)
+parser.add("mods", r"\+(\w+)", arg_type=mods)
+parser.add("score_version", r"(?:score)?v([12])", arg_type=int, default=1)
 
-parser.add("ar", r"ar([0-9.]+)", type=float)
-parser.add("cs", r"cs([0-9.]+)", type=float)
-parser.add("od", r"od([0-9.]+)", type=float)
-parser.add("hp", r"hp([0-9.]+)", type=float)
+parser.add("ar", r"ar([0-9.]+)", arg_type=float)
+parser.add("cs", r"cs([0-9.]+)", arg_type=float)
+parser.add("od", r"od([0-9.]+)", arg_type=float)
+parser.add("hp", r"hp([0-9.]+)", arg_type=float)
 
-parser.add("hits", r"(\d+)hits", type=int)
-parser.add("pp", r"([0-9.]+)pp", type=float)
+parser.add("hits", r"(\d+)hits", arg_type=int)
+parser.add("pp", r"([0-9.]+)pp", arg_type=float)
 
-parser.add("rank", r"((\w+)rank)", type=str)
+parser.add("rank", r"((\w+)rank)", arg_type=str)
 
 
 def parse(*args):
