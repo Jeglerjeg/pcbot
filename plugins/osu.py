@@ -517,6 +517,7 @@ async def get_new_score(member_id: str):
 
 
 async def get_formatted_score_list(member: discord.Member, limit: int):
+    """ Return a list of formatted scores along with time since the score was set. """
     if str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)]:
         mode = get_mode(str(member.id))
         m = ""
@@ -548,8 +549,8 @@ async def get_formatted_score_list(member: discord.Member, limit: int):
                                         member=osu_tracking[str(member.id)]["member"]) \
                  + (potential_string + "\n" if potential_string is not None else "") + time_since_string + "\n\n"
         return m
-    else:
-        return None
+
+    return None
 
 
 def get_diff(old, new, value, statistics=False):
@@ -597,7 +598,7 @@ async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
                                                    countmiss=osu_score["statistics"]["count_miss"],
                                                    maxcombo=osu_score["max_combo"]).split())
         except Exception as e:
-            logging.error(e)
+            logging.error(traceback.format_exc(e))
     return score_pp
 
 
