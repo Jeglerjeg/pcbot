@@ -515,6 +515,42 @@ async def get_new_score(member_id: str):
     return None
 
 
+async def get_formatted_score_list(member: discord.Member, limit: int):
+    if str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)]:
+        mode = get_mode(str(member.id))
+        m = ""
+        for i, osu_score in enumerate(osu_tracking[str(member.id)]["scores"]):
+            if i > limit-1:
+                break
+            params = {
+                "beatmap_id": osu_score["beatmap"]["id"]
+            }
+            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
+            score_pp = await get_score_pp(osu_score, beatmap, member)
+            if score_pp is not None:
+                beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap[
+                    "difficulty_rating"]
+
+            # Add time since play to the score
+            time_since_play = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
+            time_since_string = get_formatted_score_time(time_since_play)
+
+            potential_string = None
+            # Add potential pp to the score
+            if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
+                    and not osu_score["perfect"]:
+                potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
+                                                                              score_pp.max_pp - float(osu_score["pp"]))
+
+            m += "{}.\n".format(str(i+1)) + \
+                 await format_new_score(mode, osu_score, beatmap, rank=None,
+                                        member=osu_tracking[str(member.id)]["member"]) \
+                 + (potential_string + "\n" if potential_string is not None else "") + time_since_string + "\n\n"
+        return m
+    else:
+        return None
+
+
 def get_diff(old, new, value, statistics=False):
     """ Get the difference between old and new osu! user data. """
     if statistics:
@@ -1420,10 +1456,8 @@ async def score(message: discord.Message, *options):
                     break
                 except SyntaxError:
                     continue
-
-        if not match:
-            await client.say(message, "No beatmap link found")
-            return
+        # Check if URL was found
+        assert match, "No beatmap link found"
     else:
         try:
             beatmap_id = await api.beatmap_from_url(beatmap_url, return_type="id")
@@ -1485,39 +1519,8 @@ async def top(message: discord.Message, member: Annotate.Member = Annotate.Self)
     assert str(member.id) in osu_config.data["profiles"], \
         "No osu! profile assigned to **{}**!".format(member.name)
 
-    m = ""
-    mode = get_mode(str(member.id))
-    if str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)]:
-        for i, osu_score in enumerate(osu_tracking[str(member.id)]["scores"]):
-            if i > 4:
-                break
-            params = {
-                "beatmap_id": osu_score["beatmap"]["id"]
-            }
-            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
-            score_pp = await get_score_pp(osu_score, beatmap, member)
-            if score_pp is not None:
-                beatmap["difficulty_rating"] = score_pp.stars if mode is api.GameMode.Standard else beatmap[
-                    "difficulty_rating"]
-
-            # Add time since play to the score
-            time_since_play = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
-            time_since_string = get_formatted_score_time(time_since_play)
-
-            potential_string = None
-            # Add potential pp to the score
-            if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
-                    and not osu_score["perfect"]:
-                potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
-                                                                              score_pp.max_pp - float(osu_score["pp"]))
-
-            m += "{}.\n".format(str(i+1)) + \
-                 await format_new_score(mode, osu_score, beatmap, rank=None,
-                                        member=osu_tracking[str(member.id)]["member"]) \
-                 + (potential_string + "\n" if potential_string is not None else "") + time_since_string + "\n\n"
-    else:
-        await client.say(message, "Scores have not been retrieved for this user yet. Please wait a bit and try again")
-        return None
+    m = await get_formatted_score_list(member, 5)
+    assert m is not None, "Scores have not been retrieved for this user yet. Please wait a bit and try again"
     e = discord.Embed(color=member.color)
     e.description = m
     e.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
