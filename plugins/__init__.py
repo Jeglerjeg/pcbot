@@ -15,10 +15,6 @@ import pendulum
 from pcbot import config, Annotate, identifier_prefix, format_exception
 
 loaded_plugins = {}
-plugin_list = ["builtin", "pcbot"]
-for plugin in os.listdir("plugins/"):
-    plugin_list.append(os.path.splitext(plugin)[0])
-
 events = defaultdict(list)
 Command = namedtuple("Command", "name name_prefix aliases owner permissions roles guilds "
                                 "usage description function parent sub_commands depth hidden error pos_check "
@@ -28,11 +24,7 @@ lengthy_annotations = (Annotate.Content, Annotate.CleanContent, Annotate.LowerCo
 argument_format = "{open}{name}{suffix}{close}"
 
 owner_cfg = config.Config("owner")
-default_config = {}
-for plugin in plugin_list:
-    if not plugin.endswith("lib") and not (plugin.startswith("__") or plugin.endswith("__")):
-        default_config[plugin] = False
-disabled_plugins_config = config.Config("disabled_plugins", pretty=True, data=default_config)
+disabled_plugins_config = config.Config("disabled_plugins", pretty=True, data={"disabled_plugins": []})
 CoolDown = namedtuple("CoolDown", "date command specific")
 cooldown_data = defaultdict(list)  # member: []
 
@@ -514,7 +506,8 @@ def load_plugin(name: str, package: str = "plugins"):
 
     Any loaded plugin is imported and stored in the self.plugins dictionary.
     """
-    if (not name.startswith("__") or not name.endswith("__")) and disabled_plugins_config.data[name] is False:
+    if (not name.startswith("__") or not name.endswith("__")) and \
+            name not in disabled_plugins_config.data["disabled_plugins"]:
         try:
             loaded_plugin = importlib.import_module("{package}.{plugin}".format(plugin=name, package=package))
         except ImportError as e:
