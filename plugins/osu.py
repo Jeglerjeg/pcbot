@@ -1514,19 +1514,21 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
     await client.send_message(message.channel, embed=embed)
 
 
-@osu.command()
 async def top(message: discord.Message, member: Annotate.Member = Annotate.Self):
     """ Displays your or the selected member's 5 highest rated plays by PP. """
     assert str(member.id) in osu_config.data["profiles"], \
         "No osu! profile assigned to **{}**!".format(member.name)
 
     m = await get_formatted_score_list(member, 5)
-    assert m is not None, "Scores have not been retrieved for this user yet. Please wait a bit and try again"
+    assert m, "Scores have not been retrieved for this user yet. Please wait a bit and try again"
     e = discord.Embed(color=member.color)
     e.description = m
     e.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
     e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
+
+plugins.command(name="osutop", usage="[member]", aliases="top")(top)
+osu.command(name="top", usage="[member]", aliases="osutop")(top)
 
 
 def init_guild_config(guild: discord.Guild):
