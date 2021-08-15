@@ -364,8 +364,9 @@ def get_user_url(member_id: str):
     return host + "users/" + user_id
 
 
-def get_formatted_score_time(score_time: pendulum.period):
+def get_formatted_score_time(osu_score: dict):
     """ Returns formatted time since score was set. """
+    score_time = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
     if score_time.in_seconds() < 60:
         return "{} ago".format(str(score_time.in_seconds()) + (" seconds"
                                                                if score_time.in_seconds() > 1 else " second"))
@@ -534,8 +535,7 @@ async def get_formatted_score_list(member: discord.Member, limit: int):
                     "difficulty_rating"]
 
             # Add time since play to the score
-            time_since_play = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
-            time_since_string = get_formatted_score_time(time_since_play)
+            time_since_string = get_formatted_score_time(osu_score)
 
             potential_string = None
             # Add potential pp to the score
@@ -1552,6 +1552,7 @@ async def score(message: discord.Message, *options):
     beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
 
     embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, scoreboard_rank)
+    embed.set_footer(text=embed.footer.text + ("\n" + get_formatted_score_time(osu_score) if not mods else ""))
     await client.send_message(message.channel, embed=embed)
 
 
