@@ -40,7 +40,10 @@ from typing import List
 
 import aiohttp
 import discord
-import pendulum
+try:
+    import pendulum
+except ImportError:
+    pendulum = None
 
 import bot
 import plugins
@@ -365,21 +368,25 @@ def get_user_url(member_id: str):
 
 def get_formatted_score_time(osu_score: dict):
     """ Returns formatted time since score was set. """
-    score_time = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
-    if score_time.in_seconds() < 60:
-        return "{} ago".format(str(score_time.in_seconds()) + (" seconds"
-                                                               if score_time.in_seconds() > 1 else " second"))
-    if score_time.in_minutes() < 60:
-        return "{} ago".format(str(score_time.in_minutes()) + (" minutes" if score_time.in_minutes() > 1
-                                                               else " minute"))
-    if score_time.in_hours() < 24:
-        return "{} ago".format(str(score_time.in_hours()) + (" hours" if score_time.in_hours() > 1 else " hour"))
-    if score_time.in_days() < 30:
-        return "{} ago".format(str(score_time.in_days()) + (" days" if score_time.in_days() > 1 else " day"))
-    if score_time.in_months() < 12:
-        return "{} ago".format(str(score_time.in_months()) + (" months" if score_time.in_months() > 1 else " month"))
+    if pendulum:
+        score_time = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
+        if score_time.in_seconds() < 60:
+            return "{} ago".format(str(score_time.in_seconds()) + (" seconds"
+                                                                   if score_time.in_seconds() > 1 else " second"))
+        if score_time.in_minutes() < 60:
+            return "{} ago".format(str(score_time.in_minutes()) + (" minutes" if score_time.in_minutes() > 1
+                                                                   else " minute"))
+        if score_time.in_hours() < 24:
+            return "{} ago".format(str(score_time.in_hours()) + (" hours" if score_time.in_hours() > 1 else " hour"))
+        if score_time.in_days() < 30:
+            return "{} ago".format(str(score_time.in_days()) + (" days" if score_time.in_days() > 1 else " day"))
+        if score_time.in_months() < 12:
+            return "{} ago".format(
+                str(score_time.in_months()) + (" months" if score_time.in_months() > 1 else " month"))
 
-    return "{} ago".format(str(score_time.in_years()) + (" years" if score_time.in_years() > 1 else " year"))
+        return "{} ago".format(str(score_time.in_years()) + (" years" if score_time.in_years() > 1 else " year"))
+
+    return None
 
 
 def is_playing(member: discord.Member):
@@ -534,7 +541,10 @@ async def get_formatted_score_list(member: discord.Member, limit: int):
                     "difficulty_rating"]
 
             # Add time since play to the score
-            time_since_string = get_formatted_score_time(osu_score)
+            if pendulum:
+                time_since_string = get_formatted_score_time(osu_score)
+            else:
+                time_since_string = ""
 
             potential_string = None
             # Add potential pp to the score
@@ -1489,7 +1499,8 @@ async def score(message: discord.Message, *options):
     beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
 
     embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, scoreboard_rank)
-    embed.set_footer(text=embed.footer.text + ("\n" + get_formatted_score_time(osu_score) if not mods else ""))
+    embed.set_footer(text=embed.footer.text + ("\n" + get_formatted_score_time(osu_score) if not mods and pendulum
+                                               else ""))
     await client.send_message(message.channel, embed=embed)
 
 
