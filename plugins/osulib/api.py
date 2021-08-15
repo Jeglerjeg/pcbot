@@ -200,19 +200,17 @@ def cache_beatmapset(beatmap: dict, map_id: int):
     del beatmapset["converts"]
     for diff in beatmap["beatmaps"]:
         beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
-        if not os.path.isfile(beatmap_path):
-            diff["time_cached"] = datetime.utcnow().isoformat()
-            diff["beatmapset"] = beatmapset
-            with open(beatmap_path, "w") as f:
-                json.dump(diff, f)
+        diff["time_cached"] = datetime.utcnow().isoformat()
+        diff["beatmapset"] = beatmapset
+        with open(beatmap_path, "w") as f:
+            json.dump(diff, f)
     if beatmap["converts"]:
         for convert in beatmap["converts"]:
             convert_path = os.path.join(mapcache_path, str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
-            if not os.path.isfile(convert_path):
-                convert["time_cached"] = datetime.utcnow().isoformat()
-                convert["beatmapset"] = beatmapset
-                with open(convert_path, "w") as fp:
-                    json.dump(convert, fp)
+            convert["time_cached"] = datetime.utcnow().isoformat()
+            convert["beatmapset"] = beatmapset
+            with open(convert_path, "w") as fp:
+                json.dump(convert, fp)
 
 
 def validate_cache(map_id: int, map_type: str, mode: str = None):
@@ -230,17 +228,17 @@ def validate_cache(map_id: int, map_type: str, mode: str = None):
     if os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
             result = json.load(fp)
+        cached_time = datetime.fromisoformat(result["time_cached"])
+        time_now = datetime.utcnow()
+        previous_sr_update = datetime(2021, 8, 5)
+        diff = time_now - cached_time
+        if cached_time < previous_sr_update:
+            return False
         if result["status"] == "loved":
-            cached_time = datetime.fromisoformat(result["time_cached"])
-            time_now = datetime.utcnow()
-            diff = time_now - cached_time
             if diff.days > 30:
                 return False
         if result["status"] == "pending" or result["status"] == "graveyard" or result["status"] == "wip" \
                 or result["status"] == "qualified":
-            cached_time = datetime.fromisoformat(result["time_cached"])
-            time_now = datetime.utcnow()
-            diff = time_now - cached_time
             if diff.days > 7:
                 return False
         return True
@@ -252,6 +250,7 @@ def validate_cache(map_id: int, map_type: str, mode: str = None):
 async def beatmap_lookup(params, map_id, mode):
     """ Looks up a beatmap unless cache exists"""
     valid_result = validate_cache(map_id, "map", mode)
+    logging.info(valid_result)
     result = None
     if valid_result:
         beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
@@ -279,7 +278,6 @@ async def beatmapset_lookup(params):
     """ Looks up a beatmapset using a beatmap ID"""
     request = def_section("beatmapsets/lookup")
     result = await request(**params)
-
     cache_beatmapset(result, result["id"])
     return result
 
