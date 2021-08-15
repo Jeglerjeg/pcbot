@@ -1414,12 +1414,14 @@ async def render(message: discord.Message, *options):
         ordr_render = await ordr.get_render(render_job["renderID"])
         if not utils.http_url_pattern.match(ordr_render["videoUrl"]):
             await asyncio.sleep(10)
-            e.description = "Progress: {}".format(ordr_render["progress"])
-            await placeholder_msg.edit(embed=e)
             if "error" in ordr_render["progress"].lower():
+                e.description = "{}".format(ordr_render["progress"])
+                await placeholder_msg.edit(embed=e)
                 return
+            else:
+                e.description = "Progress: {}".format(ordr_render["progress"])
+                await placeholder_msg.edit(embed=e)
         else:
-            e.description = "Progress: {}".format(ordr_render["progress"])
             video_url = ordr_render["videoUrl"]
             render_complete = True
 
