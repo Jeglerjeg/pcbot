@@ -391,6 +391,7 @@ def get_formatted_score_time(osu_score: dict):
 
 
 def set_beatmap_sr(score_pp: PPStats, beatmap: dict, mode: api.GameMode, mods: str):
+    """ Change beatmap SR if using SR adjusting mods. """
     beatmap["difficulty_rating"] = score_pp.stars \
         if mode is api.GameMode.Standard and mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF",
                                                           "RX") else beatmap["difficulty_rating"]
