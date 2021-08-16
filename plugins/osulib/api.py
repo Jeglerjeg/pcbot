@@ -256,7 +256,6 @@ def validate_cache(map_id: int, map_type: str, mode: str = None):
 async def beatmap_lookup(params, map_id, mode):
     """ Looks up a beatmap unless cache exists"""
     valid_result = validate_cache(map_id, "map", mode)
-    logging.info(valid_result)
     result = None
     if valid_result:
         beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
