@@ -48,7 +48,7 @@ except ImportError:
 import bot
 import plugins
 from pcbot import Config, utils, Annotate, config as botconfig
-from plugins.osulib import api, Mods, calculate_pp, oppai, ClosestPPStats, ordr
+from plugins.osulib import api, Mods, calculate_pp, oppai, ClosestPPStats, PPStats, ordr
 from plugins.twitchlib import twitch
 
 client = plugins.client  # type: bot.Client
@@ -390,6 +390,13 @@ def get_formatted_score_time(osu_score: dict):
     return None
 
 
+def set_beatmap_sr(score_pp: PPStats, beatmap: dict, mode: api.GameMode, mods: str):
+    beatmap["difficulty_rating"] = score_pp.stars \
+        if mode is api.GameMode.Standard and mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF",
+                                                          "RX") else beatmap["difficulty_rating"]
+    return beatmap
+
+
 def is_playing(member: discord.Member):
     """ Check if a member has "osu!" in their Game name. """
     # See if the member is playing
@@ -532,16 +539,14 @@ async def get_formatted_score_list(member: discord.Member, limit: int):
         for i, osu_score in enumerate(osu_tracking[str(member.id)]["scores"]):
             if i > limit-1:
                 break
-            mods = Mods.format_mods(osu_score["mods"])
             params = {
                 "beatmap_id": osu_score["beatmap"]["id"]
             }
+            mods = Mods.format_mods(osu_score["mods"])
             beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
             score_pp = await get_score_pp(osu_score, beatmap, member)
             if score_pp is not None:
-                beatmap["difficulty_rating"] = score_pp.stars \
-                    if mode is api.GameMode.Standard and mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD",
-                                                                      "PF", "RX") else beatmap["difficulty_rating"]
+                beatmap = set_beatmap_sr(score_pp, beatmap, mode, mods)
 
             # Add time since play to the score
             if pendulum:
@@ -685,11 +690,10 @@ async def notify_pp(member_id: str, data: dict):
         scoreboard_rank = None
         if new["events"]:
             scoreboard_rank = api.rank_from_events(new["events"], str(osu_score["beatmap"]["id"]), osu_score)
-        if update_mode is not UpdateModes.PP:
-            potential_pp = await get_score_pp(osu_score, beatmap, member)
-
-        beatmap["difficulty_rating"] = potential_pp.stars if potential_pp is not None \
-            and potential_pp.stars is not None and mode is api.GameMode.Standard else beatmap["difficulty_rating"]
+        # Calculate PP and change beatmap SR if using a difficult adjusting mod
+        potential_pp = await get_score_pp(osu_score, beatmap, member)
+        mods = Mods.format_mods(osu_score["mods"])
+        beatmap = set_beatmap_sr(potential_pp, beatmap, mode, mods)
         if update_mode is UpdateModes.Minimal:
             m += await format_minimal_score(mode, osu_score, beatmap, scoreboard_rank, member) + "\n"
         else:
@@ -1371,7 +1375,8 @@ if oppai:
     osu.command(name="pp", aliases="oppai")(pp_)
 
 
-async def create_score_embed_with_pp(member: discord.Member, osu_score, beatmap, mode, scoreboard_rank: bool = False):
+async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, beatmap: dict,
+                                     mode: api.GameMode, scoreboard_rank: bool = False):
     """ Returns a score embed for use outside of automatic score notifications. """
     score_pp = await get_score_pp(osu_score, beatmap, member)
     mods = Mods.format_mods(osu_score["mods"])
@@ -1381,9 +1386,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score, beatmap,
     elif osu_score["pp"] is None:
         osu_score["pp"] = 0
     if score_pp is not None:
-        beatmap["difficulty_rating"] = score_pp.stars \
-            if mode is api.GameMode.Standard and mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF",
-                                                              "RX") else beatmap["difficulty_rating"]
+        beatmap = set_beatmap_sr(score_pp, beatmap, mode, mods)
 
     # There might not be any events
     if scoreboard_rank is False and str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)] \
