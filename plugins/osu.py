@@ -843,7 +843,8 @@ async def format_map_status(member: discord.Member, status_format: str, beatmaps
     return embed
 
 
-async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool = False, ignore_memory_cache: bool = False):
+async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool = False,
+                                      ignore_memory_cache: bool = False):
     """ Calculates the pp for every difficulty in the given mapset, added
     to a "pp" key in the difficulty's dict. """
     # Init the cache of this mapset if it has not been created
