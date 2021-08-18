@@ -47,6 +47,7 @@ except ImportError:
 
 import bot
 import plugins
+from operator import itemgetter
 from pcbot import Config, utils, Annotate, config as botconfig
 from plugins.osulib import api, Mods, calculate_pp, oppai, ClosestPPStats, PPStats, ordr
 from plugins.twitchlib import twitch
@@ -533,43 +534,40 @@ async def get_new_score(member_id: str):
     return None
 
 
-async def get_formatted_score_list(member: discord.Member, limit: int):
+async def get_formatted_score_list(member: discord.Member, osu_scores: dict, limit: int):
     """ Return a list of formatted scores along with time since the score was set. """
-    if str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)]:
-        mode = get_mode(str(member.id))
-        m = ""
-        for i, osu_score in enumerate(osu_tracking[str(member.id)]["scores"]):
-            if i > limit-1:
-                break
-            params = {
-                "beatmap_id": osu_score["beatmap"]["id"]
-            }
-            mods = Mods.format_mods(osu_score["mods"])
-            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
-            score_pp = await get_score_pp(osu_score, beatmap, member)
-            if score_pp is not None:
-                beatmap = set_beatmap_sr(score_pp, beatmap, mode, mods)
+    mode = get_mode(str(member.id))
+    m = ""
+    for i, osu_score in enumerate(osu_scores):
+        if i > limit - 1:
+            break
+        params = {
+            "beatmap_id": osu_score["beatmap"]["id"]
+        }
+        mods = Mods.format_mods(osu_score["mods"])
+        beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
+        score_pp = await get_score_pp(osu_score, beatmap, member)
+        if score_pp is not None:
+            beatmap = set_beatmap_sr(score_pp, beatmap, mode, mods)
 
-            # Add time since play to the score
-            if pendulum:
-                time_since_string = get_formatted_score_time(osu_score)
-            else:
-                time_since_string = ""
+        # Add time since play to the score
+        if pendulum:
+            time_since_string = get_formatted_score_time(osu_score)
+        else:
+            time_since_string = ""
 
-            potential_string = None
-            # Add potential pp to the score
-            if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
-                    and not osu_score["perfect"]:
-                potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
-                                                                              score_pp.max_pp - float(osu_score["pp"]))
+        potential_string = None
+        # Add potential pp to the score
+        if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
+                and not osu_score["perfect"]:
+            potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
+                                                                          score_pp.max_pp - float(osu_score["pp"]))
 
-            m += "{}.\n".format(str(i+1)) + \
-                 await format_new_score(mode, osu_score, beatmap, rank=None,
-                                        member=osu_tracking[str(member.id)]["member"]) \
-                 + (potential_string + "\n" if potential_string is not None else "") + time_since_string + "\n\n"
-        return m
-
-    return None
+        m += "{}.\n".format(str(i + 1)) + \
+             await format_new_score(mode, osu_score, beatmap, rank=None,
+                                    member=osu_tracking[str(member.id)]["member"]) \
+             + (potential_string + "\n" if potential_string is not None else "") + time_since_string + "\n\n"
+    return m
 
 
 def get_diff(old: dict, new: dict, value: str, statistics=False):
@@ -625,6 +623,15 @@ def get_score_name(member: discord.Member, username: str):
     """ Formats the username and link for scores."""
     user_url = get_user_url(str(member.id))
     return "{member.mention} [`{name}`]({url})".format(member=member, name=username, url=user_url)
+
+
+def sort_scores_by_time(osu_scores: list, oldest: bool = False):
+    """ Sort scores by newest or oldest scores. """
+    if oldest:
+        sorted_scores = sorted(osu_scores, key=itemgetter("created_at"))
+    else:
+        sorted_scores = sorted(osu_scores, key=itemgetter("created_at"), reverse=True)
+    return sorted_scores
 
 
 def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, potential_pp: PPStats):
@@ -1599,21 +1606,40 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
     await client.send_message(message.channel, embed=embed)
 
 
-async def top(message: discord.Message, member: Annotate.Member = Annotate.Self):
-    """ Displays your or the selected member's 5 highest rated plays by PP. """
+async def top(message: discord.Message, *options):
+    """ Displays your or the selected member's 5 highest rated plays by PP.
+    Can alternatively be sorted by time by adding either "oldest" or "newest" as an option"""
+    list_type = None
+    member = None
+    for value in options:
+        if value == "newest":
+            list_type = "newest"
+        elif value == "oldest":
+            list_type = "oldest"
+        else:
+            member = utils.find_member(guild=message.guild, name=value)
+
+    if not member:
+        member = message.author
+
     assert str(member.id) in osu_config.data["profiles"], \
         "No osu! profile assigned to **{}**!".format(member.name)
-
-    m = await get_formatted_score_list(member, 5)
-    assert m, "Scores have not been retrieved for this user yet. Please wait a bit and try again"
+    assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
+        "Scores have not been retrieved for this user yet. Please wait a bit and try again"
+    osu_scores = osu_tracking[str(member.id)]["scores"]
+    if list_type == "newest":
+        osu_scores = sort_scores_by_time(osu_scores)
+    elif list_type == "oldest":
+        osu_scores = sort_scores_by_time(osu_scores, oldest=True)
+    m = await get_formatted_score_list(member, osu_scores, 5)
     e = discord.Embed(color=member.color)
     e.description = m
     e.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
     e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
 
-plugins.command(name="osutop", usage="[member]", aliases="top")(top)
-osu.command(name="top", usage="[member]", aliases="osutop")(top)
+plugins.command(name="top", usage="[member] <type>", aliases="osutop")(top)
+osu.command(name="top", usage="[member] <type>", aliases="osutop")(top)
 
 
 def init_guild_config(guild: discord.Guild):
