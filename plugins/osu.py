@@ -369,25 +369,28 @@ def get_user_url(member_id: str):
 
 def get_formatted_score_time(osu_score: dict):
     """ Returns formatted time since score was set. """
+    time_string = None
     if pendulum:
         score_time = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
         if score_time.in_seconds() < 60:
-            return "{} ago".format(str(score_time.in_seconds()) + (" seconds"
-                                                                   if score_time.in_seconds() > 1 else " second"))
-        if score_time.in_minutes() < 60:
-            return "{} ago".format(str(score_time.in_minutes()) + (" minutes" if score_time.in_minutes() > 1
-                                                                   else " minute"))
-        if score_time.in_hours() < 24:
-            return "{} ago".format(str(score_time.in_hours()) + (" hours" if score_time.in_hours() > 1 else " hour"))
-        if score_time.in_days() < 30:
-            return "{} ago".format(str(score_time.in_days()) + (" days" if score_time.in_days() > 1 else " day"))
-        if score_time.in_months() < 12:
-            return "{} ago".format(
+            time_string = "{} ago".format(str(score_time.in_seconds()) + (" seconds"
+                                          if score_time.in_seconds() > 1 else " second"))
+        elif score_time.in_minutes() < 60:
+            time_string = "{} ago".format(str(score_time.in_minutes()) + (" minutes" if score_time.in_minutes() > 1
+                                                                          else " minute"))
+        elif score_time.in_hours() < 24:
+            time_string = "{} ago".format(str(score_time.in_hours()) + (" hours" if score_time.in_hours() > 1 else
+                                                                        " hour"))
+        elif score_time.in_days() < 30:
+            time_string = "{} ago".format(str(score_time.in_days()) + (" days" if score_time.in_days() > 1 else " day"))
+        elif score_time.in_months() < 12:
+            time_string = "{} ago".format(
                 str(score_time.in_months()) + (" months" if score_time.in_months() > 1 else " month"))
+        else:
+            time_string = "{} ago".format(str(score_time.in_years()) + (" years" if score_time.in_years() > 1 else
+                                                                        " year"))
 
-        return "{} ago".format(str(score_time.in_years()) + (" years" if score_time.in_years() > 1 else " year"))
-
-    return None
+    return time_string
 
 
 def set_beatmap_sr(score_pp: PPStats, beatmap: dict, mode: api.GameMode, mods: str):
