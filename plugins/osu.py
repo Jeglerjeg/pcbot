@@ -1494,9 +1494,9 @@ async def render(message: discord.Message, *options):
                 e.description = "{}".format(ordr_render["progress"])
                 await placeholder_msg.edit(embed=e)
                 return
-            else:
-                e.description = "Progress: {}".format(ordr_render["progress"])
-                await placeholder_msg.edit(embed=e)
+
+            e.description = "Progress: {}".format(ordr_render["progress"])
+            await placeholder_msg.edit(embed=e)
         else:
             video_url = ordr_render["videoUrl"]
             render_complete = True
