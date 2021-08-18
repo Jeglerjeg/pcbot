@@ -146,7 +146,7 @@ class Mods(Enum):
         return "".join((mod for mod in mods) if mods else ["Nomod"])
 
 
-def def_section(api_name: str, first_element: bool = False, download: bool = False):
+def def_section(api_name: str, first_element: bool = False):
     """ Add a section using a template to simplify adding API functions. """
 
     async def template(url=api_url, request_tries: int = 1, **params):
@@ -160,10 +160,7 @@ def def_section(api_name: str, first_element: bool = False, download: bool = Fal
         # Download using a URL of the given API function name
         for i in range(request_tries):
             try:
-                if not download:
-                    response = await utils.download_json(url + api_name, headers=headers, **params)
-                else:
-                    response = await utils.download_file(url + api_name, headers=headers, **params)
+                response = await utils.download_json(url + api_name, headers=headers, **params)
 
             except ValueError as e:
                 logging.warning("ValueError Calling %s: %s", url + api_name, e)
@@ -285,16 +282,6 @@ async def beatmapset_lookup(params):
     result = await request(**params)
     cache_beatmapset(result, result["id"])
     return result
-
-
-async def download_replay(mode: str, score_id: int):
-    """ Download a replay from the API. """
-    request = def_section("scores/{}/{}/download".format(mode, score_id), download=True)
-    replay = await request()
-
-    with open(replay_path, "wb") as f:
-        f.write(replay)
-    return replay
 
 
 async def get_user(user, mode=None, params=None):
