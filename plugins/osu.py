@@ -424,7 +424,7 @@ async def update_user_data(member_id: str, profile: str):
     if get_update_mode(str(member_id)) is UpdateModes.Disabled:
         return
 
-    # Check if member exists and that profile exists on file (it might have been unlinked or changed during iteration)
+    # Check if bot can see member and that profile exists on file (might have been unlinked or changed during iteration)
     member = discord.utils.get(client.get_all_members(), id=int(member_id))
     if member is None or member_id not in osu_config.data["profiles"] \
             or profile not in osu_config.data["profiles"][member_id]:
@@ -1028,13 +1028,16 @@ async def notify_maps(member_id: str, data: dict):
 async def on_ready():
     """ Handle every event. """
     global time_elapsed
+    no_key = False
 
     # Notify the owner when they have not set their API key
-    if osu_config.data["client_secret"] == "change to your client secret":
+    if osu_config.data["client_secret"] == "change to your client secret" or \
+            osu_config.data["client_id"] == "change to your client ID":
         logging.warning("osu! functionality is unavailable until a "
                         "client ID and client secret is provided (config/osu.json)")
+        no_key = True
 
-    while not client.loop.is_closed():
+    while not client.loop.is_closed() and not no_key:
         try:
             await asyncio.sleep(float(update_interval))
             started = datetime.now()
