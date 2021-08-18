@@ -1067,8 +1067,6 @@ async def on_ready():
         except Exception as e:
             logging.error(traceback.format_exc(e))
         finally:
-            # TODO: setup logging
-
             # Save the time elapsed since we started the update
             time_elapsed = (datetime.now() - started).total_seconds()
 
