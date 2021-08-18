@@ -2,9 +2,7 @@
 
     Can render replays and fetch replays by ID
 """
-
 from aiohttp import FormData
-
 from pcbot import utils, config, Config
 
 host = "https://ordr-api.issou.best/"
@@ -38,22 +36,24 @@ ordr_config = Config("ordr", pretty=True, data=dict(
     sliderMerge="false",  # Whether or not sliders should be merged
     objectsRainbow="false",  # Whether or not objects should rainbow. This overrides beatmap or skin colors
     objectsFlashToTheBeat="false",  # Whether or not objects should flash to the beat
-    useHitCircleColor="false",
-    seizureWarning="false",
-    loadStoryboard="false",
-    loadVideo="false",
-    introBGDim=80,
-    inGameBGDim=90,
-    breakBGDim=80,
-    BGParallax="false",
-    showDanserLogo="true",
-    skip="false",
-    cursorRipples="false",
-    cursorSize=1,
-    cursorTrail="true",
-    drawComboNumbers="true",
-    sliderSnakingIn="true",
-    sliderSnakingOut="false",
+    useHitCircleColor="false",  # Whether or not the slider body should have the same color as the hitcircles
+    seizureWarning="false",  # Whether or not to display the 5 second seizure warning before the render
+    loadStoryboard="false",  # Whether or not to load the beatmap storyshow
+    loadVideo="false",  # Whether or not to load the beatmap video
+    introBGDim=80,  # How dimmed the intro BG should be in percentage from 0 to 100
+    inGameBGDim=90,  # How dimmed the ingame BG should be in percentage from 0 to 100
+    breakBGDim=80,  # How dimmed the break BG should be in percentage from 0 to 100
+    BGParallax="false",  # Whether or not the BG should have parralax
+    showDanserLogo="true",  # Whether or not to show the danser logo before the render
+    skip="false",  # Whether or not to skip the intro
+    cursorRipples="false",  # Whether or not to show cursor ripples
+    cursorSize=1,  # The size of the cursor from 0.5 to 2
+    cursorTrail="true",  # Whether or not to show the cursortrail
+    drawComboNumbers="true",  # Whether or not to show combo number in hitcircles
+    sliderSnakingIn="true",  # Whether or not sliders should snake in
+    sliderSnakingOut="false",  # Whether or not sliders should snake out
+    showHitCounter="true",  # Whether or not the hit counter (100s, 50s, misses) should be shown
+    showKeyOverlay="true"  # Whether or not the key overlay should be shown
 ))
 
 
@@ -125,7 +125,9 @@ async def send_render_job(option):
         "cursorTrail": ordr_config.data["cursorTrail"],
         "drawComboNumbers": ordr_config.data["drawComboNumbers"],
         "sliderSnakingIn": ordr_config.data["sliderSnakingIn"],
-        "sliderSnakingOut": ordr_config.data["sliderSnakingOut"]
+        "sliderSnakingOut": ordr_config.data["sliderSnakingOut"],
+        "showHitCounter": ordr_config.data["showHitCounter"],
+        "showKeyOverlay": ordr_config.data["showKeyOverlay"]
     }
 
     if replay:
@@ -137,8 +139,8 @@ async def send_render_job(option):
         params["verificationKey"] = ordr_config.data["verificationKey"]
 
     data = FormData()
-    for value in params:
-        data.add_field(value, params[value])
+    for param, value in params.items():
+        data.add_field(param, value)
 
     try:
         results = await utils.post_request(url=host + "renders", call=utils.convert_to_json, data=data)
