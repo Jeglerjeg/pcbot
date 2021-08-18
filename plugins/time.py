@@ -212,8 +212,7 @@ async def handle_countdown_reminders():
             del time_cfg.data["countdown"][cd["tag"]]
             await time_cfg.asyncsave()
             continue
-        elif seconds < 0:
-            seconds = 0
+        seconds = max(seconds, 0)
 
         await wait_for_reminder(cd, seconds)
 
