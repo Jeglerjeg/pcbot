@@ -425,12 +425,10 @@ async def update_user_data(member_id: str, profile: str):
     if get_update_mode(str(member_id)) is UpdateModes.Disabled:
         return
 
+    # Check if member exists and that profile exists on file (it might have been unlinked or changed during iteration)
     member = discord.utils.get(client.get_all_members(), id=int(member_id))
-    if member is None:
-        return
-
-    # Check if profile exists on file (profile might have been unlinked or changed during iteration)
-    if member_id not in osu_config.data["profiles"] or profile not in osu_config.data["profiles"][member_id]:
+    if member is None or member_id not in osu_config.data["profiles"] \
+            or profile not in osu_config.data["profiles"][member_id]:
         if member_id in osu_tracking:
             del osu_tracking[member_id]
         return
@@ -817,8 +815,8 @@ async def format_beatmap_info(beatmapset):
     return m + "```"
 
 
-async def format_map_status(member: discord.Member, status_format: str, beatmapset, minimal: bool, user_update=True,
-                            beatmap=False):
+async def format_map_status(member: discord.Member, status_format: str, beatmapset: dict, minimal: bool,
+                            user_update: bool = True):
     """ Format the status update of a beatmap. """
     if user_update:
         user_id = osu_config.data["profiles"][str(member.id)]
@@ -829,6 +827,8 @@ async def format_map_status(member: discord.Member, status_format: str, beatmaps
     status = status_format.format(name=name, user_id=user_id, host=host, artist=beatmapset["artist"],
                                   title=beatmapset["title"], id=beatmapset["id"])
     if not minimal:
+        beatmap = bool(len(beatmapset["beatmaps"]) == 1
+                       and beatmapset["beatmaps"][0]["mode"] == "osu")
         if not beatmap:
             status += await format_beatmapset_diffs(beatmapset)
             embed = discord.Embed(color=member.color, description=status)
@@ -1006,9 +1006,7 @@ async def notify_maps(member_id: str, data: dict):
                 # Do not format difficulties when minimal (or pp) information is specified
                 update_mode = get_update_mode(member_id)
                 embed = await format_map_status(member, status_format, beatmapset,
-                                                update_mode is not UpdateModes.Full,
-                                                beatmap=bool(len(beatmapset["beatmaps"]) == 1
-                                                             and beatmapset["beatmaps"][0]["mode"] == "osu"))
+                                                update_mode is not UpdateModes.Full)
 
                 if new_event.count > 1:
                     embed.set_footer(text="updated {} times since".format(new_event.count))
@@ -1595,9 +1593,7 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
 
     status = "[**{artist} - {title}**]({host}beatmapsets/{id}) submitted by [**{name}**]({host}users/{user_id})"
     embed = await format_map_status(status_format=status, beatmapset=beatmapset, minimal=False,
-                                    member=message.author, user_update=False,
-                                    beatmap=bool(len(beatmapset["beatmaps"]) == 1
-                                                 and beatmapset["beatmaps"][0]["mode"] == "osu"))
+                                    member=message.author, user_update=False)
     await client.send_message(message.channel, embed=embed)
 
 
