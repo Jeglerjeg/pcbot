@@ -571,7 +571,7 @@ async def get_formatted_score_list(member: discord.Member, limit: int):
     return None
 
 
-def get_diff(old, new, value, statistics=False):
+def get_diff(old: dict, new: dict, value: str, statistics=False):
     """ Get the difference between old and new osu! user data. """
     if statistics:
         return float(new["statistics"][value]) - float(old["statistics"][value])
@@ -626,7 +626,7 @@ def get_score_name(member: discord.Member, username: str):
     return "{member.mention} [`{name}`]({url})".format(member=member, name=username, url=user_url)
 
 
-def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, potential_pp):
+def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, potential_pp: PPStats):
     """ Return a formatted score as an embed """
     embed = discord.Embed(color=member.color, url=get_user_url(str(member.id)))
     embed.description = formatted_score
@@ -744,7 +744,7 @@ async def notify_pp(member_id: str, data: dict):
                 pass
 
 
-async def format_beatmapset_diffs(beatmapset):
+async def format_beatmapset_diffs(beatmapset: dict):
     """ Format some difficulty info on a beatmapset. """
     # Get the longest difficulty name
     diff_length = len(max((diff["version"] for diff in beatmapset["beatmaps"]), key=len))
@@ -770,7 +770,7 @@ async def format_beatmapset_diffs(beatmapset):
     return m + "```"
 
 
-async def format_beatmap_info(beatmapset):
+async def format_beatmap_info(beatmapset: dict):
     """ Format some difficulty info on a beatmapset. """
     # Get the longest difficulty name
     diff_length = len(max((diff["version"] for diff in beatmapset["beatmaps"]), key=len))
@@ -843,7 +843,7 @@ async def format_map_status(member: discord.Member, status_format: str, beatmaps
     return embed
 
 
-async def calculate_pp_for_beatmapset(beatmapset, ignore_osu_cache: bool = False, ignore_memory_cache: bool = False):
+async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool = False, ignore_memory_cache: bool = False):
     """ Calculates the pp for every difficulty in the given mapset, added
     to a "pp" key in the difficulty's dict. """
     # Init the cache of this mapset if it has not been created
@@ -1100,7 +1100,7 @@ def get_timestamps_with_url(content: str):
 
 
 @plugins.event()
-async def on_message(message):
+async def on_message(message: discord.Message):
     """ Automatically post editor timestamps with URL. """
     # Ignore commands
     if message.content.startswith("!"):
@@ -1169,7 +1169,7 @@ async def osu(message: discord.Message, *options):
     await client.send_message(message.channel, embed=embed)
 
 
-async def has_enough_pp(user, mode, **params):
+async def has_enough_pp(user: str, mode: api.GameMode, **params):
     """ Lookup the given member and check if they have enough pp to register.
     params are just like api.get_user. """
     osu_user = await api.get_user(user, mode, params=params)
