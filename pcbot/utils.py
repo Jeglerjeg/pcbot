@@ -263,7 +263,7 @@ async def download_file(url: str, bytesio=False, headers=None, **params):
     return BytesIO(file_bytes) if bytesio else file_bytes
 
 
-async def _convert_json(response):
+async def convert_to_json(response):
     """ Converts the aiohttp ClientResponse object to JSON.
 
     :param response: The ClientResponse object.
@@ -285,7 +285,7 @@ async def download_json(url: str, headers=None, **params):
     :raises: ValueError if the returned data was not of type application/json
     :return: A JSON representation of the downloaded file.
     """
-    return await retrieve_page(url, call=_convert_json, headers=headers, **params)
+    return await retrieve_page(url, call=convert_to_json, headers=headers, **params)
 
 
 def convert_image_object(image, format: str = "PNG", **params):
