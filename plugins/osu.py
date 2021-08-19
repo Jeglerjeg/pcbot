@@ -458,31 +458,30 @@ async def update_user_data(member_id: str, profile: str):
             "limit": 20
         }
         user_recent = await api.get_user_recent_activity(profile, params=params)
+
+        # User is already tracked
+        if "new" in osu_tracking[str(member_id)]:
+            # Move the "new" data into the "old" data of this user
+            osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
+        else:
+            # If this is the first time, update the user's list of scores for later
+            params = {
+                "mode": mode.string,
+                "limit": score_request_limit,
+            }
+            fetched_scores = await api.get_user_scores(profile, "best", params=params)
+            osu_tracking[str(member_id)]["scores"] = fetched_scores
     except aiohttp.ServerDisconnectedError:
         return
     except asyncio.TimeoutError:
         logging.warning("Timed out when retrieving osu! info from %s (%s)", member, profile)
         return
-
-    # Just in case something goes wrong, we skip this member (these things are usually one-time occurrences)
-    if user_data is None or user_recent is None:
+    except ValueError:
         logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
-
-    # User is already tracked
-    if "new" in osu_tracking[str(member_id)]:
-        # Move the "new" data into the "old" data of this user
-        osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
-    else:
-        # If this is the first time, update the user's list of scores for later
-        params = {
-            "mode": mode.string,
-            "limit": score_request_limit,
-        }
-        fetched_scores = await api.get_user_scores(profile, "best", params=params)
-        if fetched_scores is None:
-            fetched_scores = osu_tracking[str(member_id)]["scores"]
-        osu_tracking[str(member_id)]["scores"] = fetched_scores
+    except Exception as e:
+        logging.error(traceback.format_exc(e))
+        return
 
     # Update the "new" data
     osu_tracking[str(member_id)]["new"] = user_data
@@ -501,8 +500,18 @@ async def get_new_score(member_id: str):
         "limit": score_request_limit,
     }
     await asyncio.sleep(osu_config.data["score_update_delay"])
-    user_scores = await api.get_user_scores(profile, "best", params=params)
-    if user_scores is None:
+    try:
+        user_scores = await api.get_user_scores(profile, "best", params=params)
+    except aiohttp.ServerDisconnectedError:
+        return None
+    except asyncio.TimeoutError:
+        logging.warning("Timed out when retrieving osu! scores from %s (%s)", member_id, profile)
+        return None
+    except ValueError:
+        logging.info("Could not retrieve osu! scores from %s (%s)", member_id, profile)
+        return None
+    except Exception as e:
+        logging.error(traceback.format_exc(e))
         return None
 
     old_best_id = []
