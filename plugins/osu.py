@@ -37,6 +37,7 @@ from datetime import datetime, timedelta
 from textwrap import wrap
 from enum import Enum
 from typing import List
+from operator import itemgetter
 
 import aiohttp
 import discord
@@ -47,7 +48,6 @@ except ImportError:
 
 import bot
 import plugins
-from operator import itemgetter
 from pcbot import Config, utils, Annotate, config as botconfig
 from plugins.osulib import api, Mods, calculate_pp, oppai, ClosestPPStats, PPStats
 from plugins.twitchlib import twitch
@@ -1544,8 +1544,8 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
 
 
 async def top(message: discord.Message, *options):
-    """ Displays your or the selected member's 5 highest rated plays by PP.
-    Can alternatively be sorted by time by adding either "oldest" or "newest" as an option"""
+    """ Displays your or the selected member's 5 highest rated plays sorted by PP.
+    To sort by when the score was set, specify "oldest" or "newest" as type. """
     list_type = None
     member = None
     for value in options:
