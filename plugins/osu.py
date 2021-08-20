@@ -79,6 +79,7 @@ osu_tracking = {}  # Saves the requested data or deletes whenever the user stops
 update_interval = osu_config.data.get("update_interval", 30)
 not_playing_skip = osu_config.data.get("not_playing_skip", 10)
 time_elapsed = 0  # The registered time it takes to process all information between updates (changes each update)
+previous_update = None  # The time osu user data was last updated. None until first update has run
 logging_interval = 30  # The time it takes before posting logging information to the console. TODO: setup logging
 rank_regex = re.compile(r"#\d+")
 
@@ -1051,7 +1052,7 @@ async def notify_maps(member_id: str, data: dict):
 
 async def on_ready():
     """ Handle every event. """
-    global time_elapsed
+    global time_elapsed, previous_update
     no_key = False
 
     # Notify the owner when they have not set their API key
@@ -1091,6 +1092,7 @@ async def on_ready():
         finally:
             # Save the time elapsed since we started the update
             time_elapsed = (datetime.now() - started).total_seconds()
+            previous_update = datetime.now()
 
 
 async def on_reload(name: str):
@@ -1634,6 +1636,7 @@ async def debug(message: discord.Message):
     await client.say(message, "Sent `{}` requests since the bot started (`{}`).\n"
                               "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
+                              "Last update happened at: `{}`\n"
                               "Members registered as playing: {}\n"
                               "Total members tracked: `{}`".format(
                                api.requests_sent, client.time_started.ctime(),
@@ -1641,6 +1644,7 @@ async def debug(message: discord.Message):
                                                            client.time_started).total_seconds() / 60.0), 2)
                                if api.requests_sent > 0 else 0,
                                time_elapsed,
+                               previous_update.ctime() if previous_update is not None else "Not updated yet.",
                                utils.format_objects(*[d["member"] for d in osu_tracking.values()
                                                       if is_playing(d["member"])], dec="`"), len(osu_tracking)
                                )
