@@ -757,9 +757,8 @@ async def notify_pp(member_id: str, data: dict):
         # The top line of the format will differ depending on whether we found a score or not
         if osu_score:
             embed.set_author(
-                name="**{0} set a new best `(#{pos}/{1} +{diff:.2f}pp)` on**\n".format(data["new"]["username"],
-                                                                                       score_request_limit,
-                                                                                       **osu_score),
+                name="{0} set a new best (#{pos}/{1} +{diff:.2f}pp) on:".format(data["new"]["username"],
+                                                                                score_request_limit, **osu_score),
                 icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
         else:
             embed.set_author(
