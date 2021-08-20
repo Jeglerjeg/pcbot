@@ -1092,7 +1092,7 @@ async def on_ready():
         finally:
             # Save the time elapsed since we started the update
             time_elapsed = (datetime.now() - started).total_seconds()
-            previous_update = datetime.now()
+            previous_update = datetime.utcnow()
 
 
 async def on_reload(name: str):
