@@ -461,6 +461,7 @@ async def update_user_data(member_id: str, profile: str):
             "key": "id"
         }
         user_data = await api.get_user(profile, mode.string, params=params)
+        user_data["time_updated"] = datetime.utcnow().isoformat()
 
         params = {
             "limit": 20
@@ -1333,8 +1334,15 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     user_id = osu_config.data["profiles"][str(member.id)]
     mode = get_mode(str(member.id))
     update_mode = get_update_mode(str(member.id))
-
-    e = discord.Embed(color=member.color)
+    if str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)]:
+        timestamp = datetime.fromisoformat(osu_tracking[str(member.id)]["new"]["time_updated"])
+    else:
+        timestamp = None
+    if timestamp:
+        e = discord.Embed(color=member.color, timestamp=timestamp)
+        e.set_footer(text="User data last updated:\n")
+    else:
+        e = discord.Embed(color=member.color)
     e.set_author(name=member.display_name, icon_url=member.avatar_url, url=host + "users/" + user_id)
     e.add_field(name="Game Mode", value=mode.name)
     e.add_field(name="Notification Mode", value=update_mode.name)
