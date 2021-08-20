@@ -495,14 +495,13 @@ async def update_user_data(member_id: str, profile: str):
     # Update the "new" data
     if "scores" not in osu_tracking[str(member_id)] and fetched_scores is not None:
         osu_tracking[str(member_id)]["scores"] = fetched_scores
-    elif "new" in osu_tracking[str(member_id)]:
+    if "new" in osu_tracking[str(member_id)]:
         # Move the "new" data into the "old" data of this user
         osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
-    if user_data:
-        osu_tracking[str(member_id)]["new"] = user_data
-        osu_tracking[str(member_id)]["new"]["time_updated"] = datetime.utcnow().isoformat()
-    if user_recent:
-        osu_tracking[str(member_id)]["new"]["events"] = user_recent
+
+    osu_tracking[str(member_id)]["new"] = user_data
+    osu_tracking[str(member_id)]["new"]["time_updated"] = datetime.utcnow().isoformat()
+    osu_tracking[str(member_id)]["new"]["events"] = user_recent
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
