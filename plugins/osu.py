@@ -658,6 +658,8 @@ def get_sorted_scores(osu_scores: list, list_type: str):
         sorted_scores = sorted(osu_scores, key=itemgetter("accuracy"), reverse=True)
     elif list_type == "combo":
         sorted_scores = sorted(osu_scores, key=itemgetter("max_combo"), reverse=True)
+    elif list_type == "score":
+        sorted_scores = sorted(osu_scores, key=itemgetter("score"), reverse=True)
     else:
         sorted_scores = sorted(osu_scores, key=itemgetter("pp"), reverse=True)
     return sorted_scores
@@ -1642,7 +1644,7 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
 
 async def top(message: discord.Message, *options):
     """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
-     Alternative sorting methods are "oldest", "newest", "combo" and "acc" """
+     Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
     member = None
     list_type = "pp"
     for value in options:
@@ -1653,6 +1655,8 @@ async def top(message: discord.Message, *options):
         elif value == "acc":
             list_type = value
         elif value == "combo":
+            list_type = value
+        elif value == "score":
             list_type = value
         else:
             member = utils.find_member(guild=message.guild, name=value)
