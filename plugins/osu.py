@@ -972,7 +972,7 @@ async def notify_recent_events(member_id: str, data: dict):
 
     # Format and post the events
     status_format = None
-    beatmap_id = None
+    beatmap_info = None
     update_mode = get_update_mode(member_id)
     for event in events:
         # Get and format the type of event
@@ -991,7 +991,6 @@ async def notify_recent_events(member_id: str, data: dict):
             status_format = "<title> by <name> has been loved!"
         elif event["type"] == "rank" and event["rank"] <= 50:
             beatmap_info = api.parse_beatmap_url("https://osu.ppy.sh" + event["beatmap"]["url"])
-            beatmap_id = beatmap_info.beatmap_id
         else:  # We discard any other events
             continue
 
@@ -1070,14 +1069,23 @@ async def notify_recent_events(member_id: str, data: dict):
                         pass
                     else:
                         new_event.messages.append(msg)
-        elif beatmap_id:
+        elif beatmap_info is not None:
             user_id = osu_config.data["profiles"][str(member.id)]
-            mode = get_mode(str(member.id))
+            mode = beatmap_info.gamemode
+
+            if mode == api.GameMode.Standard:
+                mode.string = "osu"
+            elif mode == api.GameMode.Taiko:
+                mode.string = "taiko"
+            elif mode == api.GameMode.Catch:
+                mode.string = "fruits"
+            elif mode == api.GameMode.Mania:
+                mode.string = "mania"
 
             params = {
                 "mode": mode.string,
             }
-            osu_scores = await api.get_user_beatmap_score(beatmap_id, user_id, params=params)
+            osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
             osu_score = osu_scores["score"]
             position = osu_scores["position"]
 
@@ -1091,7 +1099,7 @@ async def notify_recent_events(member_id: str, data: dict):
             params = {
                 "beatmap_id": osu_score["beatmap"]["id"],
             }
-            beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_id, mode=mode.string))
+            beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.string))
             embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position)
             embed.set_author(name="{0} set a new top 50 leaderboard score)".format(data["new"]["username"]),
                              icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
