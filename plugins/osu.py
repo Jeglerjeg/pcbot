@@ -41,7 +41,10 @@ from operator import itemgetter
 
 import aiohttp
 import discord
-import pytz
+try:
+    import pytz
+except ImportError:
+    pytz = None
 
 try:
     import pendulum
@@ -1095,7 +1098,7 @@ async def on_ready():
         finally:
             # Save the time elapsed since we started the update
             time_elapsed = (datetime.now() - started).total_seconds()
-            previous_update = datetime.now(tz=pytz.utc)
+            previous_update = datetime.utcnow()
 
 
 async def on_reload(name: str):
@@ -1698,19 +1701,26 @@ async def maps(message: discord.Message, *channels: discord.TextChannel):
 @osu.command(owner=True)
 async def debug(message: discord.Message):
     """ Display some debug info. """
-    await client.say(message, "Sent `{}` requests since the bot started (<t:{}:F>).\n"
+    client_time = "<t:{}:F>".format(
+        int(client.time_started.replace(tzinfo=pytz.utc).timestamp())) if pytz is not None else "`{}`".format(
+        client.time_started.ctime())
+    if previous_update is not None:
+        previous_time = "<t:{}:F>".format(int(previous_update.replace(
+            tzinfo=pytz.utc).timestamp())) if pytz is not None else "`{}`".format(previous_update.ctime())
+    else:
+        previous_time = None
+    await client.say(message, "Sent `{}` requests since the bot started ({}).\n"
                               "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
                               "Last update happened at: {}\n"
                               "Members registered as playing: {}\n"
                               "Total members tracked: `{}`".format(
-                               api.requests_sent, int(client.time_started.replace(tzinfo=pytz.utc).timestamp()),
+                               api.requests_sent, client_time,
                                round(api.requests_sent / ((datetime.utcnow() -
                                                            client.time_started).total_seconds() / 60.0), 2)
                                if api.requests_sent > 0 else 0,
                                time_elapsed,
-                               "<t:{}:F>".format(int(previous_update.timestamp()))
-                               if previous_update is not None else "Not updated yet.",
+                               previous_time if previous_time is not None else "Not updated yet.",
                                utils.format_objects(*[d["member"] for d in osu_tracking.values()
                                                       if is_playing(d["member"])], dec="`"), len(osu_tracking)
                                )
