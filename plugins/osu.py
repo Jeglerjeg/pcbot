@@ -1074,6 +1074,7 @@ async def notify_recent_events(member_id: str, data: dict):
         elif beatmap_info is not None:
             user_id = osu_config.data["profiles"][member_id]
             mode = beatmap_info.gamemode
+            member = discord.utils.get(client.get_all_members(), id=int(member_id))
 
             params = {
                 "mode": mode.name,
