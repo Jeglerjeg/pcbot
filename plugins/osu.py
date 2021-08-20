@@ -447,6 +447,7 @@ async def update_user_data(member_id: str, profile: str):
         return
 
     # Get the user data for the player
+    fetched_scores = None
     mode = get_mode(str(member_id))
     try:
         params = {
@@ -460,17 +461,13 @@ async def update_user_data(member_id: str, profile: str):
         user_recent = await api.get_user_recent_activity(profile, params=params)
 
         # User is already tracked
-        if "new" in osu_tracking[str(member_id)]:
-            # Move the "new" data into the "old" data of this user
-            osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
-        else:
+        if "new" not in osu_tracking[str(member_id)]:
             # If this is the first time, update the user's list of scores for later
             params = {
                 "mode": mode.string,
                 "limit": score_request_limit,
             }
             fetched_scores = await api.get_user_scores(profile, "best", params=params)
-            osu_tracking[str(member_id)]["scores"] = fetched_scores
     except aiohttp.ServerDisconnectedError:
         return
     except asyncio.TimeoutError:
@@ -482,8 +479,16 @@ async def update_user_data(member_id: str, profile: str):
     except Exception as e:
         logging.error(traceback.format_exc(e))
         return
+    if user_recent is None or user_data is None:
+        logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
+        return
 
     # Update the "new" data
+    if "new" not in osu_tracking[str(member_id)] and fetched_scores is not None:
+        osu_tracking[str(member_id)]["scores"] = fetched_scores
+    elif "new" in osu_tracking[str(member_id)]:
+        # Move the "new" data into the "old" data of this user
+        osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
     osu_tracking[str(member_id)]["new"] = user_data
     osu_tracking[str(member_id)]["new"]["events"] = user_recent
     await asyncio.sleep(osu_config.data["user_update_delay"])
@@ -512,6 +517,8 @@ async def get_new_score(member_id: str):
         return None
     except Exception as e:
         logging.error(traceback.format_exc(e))
+        return None
+    if user_scores is None:
         return None
 
     old_best_id = []
