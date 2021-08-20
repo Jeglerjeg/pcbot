@@ -24,10 +24,10 @@ setcache_path = "plugins/osulib/setdatacache"
 replay_path = os.path.join("plugins/osulib/", "replay.osr")
 
 mode_names = {
-    "osu": ["standard", "osu", "std"],
-    "taiko": ["taiko"],
-    "fruits": ["catch", "ctb", "fruits"],
-    "mania": ["mania", "keys"]
+    "osu": ["standard", "osu", "std", "osu!"],
+    "taiko": ["taiko", "osu!taiko"],
+    "fruits": ["catch", "ctb", "fruits", "osu!catch"],
+    "mania": ["mania", "keys", "osu!mania"]
 }
 
 

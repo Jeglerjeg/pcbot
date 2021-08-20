@@ -100,8 +100,6 @@ asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("clien
 host = "https://osu.ppy.sh/"
 rankings_url = "https://osu.ppy.sh/rankings/osu/performance"
 
-gamemodes = ", ".join(gm.name for gm in api.GameMode)
-
 recent_map_events = []
 event_repeat_interval = osu_config.data.get("map_event_repeat_interval", 6)
 timestamp_pattern = re.compile(r"(\d+:\d+:\d+\s(\([0-9,]+\))?\s*)-")
@@ -170,6 +168,20 @@ def calculate_acc(mode: api.GameMode, osu_score: dict, exclude_misses: bool = Fa
         total_number_of_hits = miss + c50 + c100 + katu + c300 + geki
 
     return total_points_of_hits / (total_number_of_hits * 300)
+
+
+def format_mode_name(mode: api.GameMode):
+    """ Return formatted mode name for user facing modes. """
+    name = ""
+    if mode is api.GameMode.osu:
+        name = "osu!"
+    elif mode is api.GameMode.mania:
+        name = "osu!mania"
+    elif mode is api.GameMode.taiko:
+        name = "osu!taiko"
+    elif mode is api.GameMode.fruits:
+        name = "osu!catch"
+    return name
 
 
 def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
@@ -1331,6 +1343,8 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
     await osu_config.asyncsave()
     await client.say(message, "Unlinked **{}'s** osu! profile.".format(member.name))
 
+gamemodes = ", ".join(format_mode_name(gm) for gm in api.GameMode)
+
 
 @osu.command(aliases="mode m track", error="Valid gamemodes: `{}`".format(gamemodes), doc_args=dict(modes=gamemodes))
 async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
@@ -1454,19 +1468,6 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
 if oppai:
     plugins.command(name="pp", aliases="oppai")(pp_)
     osu.command(name="pp", aliases="oppai")(pp_)
-
-
-def format_mode_name(mode: api.GameMode):
-    name = ""
-    if mode is api.GameMode.osu:
-        name = "osu!"
-    elif mode is api.GameMode.mania:
-        name = "osu!mania"
-    elif mode is api.GameMode.taiko:
-        name = "osu!taiko"
-    elif mode is api.GameMode.fruits:
-        name = "osu!catch"
-    return name
 
 
 async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, beatmap: dict,
