@@ -261,7 +261,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
     acc = calculate_acc(mode, osu_score)
     return (
         "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-        "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist}**"
+        "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
         "```diff\n"
         "  acc     300s  100s  50s  miss  combo\n"
         "{sign} {acc:<8.2%}{count300:<6}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}```"
@@ -276,6 +276,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
         acc=acc,
         pp=round(osu_score["pp"], 2),
         rank=osu_score["rank"],
+        score='{:,}'.format(osu_score["score"]),
         count300=osu_score["statistics"]["count_300"],
         count100=osu_score["statistics"]["count_100"],
         count50=osu_score["statistics"]["count_50"],
