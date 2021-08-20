@@ -462,7 +462,6 @@ async def update_user_data(member_id: str, profile: str):
             "key": "id"
         }
         user_data = await api.get_user(profile, mode.string, params=params)
-        user_data["time_updated"] = datetime.utcnow().isoformat()
 
         params = {
             "limit": 20
@@ -499,6 +498,7 @@ async def update_user_data(member_id: str, profile: str):
         # Move the "new" data into the "old" data of this user
         osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
     osu_tracking[str(member_id)]["new"] = user_data
+    osu_tracking[str(member_id)]["new"]["time_updated"] = datetime.utcnow().isoformat()
     osu_tracking[str(member_id)]["new"]["events"] = user_recent
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
