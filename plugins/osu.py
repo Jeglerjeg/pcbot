@@ -1087,8 +1087,8 @@ async def on_ready():
             logging.error(traceback.format_exc(e))
         except asyncio.CancelledError:
             return
-        except Exception as e:
-            logging.error(traceback.format_exc(e))
+        except:
+            logging.error(traceback.format_exc())
         finally:
             # Save the time elapsed since we started the update
             time_elapsed = (datetime.now() - started).total_seconds()
