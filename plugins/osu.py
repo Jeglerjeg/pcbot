@@ -651,7 +651,7 @@ def get_sorted_scores(osu_scores: list, list_type: str):
     """ Sort scores by newest or oldest scores. """
     if list_type == "oldest":
         sorted_scores = sorted(osu_scores, key=itemgetter("created_at"))
-    elif list_type == "oldest":
+    elif list_type == "newest":
         sorted_scores = sorted(osu_scores, key=itemgetter("created_at"), reverse=True)
     elif list_type == "acc":
         sorted_scores = sorted(osu_scores, key=itemgetter("accuracy"), reverse=True)
@@ -1107,10 +1107,12 @@ async def on_ready():
 
 async def on_reload(name: str):
     """ Preserve the tracking cache. """
-    global osu_tracking, recent_map_events
+    global osu_tracking, recent_map_events, time_elapsed, previous_update
     local_tracking = osu_tracking
     local_events = recent_map_events
     local_requests = api.requests_sent
+    local_update_time_elapsed = time_elapsed
+    local_update_time = previous_update
 
     importlib.reload(plugins.osulib.api)
     importlib.reload(plugins.osulib.ordr)
@@ -1121,6 +1123,8 @@ async def on_reload(name: str):
     api.requests_sent = local_requests
     osu_tracking = local_tracking
     recent_map_events = local_events
+    time_elapsed = local_update_time_elapsed
+    previous_update = local_update_time
 
 
 def get_timestamps_with_url(content: str):
