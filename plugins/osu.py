@@ -381,7 +381,7 @@ def get_formatted_score_time(osu_score: dict):
         elif score_time.in_hours() < 24:
             time_string = "{} ago".format(str(score_time.in_hours()) + (" hours" if score_time.in_hours() > 1 else
                                                                         " hour"))
-        elif score_time.in_days() < 30:
+        elif score_time.in_days() <= 31:
             time_string = "{} ago".format(str(score_time.in_days()) + (" days" if score_time.in_days() > 1 else " day"))
         elif score_time.in_months() < 12:
             time_string = "{} ago".format(
