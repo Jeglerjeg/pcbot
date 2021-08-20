@@ -151,7 +151,7 @@ def calculate_acc(mode: api.GameMode, osu_score: dict, exclude_misses: bool = Fa
     c300, c100, c50, miss, katu, geki = map(int, (osu_score["statistics"][key] for key in keys))
 
     # Catch accuracy is done a tad bit differently, so we calculate that by itself
-    if mode is api.GameMode.catch:
+    if mode is api.GameMode.fruits:
         total_numbers_of_fruits_caught = c50 + c100 + c300
         total_numbers_of_fruits = miss + c50 + c100 + c300 + katu
         return total_numbers_of_fruits_caught / total_numbers_of_fruits
@@ -1270,7 +1270,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     elif osu_user["playmode"] == "taiko":
         mode = api.GameMode.taiko
     elif osu_user["playmode"] == "fruits":
-        mode = api.GameMode.catch
+        mode = api.GameMode.fruits
     elif osu_user["playmode"] == "mania":
         mode = api.GameMode.mania
     else:
