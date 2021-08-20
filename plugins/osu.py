@@ -132,6 +132,7 @@ class UpdateModes(Enum):
     Minimal = ("minimal", "quiet", "m")
     PP = ("pp", "diff", "p")
     Disabled = ("none", "off", "disabled", "n", "d")
+    Leaderboard = ("leaderboard", "top50")
 
     @classmethod
     def get_mode(cls, mode: str):
@@ -229,8 +230,8 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         vod_request = await twitch.request("channels/{}/videos".format(twitch_id), limit=1, broadcast_type="archive",
                                            sort="time")
         assert vod_request["_total"] >= 1
-    except Exception as e:
-        logging.error(traceback.format_exc(e))
+    except Exception:
+        logging.error(traceback.format_exc())
         return text + "\n"
 
     vod = vod_request["videos"][0]
@@ -484,22 +485,24 @@ async def update_user_data(member_id: str, profile: str):
     except ValueError:
         logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
-    except Exception as e:
-        logging.error(traceback.format_exc(e))
+    except Exception:
+        logging.error(traceback.format_exc())
         return
-    if user_recent is None or user_data is None:
+    if not user_recent or not user_data:
         logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
 
     # Update the "new" data
-    if "scores" not in osu_tracking[str(member_id)] and fetched_scores is not None:
+    if "scores" not in osu_tracking[str(member_id)] and fetched_scores:
         osu_tracking[str(member_id)]["scores"] = fetched_scores
     elif "new" in osu_tracking[str(member_id)]:
         # Move the "new" data into the "old" data of this user
         osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
-    osu_tracking[str(member_id)]["new"] = user_data
-    osu_tracking[str(member_id)]["new"]["time_updated"] = datetime.utcnow().isoformat()
-    osu_tracking[str(member_id)]["new"]["events"] = user_recent
+    if user_data:
+        osu_tracking[str(member_id)]["new"] = user_data
+        osu_tracking[str(member_id)]["new"]["time_updated"] = datetime.utcnow().isoformat()
+    if user_recent:
+        osu_tracking[str(member_id)]["new"]["events"] = user_recent
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
@@ -524,8 +527,8 @@ async def get_new_score(member_id: str):
     except ValueError:
         logging.info("Could not retrieve osu! scores from %s (%s)", member_id, profile)
         return None
-    except Exception as e:
-        logging.error(traceback.format_exc(e))
+    except Exception:
+        logging.error(traceback.format_exc())
         return None
     if user_scores is None:
         return None
@@ -638,8 +641,8 @@ async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
                                                    modslist="+" + mods + " " if mods != "Nomod" else "",
                                                    countmiss=osu_score["statistics"]["count_miss"],
                                                    maxcombo=osu_score["max_combo"]).split())
-        except Exception as e:
-            logging.error(traceback.format_exc(e))
+        except Exception:
+            logging.error(traceback.format_exc())
     return score_pp
 
 
@@ -946,7 +949,7 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
         await osu_config.asyncsave()
 
 
-async def notify_maps(member_id: str, data: dict):
+async def notify_recent_events(member_id: str, data: dict):
     """ Notify any map updates, such as update, resurrect and qualified. """
     # Only update when there is a difference
     if "old" not in data:
@@ -969,6 +972,9 @@ async def notify_maps(member_id: str, data: dict):
         events.insert(0, event)
 
     # Format and post the events
+    status_format = None
+    beatmap_id = None
+    update_mode = get_update_mode(member_id)
     for event in events:
         # Get and format the type of event
         if event["type"] == "beatmapsetUpload":
@@ -981,8 +987,12 @@ async def notify_maps(member_id: str, data: dict):
             status_format = "<title> by <name> has been qualified!"
         elif event["type"] == "beatmapsetApprove" and event["approval"] == "ranked":
             status_format = "<title> by <name> has been ranked!"
-        elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved":
+        elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved" \
+                and update_mode is UpdateModes.Leaderboard:
             status_format = "<title> by <name> has been loved!"
+        elif event["type"] == "rank" and event["rank"] <= 50:
+            beatmap_info = api.parse_beatmap_url("https://osu.ppy.sh" + event["beatmap"]["url"])
+            beatmap_id = beatmap_info.beatmap_id
         else:  # We discard any other events
             continue
 
@@ -991,75 +1001,112 @@ async def notify_maps(member_id: str, data: dict):
             status_format = status_format.replace("<name>", "[**{name}**]({host}users/{user_id})")
             status_format = status_format.replace("<title>", "[**{artist} - {title}**]({host}beatmapsets/{id})")
 
-        # We'll sleep for a long while to let the beatmap API catch up with the change
-        await asyncio.sleep(45)
+            # We'll sleep for a long while to let the beatmap API catch up with the change
+            await asyncio.sleep(45)
 
-        # Try returning the beatmap info 6 times with a span of a minute
-        # This might be needed when new maps are submitted
-        for _ in range(6):
-            beatmapset = await api.beatmapset_from_url("https://osu.ppy.sh" + event["beatmapset"]["url"],
-                                                       force_redownload=True)
-            if beatmapset:
-                break
-            await asyncio.sleep(60)
-        else:
-            # well shit
-            continue
-
-        # Calculate (or retrieve cached info) the pp for every difficulty of this mapset
-        try:
-            await calculate_pp_for_beatmapset(beatmapset, ignore_osu_cache=True, ignore_memory_cache=True)
-        except ValueError:
-            logging.error(traceback.format_exc())
-
-        new_event = MapEvent(text=str(event["beatmapset"]["title"] + event["type"] + (event["approval"] if
-                                      event["type"] == "beatmapsetApprove" else "")))
-        prev = discord.utils.get(recent_map_events, text=str(event["beatmapset"]["title"] + event["type"] +
-                                                             (event["approval"] if
-                                                             event["type"] == "beatmapsetApprove" else "")))
-        to_delete = []
-
-        if prev:
-            recent_map_events.remove(prev)
-
-            if prev.time_created + timedelta(hours=event_repeat_interval) > new_event.time_created:
-                to_delete = prev.messages
-                new_event.count = prev.count + 1
-                new_event.time_created = prev.time_created
-
-        # Always append the new event to the recent list
-        recent_map_events.append(new_event)
-
-        # Send the message to all guilds
-        for guild in client.guilds:
-            member = guild.get_member(int(member_id))
-            channels = get_notify_channels(guild, "map")  # type: list
-
-            if not member or not channels:
+            # Try returning the beatmap info 6 times with a span of a minute
+            # This might be needed when new maps are submitted
+            for _ in range(6):
+                beatmapset = await api.beatmapset_from_url("https://osu.ppy.sh" + event["beatmapset"]["url"],
+                                                           force_redownload=True)
+                if beatmapset:
+                    break
+                await asyncio.sleep(60)
+            else:
+                # well shit
                 continue
 
-            for channel in channels:
-                # Do not format difficulties when minimal (or pp) information is specified
-                update_mode = get_update_mode(member_id)
-                embed = await format_map_status(member, status_format, beatmapset,
-                                                update_mode is not UpdateModes.Full)
+            # Calculate (or retrieve cached info) the pp for every difficulty of this mapset
+            try:
+                await calculate_pp_for_beatmapset(beatmapset, ignore_osu_cache=True, ignore_memory_cache=True)
+            except ValueError:
+                logging.error(traceback.format_exc())
 
-                if new_event.count > 1:
-                    embed.set_footer(text="updated {} times since".format(new_event.count))
-                    embed.timestamp = new_event.time_created
+            new_event = MapEvent(text=str(event["beatmapset"]["title"] + event["type"] + (event["approval"] if
+                                                                                          event["type"] ==
+                                                                                          "beatmapsetApprove" else "")))
+            prev = discord.utils.get(recent_map_events, text=str(event["beatmapset"]["title"] + event["type"] +
+                                                                 (event["approval"] if
+                                                                  event["type"] == "beatmapsetApprove" else "")))
+            to_delete = []
 
-                # Delete the previous message if there is one
-                if to_delete:
-                    delete_msg = discord.utils.get(to_delete, channel=channel)
-                    await client.delete_message(delete_msg)
-                    to_delete.remove(delete_msg)
+            if prev:
+                recent_map_events.remove(prev)
 
-                try:
-                    msg = await client.send_message(channel, embed=embed)
-                except discord.errors.Forbidden:
-                    pass
-                else:
-                    new_event.messages.append(msg)
+                if prev.time_created + timedelta(hours=event_repeat_interval) > new_event.time_created:
+                    to_delete = prev.messages
+                    new_event.count = prev.count + 1
+                    new_event.time_created = prev.time_created
+
+            # Always append the new event to the recent list
+            recent_map_events.append(new_event)
+
+            # Send the message to all guilds
+            for guild in client.guilds:
+                member = guild.get_member(int(member_id))
+                channels = get_notify_channels(guild, "map")  # type: list
+
+                if not member or not channels:
+                    continue
+
+                for channel in channels:
+                    # Do not format difficulties when minimal (or pp) information is specified
+                    update_mode = get_update_mode(member_id)
+                    embed = await format_map_status(member, status_format, beatmapset,
+                                                    update_mode is not UpdateModes.Full)
+
+                    if new_event.count > 1:
+                        embed.set_footer(text="updated {} times since".format(new_event.count))
+                        embed.timestamp = new_event.time_created
+
+                    # Delete the previous message if there is one
+                    if to_delete:
+                        delete_msg = discord.utils.get(to_delete, channel=channel)
+                        await client.delete_message(delete_msg)
+                        to_delete.remove(delete_msg)
+
+                    try:
+                        msg = await client.send_message(channel, embed=embed)
+                    except discord.errors.Forbidden:
+                        pass
+                    else:
+                        new_event.messages.append(msg)
+        elif beatmap_id:
+            user_id = osu_config.data["profiles"][str(member.id)]
+            mode = get_mode(str(member.id))
+
+            params = {
+                "mode": mode.string,
+            }
+            osu_scores = await api.get_user_beatmap_score(beatmap_id, user_id, params=params)
+            osu_score = osu_scores["score"]
+            position = osu_scores["position"]
+
+            top100_best_id = []
+            for old_score in data["scores"]:
+                top100_best_id.append(old_score["best_id"])
+
+            if osu_score["best_id"] in top100_best_id:
+                continue
+
+            params = {
+                "beatmap_id": osu_score["beatmap"]["id"],
+            }
+            beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_id, mode=mode.string))
+            embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position)
+            embed.set_author(name="{0} set a new top 50 leaderboard score)".format(data["new"]["username"]),
+                             icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
+            # Send the message to all guilds
+            for guild in client.guilds:
+                member = guild.get_member(int(member_id))
+                channels = get_notify_channels(guild, "score")
+                if not member or not channels:
+                    continue
+                for channel in channels:
+                    try:
+                        await client.send_message(channel, embed=embed)
+                    except discord.Forbidden:
+                        pass
 
 
 async def on_ready():
@@ -1092,14 +1139,14 @@ async def on_ready():
                     await notify_pp(str(member_id), data)
                     # Check for any differences in the users' events and post about map updates
                     # NOTE: the same applies to this now. These can't be concurrent as they also calculate pp.
-                    await notify_maps(str(member_id), data)
+                    await notify_recent_events(str(member_id), data)
                 else:
                     continue
-        except aiohttp.ClientOSError as e:
-            logging.error(traceback.format_exc(e))
+        except aiohttp.ClientOSError:
+            logging.error(traceback.format_exc())
         except asyncio.CancelledError:
             return
-        except:
+        except Exception:
             logging.error(traceback.format_exc())
         finally:
             # Save the time elapsed since we started the update
