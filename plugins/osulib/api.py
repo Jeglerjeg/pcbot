@@ -24,10 +24,10 @@ setcache_path = "plugins/osulib/setdatacache"
 replay_path = os.path.join("plugins/osulib/", "replay.osr")
 
 mode_names = {
-    "Standard": ["standard", "osu", "std"],
-    "Taiko": ["taiko"],
-    "Catch": ["catch", "ctb", "fruits"],
-    "Mania": ["mania", "keys"]
+    "osu": ["standard", "osu", "std"],
+    "taiko": ["taiko"],
+    "catch": ["catch", "ctb", "fruits"],
+    "mania": ["mania", "keys"]
 }
 
 
@@ -61,10 +61,10 @@ async def get_access_token(client_id, client_secret):
 
 class GameMode(Enum):
     """ Enum for gamemodes. """
-    Standard = 0
-    Taiko = 1
-    Catch = 2
-    Mania = 3
+    osu = 0
+    taiko = 1
+    catch = 2
+    mania = 3
 
     @classmethod
     def get_mode(cls, mode: str):
@@ -374,7 +374,6 @@ def parse_beatmap_url(url: str):
         if match_v2_beatmapset.group("mode") is None:
             return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"), beatmap_id=None,
                                   gamemode=None)
-
         return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"),
                               beatmap_id=match_v2_beatmapset.group("beatmap_id"),
                               gamemode=GameMode.get_mode(match_v2_beatmapset.group("mode")))

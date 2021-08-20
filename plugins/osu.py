@@ -151,20 +151,20 @@ def calculate_acc(mode: api.GameMode, osu_score: dict, exclude_misses: bool = Fa
     c300, c100, c50, miss, katu, geki = map(int, (osu_score["statistics"][key] for key in keys))
 
     # Catch accuracy is done a tad bit differently, so we calculate that by itself
-    if mode is api.GameMode.Catch:
+    if mode is api.GameMode.catch:
         total_numbers_of_fruits_caught = c50 + c100 + c300
         total_numbers_of_fruits = miss + c50 + c100 + c300 + katu
         return total_numbers_of_fruits_caught / total_numbers_of_fruits
 
     total_points_of_hits, total_number_of_hits = 0, 0
 
-    if mode is api.GameMode.Standard:
+    if mode is api.GameMode.osu:
         total_points_of_hits = c50 * 50 + c100 * 100 + c300 * 300
         total_number_of_hits = (0 if exclude_misses else miss) + c50 + c100 + c300
-    elif mode is api.GameMode.Taiko:
+    elif mode is api.GameMode.taiko:
         total_points_of_hits = (miss * 0 + c100 * 0.5 + c300 * 1) * 300
         total_number_of_hits = miss + c100 + c300
-    elif mode is api.GameMode.Mania:
+    elif mode is api.GameMode.mania:
         # In mania, katu is 200s and geki is MAX
         total_points_of_hits = c50 * 50 + c100 * 100 + katu * 200 + (c300 + geki) * 300
         total_number_of_hits = miss + c50 + c100 + katu + c300 + geki
@@ -344,20 +344,11 @@ def get_primary_guild(member_id: str):
 def get_mode(member_id: str):
     """ Return the api.GameMode for the member with this id. """
     if member_id not in osu_config.data["mode"]:
-        mode = api.GameMode.Standard
-        mode.string = "osu"
+        mode = api.GameMode.osu
         return mode
 
     value = int(osu_config.data["mode"][member_id])
     mode = api.GameMode(value)
-    if mode == api.GameMode.Standard:
-        mode.string = "osu"
-    elif mode == api.GameMode.Taiko:
-        mode.string = "taiko"
-    elif mode == api.GameMode.Catch:
-        mode.string = "fruits"
-    elif mode == api.GameMode.Mania:
-        mode.string = "mania"
     return mode
 
 
@@ -405,7 +396,7 @@ def get_formatted_score_time(osu_score: dict):
 def set_beatmap_sr(score_pp: PPStats, beatmap: dict, mode: api.GameMode, mods: str):
     """ Change beatmap SR if using SR adjusting mods. """
     beatmap["difficulty_rating"] = score_pp.stars \
-        if mode is api.GameMode.Standard and mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF",
+        if mode is api.GameMode.osu and mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF",
                                                           "RX") else beatmap["difficulty_rating"]
     return beatmap
 
@@ -462,7 +453,7 @@ async def update_user_data(member_id: str, profile: str):
         params = {
             "key": "id"
         }
-        user_data = await api.get_user(profile, mode.string, params=params)
+        user_data = await api.get_user(profile, mode.name, params=params)
 
         params = {
             "limit": 20
@@ -473,7 +464,7 @@ async def update_user_data(member_id: str, profile: str):
         if "scores" not in osu_tracking[str(member_id)]:
             # If this is the first time, update the user's list of scores for later
             params = {
-                "mode": mode.string,
+                "mode": mode.name,
                 "limit": score_request_limit,
             }
             fetched_scores = await api.get_user_scores(profile, "best", params=params)
@@ -571,7 +562,7 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: dict, lim
             "beatmap_id": osu_score["beatmap"]["id"]
         }
         mods = Mods.format_mods(osu_score["mods"])
-        beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
+        beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
         score_pp = await get_score_pp(osu_score, beatmap, member)
         if score_pp is not None:
             beatmap = set_beatmap_sr(score_pp, beatmap, mode, mods)
@@ -621,7 +612,7 @@ async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
     mode = get_mode(str(member.id))
     mods = Mods.format_mods(osu_score["mods"])
     score_pp = None
-    if mode is api.GameMode.Standard:
+    if mode is api.GameMode.osu:
         try:
             score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=True,
                                           ignore_osu_cache=not bool(beatmap["status"] == "ranked"
@@ -720,7 +711,7 @@ async def notify_pp(member_id: str, data: dict):
         params = {
             "beatmap_id": osu_score["beatmap"]["id"],
         }
-        beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
+        beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
         thumbnail_url = beatmap["beatmapset"]["covers"]["list@2x"]
 
         # There might not be any events
@@ -901,7 +892,7 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
     for diff in beatmapset["beatmaps"]:
         map_id = str(diff["id"])
         # Skip any diff that's not standard osu!
-        if int(diff["mode_int"]) != api.GameMode.Standard.value:
+        if int(diff["mode_int"]) != api.GameMode.osu.value:
             continue
 
         if ignore_osu_cache:
@@ -1073,17 +1064,8 @@ async def notify_recent_events(member_id: str, data: dict):
             user_id = osu_config.data["profiles"][str(member.id)]
             mode = beatmap_info.gamemode
 
-            if mode == api.GameMode.Standard:
-                mode.string = "osu"
-            elif mode == api.GameMode.Taiko:
-                mode.string = "taiko"
-            elif mode == api.GameMode.Catch:
-                mode.string = "fruits"
-            elif mode == api.GameMode.Mania:
-                mode.string = "mania"
-
             params = {
-                "mode": mode.string,
+                "mode": mode.name,
             }
             osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
             osu_score = osu_scores["score"]
@@ -1099,7 +1081,7 @@ async def notify_recent_events(member_id: str, data: dict):
             params = {
                 "beatmap_id": osu_score["beatmap"]["id"],
             }
-            beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.string))
+            beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.name))
             embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position)
             embed.set_author(name="{0} set a new top 50 leaderboard score)".format(data["new"]["username"]),
                              icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
@@ -1284,15 +1266,15 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     user_id = osu_user["id"]
 
     if osu_user["playmode"] == "osu":
-        mode = api.GameMode.Standard
+        mode = api.GameMode.osu
     elif osu_user["playmode"] == "taiko":
-        mode = api.GameMode.Taiko
+        mode = api.GameMode.taiko
     elif osu_user["playmode"] == "fruits":
-        mode = api.GameMode.Catch
+        mode = api.GameMode.catch
     elif osu_user["playmode"] == "mania":
-        mode = api.GameMode.Mania
+        mode = api.GameMode.mania
     else:
-        mode = api.GameMode.Standard
+        mode = api.GameMode.osu
 
     # Make sure the user has more pp than the minimum limit defined in config
     if float(osu_user["statistics"]["pp"]) < minimum_pp_required:
@@ -1312,7 +1294,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
         mode = api.GameMode.get_mode(reply.content)
         assert mode is not None, "**The given gamemode is invalid.**"
-        assert await has_enough_pp(user=user_id, mode=mode.string), \
+        assert await has_enough_pp(user=user_id, mode=mode.name), \
             "**Your pp in {} is less than the required {}pp.**".format(mode.name, minimum_pp_required)
 
     # Clear the scores when changing user
@@ -1359,16 +1341,8 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
         "No osu! profile assigned to **{}**!".format(message.author.name)
 
     user_id = osu_config.data["profiles"][str(message.author.id)]
-    if mode == api.GameMode.Standard:
-        mode.string = "osu"
-    elif mode == api.GameMode.Taiko:
-        mode.string = "taiko"
-    elif mode == api.GameMode.Catch:
-        mode.string = "fruits"
-    elif mode == api.GameMode.Mania:
-        mode.string = "mania"
 
-    assert await has_enough_pp(user=user_id, mode=mode.string), \
+    assert await has_enough_pp(user=user_id, mode=mode.name), \
         "**Your pp in {} is less than the required {}pp.**".format(mode.name, minimum_pp_required)
 
     osu_config.data["mode"][str(message.author.id)] = mode.value
@@ -1521,7 +1495,7 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
 
     params = {
         "include_fails": 1,
-        "mode": mode.string,
+        "mode": mode.name,
         "limit": 1
     }
 
@@ -1533,7 +1507,7 @@ async def recent(message: discord.Message, member: Annotate.Member = Annotate.Se
     params = {
         "beatmap_id": osu_score["beatmap"]["id"],
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score["beatmap"]["id"]), mode=mode.string))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score["beatmap"]["id"]), mode=mode.name))
 
     embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode)
     await client.send_message(message.channel, embed=embed)
@@ -1657,7 +1631,7 @@ async def score(message: discord.Message, *options):
     mode = get_mode(str(member.id))
 
     params = {
-        "mode": mode.string,
+        "mode": mode.name,
     }
     osu_scores = await api.get_user_beatmap_score(beatmap_id, user_id, params=params)
     assert osu_scores, "Found no scores by **{}**.".format(member.name)
@@ -1673,7 +1647,7 @@ async def score(message: discord.Message, *options):
     params = {
         "beatmap_id": osu_score["beatmap"]["id"],
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.string))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
 
     embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, scoreboard_rank)
     embed.set_footer(text=embed.footer.text + ("\n" + get_formatted_score_time(osu_score) if not mods and pendulum
