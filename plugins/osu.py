@@ -1342,8 +1342,10 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
 
     user_id = osu_config.data["profiles"][str(message.author.id)]
 
+    mode_name = format_mode_name(mode)
+
     assert await has_enough_pp(user=user_id, mode=mode.name), \
-        "**Your pp in {} is less than the required {}pp.**".format(mode.name, minimum_pp_required)
+        "**Your pp in {} is less than the required {}pp.**".format(mode_name, minimum_pp_required)
 
     osu_config.data["mode"][str(message.author.id)] = mode.value
     await osu_config.asyncsave()
@@ -1352,7 +1354,7 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
     if str(message.author.id) in osu_tracking:
         del osu_tracking[str(message.author.id)]
 
-    await client.say(message, "Set your gamemode to **{}**.".format(mode.name))
+    await client.say(message, "Set your gamemode to **{}**.".format(mode_name))
 
 
 @osu.command()
@@ -1374,7 +1376,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     else:
         e = discord.Embed(color=member.color)
     e.set_author(name=member.display_name, icon_url=member.avatar_url, url=host + "users/" + user_id)
-    e.add_field(name="Game Mode", value=mode.name)
+    e.add_field(name="Game Mode", value=format_mode_name(mode))
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if is_playing(member) else "NO")
 
@@ -1452,6 +1454,19 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
 if oppai:
     plugins.command(name="pp", aliases="oppai")(pp_)
     osu.command(name="pp", aliases="oppai")(pp_)
+
+
+def format_mode_name(mode: api.GameMode):
+    name = ""
+    if mode is api.GameMode.osu:
+        name = "osu!"
+    elif mode is api.GameMode.mania:
+        name = "osu!mania"
+    elif mode is api.GameMode.taiko:
+        name = "osu!taiko"
+    elif mode is api.GameMode.fruits:
+        name = "osu!catch"
+    return name
 
 
 async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, beatmap: dict,
