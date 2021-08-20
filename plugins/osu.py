@@ -1073,7 +1073,7 @@ async def notify_recent_events(member_id: str, data: dict):
                     else:
                         new_event.messages.append(msg)
         elif beatmap_info is not None:
-            user_id = osu_config.data["profiles"][str(member.id)]
+            user_id = osu_config.data["profiles"][member_id]
             mode = beatmap_info.gamemode
 
             params = {
