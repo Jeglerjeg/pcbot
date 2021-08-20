@@ -41,6 +41,8 @@ from operator import itemgetter
 
 import aiohttp
 import discord
+import pytz
+
 try:
     import pendulum
 except ImportError:
@@ -1092,7 +1094,7 @@ async def on_ready():
         finally:
             # Save the time elapsed since we started the update
             time_elapsed = (datetime.now() - started).total_seconds()
-            previous_update = datetime.utcnow()
+            previous_update = datetime.now(tz=pytz.utc)
 
 
 async def on_reload(name: str):
@@ -1633,18 +1635,19 @@ async def maps(message: discord.Message, *channels: discord.TextChannel):
 @osu.command(owner=True)
 async def debug(message: discord.Message):
     """ Display some debug info. """
-    await client.say(message, "Sent `{}` requests since the bot started (`{}`).\n"
+    await client.say(message, "Sent `{}` requests since the bot started (<t:{}:F>).\n"
                               "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
-                              "Last update happened at: `{}`\n"
+                              "Last update happened at: {}\n"
                               "Members registered as playing: {}\n"
                               "Total members tracked: `{}`".format(
-                               api.requests_sent, client.time_started.ctime(),
+                               api.requests_sent, int(client.time_started.replace(tzinfo=pytz.utc).timestamp()),
                                round(api.requests_sent / ((datetime.utcnow() -
                                                            client.time_started).total_seconds() / 60.0), 2)
                                if api.requests_sent > 0 else 0,
                                time_elapsed,
-                               previous_update.ctime() if previous_update is not None else "Not updated yet.",
+                               "<t:{}:F>".format(int(previous_update.timestamp()))
+                               if previous_update is not None else "Not updated yet.",
                                utils.format_objects(*[d["member"] for d in osu_tracking.values()
                                                       if is_playing(d["member"])], dec="`"), len(osu_tracking)
                                )
