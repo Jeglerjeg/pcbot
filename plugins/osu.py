@@ -647,12 +647,16 @@ def get_score_name(member: discord.Member, username: str):
     return "{member.mention} [`{name}`]({url})".format(member=member, name=username, url=user_url)
 
 
-def sort_scores_by_time(osu_scores: list, oldest: bool = False):
+def get_sorted_scores(osu_scores: list, list_type: str):
     """ Sort scores by newest or oldest scores. """
-    if oldest:
+    if list_type == "oldest":
         sorted_scores = sorted(osu_scores, key=itemgetter("created_at"))
-    else:
+    elif list_type == "oldest":
         sorted_scores = sorted(osu_scores, key=itemgetter("created_at"), reverse=True)
+    elif list_type == "acc":
+        sorted_scores = sorted(osu_scores, key=itemgetter("accuracy"), reverse=True)
+    else:
+        sorted_scores = sorted(osu_scores, key=itemgetter("pp"), reverse=True)
     return sorted_scores
 
 
@@ -1630,15 +1634,17 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
 
 
 async def top(message: discord.Message, *options):
-    """ Displays your or the selected member's 5 highest rated plays sorted by PP.
-    To sort by when the score was set, specify "oldest" or "newest" as type. """
-    list_type = None
+    """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
+     Alternative sorting methods are "oldest", "newest" and "acc" """
     member = None
+    list_type = "pp"
     for value in options:
         if value == "newest":
-            list_type = "newest"
+            list_type = value
         elif value == "oldest":
-            list_type = "oldest"
+            list_type = value
+        elif value == "acc":
+            list_type = value
         else:
             member = utils.find_member(guild=message.guild, name=value)
 
@@ -1649,11 +1655,7 @@ async def top(message: discord.Message, *options):
         "No osu! profile assigned to **{}**!".format(member.name)
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
-    osu_scores = osu_tracking[str(member.id)]["scores"]
-    if list_type == "newest":
-        osu_scores = sort_scores_by_time(osu_scores)
-    elif list_type == "oldest":
-        osu_scores = sort_scores_by_time(osu_scores, oldest=True)
+    osu_scores = get_sorted_scores(osu_tracking[str(member.id)]["scores"], list_type)
     m = await get_formatted_score_list(member, osu_scores, 5)
     e = discord.Embed(color=member.color)
     e.description = m
@@ -1661,8 +1663,8 @@ async def top(message: discord.Message, *options):
     e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
 
-plugins.command(name="top", usage="[member] <type>", aliases="osutop")(top)
-osu.command(name="top", usage="[member] <type>", aliases="osutop")(top)
+plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
+osu.command(name="top", usage="[member] <sorting_by>", aliases="osutop")(top)
 
 
 def init_guild_config(guild: discord.Guild):
