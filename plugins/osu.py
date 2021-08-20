@@ -641,12 +641,6 @@ async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
     return score_pp
 
 
-def get_score_name(member: discord.Member, username: str):
-    """ Formats the username and link for scores."""
-    user_url = get_user_url(str(member.id))
-    return "{member.mention} [`{name}`]({url})".format(member=member, name=username, url=user_url)
-
-
 def get_sorted_scores(osu_scores: list, list_type: str):
     """ Sort scores by newest or oldest scores. """
     if list_type == "oldest":
@@ -751,8 +745,6 @@ async def notify_pp(member_id: str, data: dict):
         primary_guild = get_primary_guild(str(member.id))
         is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
 
-        # Format the url and the username
-        name = get_score_name(member, new["username"])
         embed = get_formatted_score_embed(member, osu_score, m, potential_pp if potential_pp is not None
                                           and potential_pp.max_pp is not None and
                                           potential_pp.max_pp - osu_score["pp"] > 1
@@ -760,13 +752,18 @@ async def notify_pp(member_id: str, data: dict):
         if osu_score:
             embed.set_thumbnail(url=thumbnail_url)
 
+        embed.description = m
+
         # The top line of the format will differ depending on whether we found a score or not
         if osu_score:
-            embed.description = "**{0} set a new best `(#{pos}/{1} +{diff:.2f}pp)` on**\n".format(name,
-                                                                                                  score_request_limit,
-                                                                                                  **osu_score) + m
+            embed.set_author(
+                name="**{0} set a new best `(#{pos}/{1} +{diff:.2f}pp)` on**\n".format(data["new"]["username"],
+                                                                                       score_request_limit,
+                                                                                       **osu_score),
+                icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
         else:
-            embed.description = name + "\n" + m
+            embed.set_author(
+                name=data["new"]["username"], icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
 
         for i, channel in enumerate(channels):
             try:
