@@ -487,12 +487,12 @@ async def update_user_data(member_id: str, profile: str):
     except Exception:
         logging.error(traceback.format_exc())
         return
-    if not user_recent or not user_data:
+    if user_recent is None or user_data is None:
         logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
 
     # Update the "new" data
-    if "scores" not in osu_tracking[str(member_id)] and fetched_scores:
+    if "scores" not in osu_tracking[str(member_id)] and fetched_scores is not None:
         osu_tracking[str(member_id)]["scores"] = fetched_scores
     elif "new" in osu_tracking[str(member_id)]:
         # Move the "new" data into the "old" data of this user
