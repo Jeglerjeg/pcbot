@@ -1444,7 +1444,8 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
                                       score_pp if score_pp is not None and score_pp.max_pp is not None and
                                       score_pp.max_pp - osu_score["pp"] > 1
                                       and not bool(osu_score["perfect"] and osu_score["passed"]) else None)
-    embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
+    embed.set_author(name=osu_score["user"]["username"], icon_url=osu_score["user"]["avatar_url"],
+                     url=get_user_url(str(member.id)))
     embed.set_thumbnail(url=osu_score["beatmapset"]["covers"]["list@2x"] if bool(
         "beatmapset" in osu_score) else beatmap["beatmapset"]["covers"]["list@2x"])
     return embed
@@ -1609,7 +1610,8 @@ async def top(message: discord.Message, *options):
     m = await get_formatted_score_list(member, osu_scores, 5)
     e = discord.Embed(color=member.color)
     e.description = m
-    e.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
+    e.set_author(name=osu_tracking[str(member.id)]["new"]["username"],
+                 icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
     e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
 
