@@ -24,7 +24,7 @@ setcache_path = "plugins/osulib/setdatacache"
 mode_names = {
     "osu": ["standard", "osu", "std"],
     "taiko": ["taiko"],
-    "catch": ["catch", "ctb", "fruits"],
+    "fruits": ["catch", "ctb", "fruits"],
     "mania": ["mania", "keys"]
 }
 
@@ -61,7 +61,7 @@ class GameMode(Enum):
     """ Enum for gamemodes. """
     osu = 0
     taiko = 1
-    catch = 2
+    fruits = 2
     mania = 3
 
     @classmethod
@@ -69,7 +69,7 @@ class GameMode(Enum):
         """ Return the mode with the specified string. """
         for mode_name, names in mode_names.items():
             for name in names:
-                if name.startswith(mode.lower()):
+                if name.lower().startswith(mode.lower()):
                     return GameMode.__members__[mode_name]
 
         return None
