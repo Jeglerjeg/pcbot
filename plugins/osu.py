@@ -462,7 +462,7 @@ async def update_user_data(member_id: str, profile: str):
         user_recent = await api.get_user_recent_activity(profile, params=params)
 
         # User is already tracked
-        if "new" not in osu_tracking[str(member_id)]:
+        if "scores" not in osu_tracking[str(member_id)]:
             # If this is the first time, update the user's list of scores for later
             params = {
                 "mode": mode.string,
@@ -485,7 +485,7 @@ async def update_user_data(member_id: str, profile: str):
         return
 
     # Update the "new" data
-    if "new" not in osu_tracking[str(member_id)] and fetched_scores is not None:
+    if "scores" not in osu_tracking[str(member_id)] and fetched_scores is not None:
         osu_tracking[str(member_id)]["scores"] = fetched_scores
     elif "new" in osu_tracking[str(member_id)]:
         # Move the "new" data into the "old" data of this user
