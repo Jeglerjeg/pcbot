@@ -515,7 +515,7 @@ async def get_new_score(member_id: str):
     # Download a list of the user's scores
     profile = osu_config.data["profiles"][member_id]
     params = {
-        "mode": get_mode(member_id).string,
+        "mode": get_mode(member_id).name,
         "limit": score_request_limit,
     }
     await asyncio.sleep(osu_config.data["score_update_delay"])
