@@ -128,7 +128,7 @@ class UpdateModes(Enum):
     """ Enums for the various notification update modes.
     Values are valid names in a tuple. """
     Full = ("full", "on", "enabled", "f", "e")
-    NoMention = ("nomention", "silent")
+    No_Mention = ("no_mention", "nomention", "silent")
     Minimal = ("minimal", "quiet", "m")
     PP = ("pp", "diff", "p")
     Disabled = ("none", "off", "disabled", "n", "d")
@@ -784,7 +784,7 @@ async def notify_pp(member_id: str, data: dict):
                 # In the primary guild and if the user sets a score, send a mention and delete it
                 # This will only mention in the first channel of the guild
                 if use_mentions_in_scores and osu_score and i == 0 and is_primary \
-                        and update_mode is not UpdateModes.NoMention:
+                        and update_mode is not UpdateModes.No_Mention:
                     mention = await client.send_message(channel, member.mention)
                     await client.delete_message(mention)
             except discord.Forbidden:
