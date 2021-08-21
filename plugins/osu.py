@@ -1168,12 +1168,13 @@ async def on_ready():
 
 async def on_reload(name: str):
     """ Preserve the tracking cache. """
-    global osu_tracking, recent_map_events, time_elapsed, previous_update
+    global osu_tracking, recent_map_events, time_elapsed, previous_update, previous_score_updates
     local_tracking = osu_tracking
     local_events = recent_map_events
     local_requests = api.requests_sent
     local_update_time_elapsed = time_elapsed
     local_update_time = previous_update
+    local_score_updates = previous_score_updates
 
     importlib.reload(plugins.osulib.api)
     importlib.reload(plugins.osulib.ordr)
@@ -1186,6 +1187,7 @@ async def on_reload(name: str):
     recent_map_events = local_events
     time_elapsed = local_update_time_elapsed
     previous_update = local_update_time
+    previous_score_updates = local_score_updates
 
 
 def get_timestamps_with_url(content: str):
