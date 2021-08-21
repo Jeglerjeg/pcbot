@@ -1427,6 +1427,10 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     e.add_field(name="Game Mode", value=format_mode_name(mode))
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if is_playing(member) else "NO")
+    e.add_field(name="Notifying leaderboard scores", value="YES" if bool(str(member.id) in
+                                                                         osu_config.data["leaderboard"] and
+                                                                         osu_config.data["leaderboard"][str(member.id)])
+                else "NO")
 
     await client.send_message(message.channel, embed=e)
 
