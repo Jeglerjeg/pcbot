@@ -1702,7 +1702,7 @@ async def top(message: discord.Message, *options):
     await client.send_message(message.channel, embed=e)
 
 plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
-osu.command(name="top", usage="[member] <sorting_by>", aliases="osutop")(top)
+osu.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 
 
 def init_guild_config(guild: discord.Guild):
