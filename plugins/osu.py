@@ -988,10 +988,9 @@ async def notify_recent_events(member_id: str, data: dict):
             status_format = "<title> by <name> has been qualified!"
         elif event["type"] == "beatmapsetApprove" and event["approval"] == "ranked":
             status_format = "<title> by <name> has been ranked!"
-        elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved" \
-                and update_mode is UpdateModes.Leaderboard:
+        elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved":
             status_format = "<title> by <name> has been loved!"
-        elif event["type"] == "rank" and event["rank"] <= 50:
+        elif event["type"] == "rank" and event["rank"] <= 50 and update_mode is UpdateModes.Leaderboard:
             beatmap_info = api.parse_beatmap_url("https://osu.ppy.sh" + event["beatmap"]["url"])
         else:  # We discard any other events
             continue
