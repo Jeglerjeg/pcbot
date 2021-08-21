@@ -81,6 +81,7 @@ osu_config = Config("osu", pretty=True, data=dict(
 ))
 
 osu_tracking = {}  # Saves the requested data or deletes whenever the user stops playing (for comparisons)
+previous_score_updates = []  # Saves the score IDs of recent map notifications so they don't get posted several times
 update_interval = osu_config.data.get("update_interval", 30)
 not_playing_skip = osu_config.data.get("not_playing_skip", 10)
 time_elapsed = 0  # The registered time it takes to process all information between updates (changes each update)
@@ -719,6 +720,11 @@ async def notify_pp(member_id: str, data: dict):
 
     # If a new score was found, format the score
     if osu_score:
+        if osu_score["best_id"] in previous_score_updates:
+            return
+
+        previous_score_updates.append(osu_score["best_id"])
+
         params = {
             "beatmap_id": osu_score["beatmap"]["id"],
         }
@@ -1082,12 +1088,17 @@ async def notify_recent_events(member_id: str, data: dict):
             osu_score = osu_scores["score"]
             position = osu_scores["position"]
 
+            if osu_score["best_id"] in previous_score_updates:
+                continue
+
             top100_best_id = []
             for old_score in data["scores"]:
                 top100_best_id.append(old_score["best_id"])
 
             if osu_score["best_id"] in top100_best_id:
                 continue
+
+            previous_score_updates.append(osu_score["best_id"])
 
             params = {
                 "beatmap_id": osu_score["beatmap"]["id"],
