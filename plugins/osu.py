@@ -1096,7 +1096,7 @@ async def notify_recent_events(member_id: str, data: dict):
             }
             beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.name))
             embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position)
-            embed.set_author(name="{0} set a new top 50 leaderboard score)".format(data["new"]["username"]),
+            embed.set_author(name="{0} set a new leaderboard score".format(data["new"]["username"]),
                              icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
             # Send the message to all guilds
             for guild in client.guilds:
