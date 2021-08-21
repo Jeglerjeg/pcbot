@@ -78,6 +78,7 @@ osu_config = Config("osu", pretty=True, data=dict(
     map_cache={},  # Cache for map events, primarily used for calculating and caching pp of the difficulties
     score_update_delay=5,  # Seconds to wait before fetching a new score (apiv2 can be slow at updating top100)
     user_update_delay=2,  # Seconds to wait after updating user data (for ratelimiting purposes)
+    leaderboard={}  # A list of users that have turned on/off leaderboard notifications
 ))
 
 osu_tracking = {}  # Saves the requested data or deletes whenever the user stops playing (for comparisons)
@@ -130,7 +131,6 @@ class UpdateModes(Enum):
     Minimal = ("minimal", "quiet", "m")
     PP = ("pp", "diff", "p")
     Disabled = ("none", "off", "disabled", "n", "d")
-    Leaderboard = ("leaderboard", "top50")
 
     @classmethod
     def get_mode(cls, mode: str):
@@ -981,7 +981,8 @@ async def notify_recent_events(member_id: str, data: dict):
     # Format and post the events
     status_format = None
     beatmap_info = None
-    update_mode = get_update_mode(member_id)
+    leaderboard_enabled = bool(member_id in osu_config.data["leaderboard"] and
+                               osu_config.data["leaderboard"][member_id])
     for event in events:
         # Get and format the type of event
         if event["type"] == "beatmapsetUpload":
@@ -996,7 +997,7 @@ async def notify_recent_events(member_id: str, data: dict):
             status_format = "<title> by <name> has been ranked!"
         elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved":
             status_format = "<title> by <name> has been loved!"
-        elif event["type"] == "rank" and event["rank"] <= 50 and update_mode is UpdateModes.Leaderboard:
+        elif event["type"] == "rank" and event["rank"] <= 50 and leaderboard_enabled:
             beatmap_info = api.parse_beatmap_url("https://osu.ppy.sh" + event["beatmap"]["url"])
         else:  # We discard any other events
             continue
@@ -1380,6 +1381,26 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
         del osu_tracking[str(message.author.id)]
 
     await client.say(message, "Set your gamemode to **{}**.".format(mode_name))
+
+
+@osu.command(usage="<on/off>")
+async def leaderboard_updates(message: discord.Message, notify_setting: str):
+    """ When leaderboard updates are enabled, the bot will post your top50 scores on maps unless
+    it's in your top100 PP scores. """
+    member = message.author
+    # Make sure the member is assigned
+    assert str(member.id) in osu_config.data["profiles"], "No osu! profile assigned to **{}**!".format(member.name)
+
+    if notify_setting.lower() == "on":
+        osu_config.data["leaderboard"][str(member.id)] = True
+        await client.say(message, "Enabled leaderboard updates.")
+    elif notify_setting.lower() == "off":
+        osu_config.data["leaderboard"][str(member.id)] = False
+        await client.say(message, "Disabled leaderboard updates.")
+    else:
+        await client.say(message, "Invalid setting selected. Valid settings are on and off.")
+
+    await osu_config.asyncsave()
 
 
 @osu.command()
