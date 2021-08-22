@@ -76,7 +76,7 @@ osu_config = Config("osu", pretty=True, data=dict(
     update_mode={},  # Member's notification update mode as member_id: UpdateModes.name
     primary_guild={},  # Member's primary guild; defines where they should be mentioned: member_id: guild_id
     map_cache={},  # Cache for map events, primarily used for calculating and caching pp of the difficulties
-    score_update_delay=5,  # Seconds to wait before fetching a new score (apiv2 can be slow at updating top100)
+    score_update_delay=5,  # Seconds to wait to retry get_new_score if new score is not found
     user_update_delay=2,  # Seconds to wait after updating user data (for ratelimiting purposes)
     leaderboard={}  # A list of users that have turned on/off leaderboard notifications
 ))
@@ -518,7 +518,6 @@ async def get_new_score(member_id: str):
         "mode": get_mode(member_id).name,
         "limit": score_request_limit,
     }
-    await asyncio.sleep(osu_config.data["score_update_delay"])
     try:
         user_scores = await api.get_user_scores(profile, "best", params=params)
     except aiohttp.ServerDisconnectedError:
@@ -558,8 +557,6 @@ async def get_new_score(member_id: str):
             else:
                 diff = 0
             return dict(osu_score, pos=i + 1, diff=diff)
-
-    logging.info("%s gained PP, but no new score was found", member_id)
     return None
 
 
@@ -714,7 +711,13 @@ async def notify_pp(member_id: str, data: dict):
     if update_mode is UpdateModes.PP:
         osu_score = None
     else:
-        osu_score = await get_new_score(member_id)
+        for i in range(3):
+            osu_score = await get_new_score(member_id)
+            if osu_score is not None:
+                break
+            await asyncio.sleep(osu_config.data["score_update_delay"])
+        else:
+            logging.info("%s gained PP, but no new score was found", member_id)
 
     # If a new score was found, format the score
     if osu_score:
@@ -1084,6 +1087,9 @@ async def notify_recent_events(member_id: str, data: dict):
                 "mode": mode.name,
             }
             osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
+            if osu_scores is None:
+                continue
+
             osu_score = osu_scores["score"]
             position = osu_scores["position"]
 
