@@ -656,7 +656,7 @@ def get_sorted_scores(osu_scores: list, list_type: str):
     elif list_type == "score":
         sorted_scores = sorted(osu_scores, key=itemgetter("score"), reverse=True)
     else:
-        sorted_scores = sorted(osu_scores, key=itemgetter("pp"), reverse=True)
+        sorted_scores = osu_scores
     return sorted_scores
 
 
