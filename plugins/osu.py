@@ -172,10 +172,11 @@ def calculate_acc(mode: api.GameMode, osu_score: dict, exclude_misses: bool = Fa
 
 
 def get_leaderboard_update_status(member_id: str):
+    """ Return whether or not the user should have leaderboard scores posted automatically. """
     if member_id in osu_config.data["leaderboard"]:
         return osu_config.data["leaderboard"][member_id]
-    else:
-        return not bool(osu_config.data["opt_in_leaderboard"])
+
+    return not bool(osu_config.data["opt_in_leaderboard"])
 
 
 def format_mode_name(mode: api.GameMode):
@@ -1164,8 +1165,6 @@ async def on_ready():
                     # Check for any differences in the users' events and post about map updates
                     # NOTE: the same applies to this now. These can't be concurrent as they also calculate pp.
                     await notify_recent_events(str(member_id), data)
-                else:
-                    continue
         except aiohttp.ClientOSError:
             logging.error(traceback.format_exc())
         except asyncio.CancelledError:
@@ -1227,7 +1226,7 @@ async def on_message(message: discord.Message):
         return True
 
 
-@plugins.command(aliases="circlesimulator eba", usage="[member] [mode]")
+@plugins.command(aliases="circlesimulator eba", usage="[member] <mode>")
 async def osu(message: discord.Message, *options):
     """ Handle osu! commands.
 
