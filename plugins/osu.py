@@ -410,7 +410,7 @@ def set_beatmap_sr(score_pp: PPStats, beatmap: dict, mode: api.GameMode, mods: s
     """ Change beatmap SR if using SR adjusting mods. """
     beatmap["difficulty_rating"] = score_pp.stars \
         if mode is api.GameMode.osu and mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF",
-                                                          "RX") else beatmap["difficulty_rating"]
+                                                     "RX") else beatmap["difficulty_rating"]
     return beatmap
 
 
@@ -581,10 +581,8 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: dict, lim
             beatmap = set_beatmap_sr(score_pp, beatmap, mode, mods)
 
         # Add time since play to the score
-        if pendulum:
-            time_since_string = get_formatted_score_time(osu_score)
-        else:
-            time_since_string = ""
+        score_datetime = datetime.fromisoformat(osu_score["created_at"])
+        time_since_string = "<t:{}:R>".format(int(score_datetime.timestamp()))
 
         potential_string = None
         # Add potential pp to the score
