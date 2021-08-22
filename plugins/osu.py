@@ -718,6 +718,7 @@ async def notify_pp(member_id: str, data: dict):
                 break
             await asyncio.sleep(osu_config.data["score_update_delay"])
         else:
+            osu_score = None
             logging.info("%s gained PP, but no new score was found", member_id)
 
     # If a new score was found, format the score
@@ -750,10 +751,10 @@ async def notify_pp(member_id: str, data: dict):
     m += format_user_diff(mode, old, new)
 
     # Send the message to all guilds
-    for guild in client.guilds:
-        member = guild.get_member(int(member_id))
+    member = client.get_user(int(member_id))
+    for guild in member.mutual_guilds:
         channels = get_notify_channels(guild, "score")
-        if not member or not channels:
+        if not channels:
             continue
 
         primary_guild = get_primary_guild(str(member.id))
@@ -1050,11 +1051,11 @@ async def notify_recent_events(member_id: str, data: dict):
             recent_map_events.append(new_event)
 
             # Send the message to all guilds
-            for guild in client.guilds:
-                member = guild.get_member(int(member_id))
+            member = client.get_user(int(member_id))
+            for guild in member.mutual_guilds:
                 channels = get_notify_channels(guild, "map")  # type: list
 
-                if not member or not channels:
+                if not channels:
                     continue
 
                 for channel in channels:
@@ -1114,10 +1115,10 @@ async def notify_recent_events(member_id: str, data: dict):
             embed.set_author(name="{0} set a new leaderboard score".format(data["new"]["username"]),
                              icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
             # Send the message to all guilds
-            for guild in client.guilds:
-                member = guild.get_member(int(member_id))
+            member = client.get_user(int(member_id))
+            for guild in member.mutual_guilds:
                 channels = get_notify_channels(guild, "score")
-                if not member or not channels:
+                if not channels:
                     continue
                 for channel in channels:
                     try:
