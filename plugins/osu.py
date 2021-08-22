@@ -78,7 +78,8 @@ osu_config = Config("osu", pretty=True, data=dict(
     map_cache={},  # Cache for map events, primarily used for calculating and caching pp of the difficulties
     score_update_delay=5,  # Seconds to wait to retry get_new_score if new score is not found
     user_update_delay=2,  # Seconds to wait after updating user data (for ratelimiting purposes)
-    leaderboard={}  # A list of users that have turned on/off leaderboard notifications
+    leaderboard={},  # A list of users that have turned on/off leaderboard notifications
+    opt_in_leaderboard=True,  # Whether or not leaderboard notifications should be opt-in
 ))
 
 osu_tracking = {}  # Saves the requested data or deletes whenever the user stops playing (for comparisons)
@@ -168,6 +169,13 @@ def calculate_acc(mode: api.GameMode, osu_score: dict, exclude_misses: bool = Fa
         total_number_of_hits = miss + c50 + c100 + katu + c300 + geki
 
     return total_points_of_hits / (total_number_of_hits * 300)
+
+
+def get_leaderboard_update_status(member_id: str):
+    if member_id in osu_config.data["leaderboard"]:
+        return osu_config.data["leaderboard"][member_id]
+    else:
+        return not bool(osu_config.data["opt_in_leaderboard"])
 
 
 def format_mode_name(mode: api.GameMode):
@@ -983,8 +991,7 @@ async def notify_recent_events(member_id: str, data: dict):
     # Format and post the events
     status_format = None
     beatmap_info = None
-    leaderboard_enabled = bool(member_id in osu_config.data["leaderboard"] and
-                               osu_config.data["leaderboard"][member_id])
+    leaderboard_enabled = get_leaderboard_update_status(member_id)
     for event in events:
         # Get and format the type of event
         if event["type"] == "beatmapsetUpload":
@@ -1379,7 +1386,7 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
 
 
 @osu.command(usage="<on/off>")
-async def leaderboard_updates(message: discord.Message, notify_setting: str):
+async def leaderboard_notifications(message: discord.Message, notify_setting: str):
     """ When leaderboard updates are enabled, the bot will post your top50 scores on maps unless
     it's in your top100 PP scores. """
     member = message.author
@@ -1420,9 +1427,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     e.add_field(name="Game Mode", value=format_mode_name(mode))
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if is_playing(member) else "NO")
-    e.add_field(name="Notifying leaderboard scores", value="YES" if bool(str(member.id) in
-                                                                         osu_config.data["leaderboard"] and
-                                                                         osu_config.data["leaderboard"][str(member.id)])
+    e.add_field(name="Notifying leaderboard scores", value="YES" if get_leaderboard_update_status(str(member.id))
                 else "NO")
 
     await client.send_message(message.channel, embed=e)
