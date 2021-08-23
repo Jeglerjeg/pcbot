@@ -207,7 +207,7 @@ async def execute_command(command: plugins.Command, message: discord.Message, *a
     try:
         await command.function(message, *args, **kwargs)
     except AssertionError as e:
-        await client.say(message, str(e) or command.error or plugins.format_help(command, message.guild))
+        await client.say(message, str(e) or command.error or plugins.format_help(command, message.guild, message))
     except:
         logging.error(traceback.format_exc())
         if plugins.is_owner(message.author) and config.owner_error:
@@ -444,7 +444,7 @@ async def parse_command(command: plugins.Command, cmd_args: list, message: disco
             else:
                 if len(cmd_args) == 1:
                     send_help = True
-                await client.say(message, plugins.format_help(command, message.guild,
+                await client.say(message, plugins.format_help(command, message.guild, message,
                                                               no_subcommand=not send_help))
 
         command = None
@@ -513,7 +513,7 @@ async def on_message(message: discord.Message):
         parsed_command, args, kwargs = await parse_command(command, cmd_args, message)
     except AssertionError as e:  # Return any feedback given from the command via AssertionError, or the command help
         await client.send_message(message.channel,
-                                  str(e) or plugins.format_help(command, message.guild, no_subcommand=True))
+                                  str(e) or plugins.format_help(command, message.guild, message, no_subcommand=True))
         log_message(message)
         return
 
