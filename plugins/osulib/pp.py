@@ -24,7 +24,7 @@ MapPPStats = namedtuple("PPStats", "pp stars artist title version ar od hp cs ai
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars artist title version")
 
 cache_path = "plugins/osulib/mapcache"
-cached_beatmap = CachedBeatmap(url_or_id=None, beatmap=None)
+cached_beatmap = {}
 
 
 async def is_osu_file(url: str):
@@ -83,7 +83,6 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False, ignore_me
     :param ignore_osu_cache: When true, does not download or use .osu file cache
     :param ignore_memory_cache: When true, the in-memory beatmap cache will be ignored
     """
-    global cached_beatmap
 
     if isinstance(beatmap_url_or_id, str):
         beatmap_id = await api.beatmap_from_url(beatmap_url_or_id, return_type="id")
@@ -96,12 +95,12 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False, ignore_me
         os.makedirs(cache_path)
 
     # Parse from cache or load the .osu and parse new>r
-    if not ignore_memory_cache and beatmap_url_or_id == cached_beatmap.url_or_id:
-        beatmap = cached_beatmap.beatmap
+    if not ignore_memory_cache and beatmap_url_or_id in cached_beatmap:
+        beatmap = cached_beatmap[beatmap_url_or_id]
     elif not ignore_osu_cache and os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
             beatmap = fp.read()
-            cached_beatmap = CachedBeatmap(url_or_id=beatmap_url_or_id, beatmap=beatmap)
+            cached_beatmap[beatmap_url_or_id] = beatmap
     else:
         downloaded_beatmap = await download_beatmap(beatmap_url_or_id, ignore_cache=ignore_osu_cache)
         if ignore_osu_cache:
@@ -110,7 +109,7 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False, ignore_me
             with open(beatmap_path, encoding="utf-8") as fp:
                 beatmap = fp.read()
 
-        cached_beatmap = CachedBeatmap(url_or_id=beatmap_url_or_id, beatmap=beatmap)
+        cached_beatmap[beatmap_url_or_id] = beatmap
 
     return beatmap
 
