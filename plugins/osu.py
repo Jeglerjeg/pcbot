@@ -1703,8 +1703,8 @@ async def score(message: discord.Message, *options):
     beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
 
     embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, scoreboard_rank)
-    embed.set_footer(text=embed.footer.text + ("\n" + get_formatted_score_time(osu_score) if not mods and pendulum
-                                               else ""))
+    embed.set_footer(text="".join([embed.footer.text, ("".join(["\n", get_formatted_score_time(osu_score)
+                                                       if not mods and pendulum else ""]))]))
     await client.send_message(message.channel, embed=embed)
 
 
