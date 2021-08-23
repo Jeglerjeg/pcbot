@@ -597,10 +597,10 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: dict, lim
             potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
                                                                           score_pp.max_pp - float(osu_score["pp"]))
 
-        m += "{}.\n".format(str(i + 1)) + \
-             await format_new_score(mode, osu_score, beatmap, rank=None,
-                                    member=osu_tracking[str(member.id)]["member"]) \
-             + (potential_string + "\n" if potential_string is not None else "") + time_since_string + "\n\n"
+        m += "".join(["{}.\n".format(str(i + 1)),
+                      await format_new_score(mode, osu_score, beatmap, rank=None,
+                                             member=osu_tracking[str(member.id)]["member"]),
+                      (potential_string + "\n" if potential_string is not None else ""), time_since_string, "\n\n"])
     return m
 
 
