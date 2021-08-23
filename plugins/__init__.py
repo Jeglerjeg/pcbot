@@ -281,22 +281,27 @@ def argument(arg_format=argument_format, *, pass_message=False, allow_spaces=Fal
     return decorator
 
 
-def format_usage(cmd: Command, guild: discord.Guild):
+def format_usage(cmd: Command, guild: discord.Guild, message: discord.Message, sub_command_format: bool = False):
     """ Format the usage string of the given command. Places any usage
     of a sub command on a newline.
 
     :param cmd: Type Command.
     :param guild: The guild to generate the usage in.
+    :param message: The message object to run permission checks on.
+    :param sub_command_format: Whether or not the command should be formatted as a subcommand.
     :return: str: formatted usage.
     """
     if cmd.hidden and cmd.parent is not None:
+        return
+
+    if not can_use_command(cmd, message.author, message.channel) and sub_command_format:
         return
 
     command_prefix = config.guild_command_prefix(guild)
     usage = [cmd.usage(guild)]
     for sub_command in cmd.sub_commands:
         # Recursively format the usage of the next sub commands
-        formatted = format_usage(sub_command, guild)
+        formatted = format_usage(sub_command, guild, message, sub_command_format=True)
 
         if formatted:
             usage.append(formatted)
@@ -304,20 +309,21 @@ def format_usage(cmd: Command, guild: discord.Guild):
     return "\n".join(s for s in usage if s is not None).format(pre=command_prefix) if usage else None
 
 
-def format_help(cmd: Command, guild: discord.Guild, no_subcommand: bool = False):
+def format_help(cmd: Command, guild: discord.Guild, message: discord.Message, no_subcommand: bool = False):
     """ Format the help string of the given command as a message to be sent.
 
     :param cmd: Type Command
     :param guild: The guild to generate help in.
+    :param message: The message object format_usage runs permission checks on.
     :param no_subcommand: Use only the given command's usage.
     :return: str: help message.
     """
-    usage = cmd.usage(guild) if no_subcommand else format_usage(cmd, guild)
+    usage = cmd.usage(guild) if no_subcommand else format_usage(cmd, guild, message)
 
     # If there is no usage, the command isn't supposed to be displayed as such
     # Therefore, we switch to using the parent command instead
     if usage is None and cmd.parent is not None:
-        return format_help(cmd.parent, guild)
+        return format_help(cmd.parent, guild, message)
 
     command_prefix = config.guild_command_prefix(guild)
     desc = cmd.description.format(pre=command_prefix)

@@ -42,7 +42,7 @@ async def help_(message: discord.Message, command: str.lower = None, *args):
         # Get the specific command with arguments and send the help
         cmd = plugins.get_sub_command(cmd, *args)
         embed = discord.Embed(color=message.author.color)
-        embed.description = plugins.format_help(cmd, message.guild)
+        embed.description = plugins.format_help(cmd, message.guild, message)
         await client.send_message(message.channel, embed=embed)
 
     # Display every command
