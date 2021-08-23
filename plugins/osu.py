@@ -571,7 +571,7 @@ async def get_new_score(member_id: str):
     return None
 
 
-async def get_formatted_score_list(member: discord.Member, osu_scores: dict, limit: int):
+async def get_formatted_score_list(member: discord.Member, osu_scores: list, limit: int):
     """ Return a list of formatted scores along with time since the score was set. """
     mode = get_mode(str(member.id))
     m = []
@@ -768,6 +768,7 @@ async def notify_pp(member_id: str, data: dict):
         channels = get_notify_channels(guild, "score")
         if not channels:
             continue
+        member = guild.get_member(int(member_id))
 
         primary_guild = get_primary_guild(str(member.id))
         is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
@@ -1069,6 +1070,8 @@ async def notify_recent_events(member_id: str, data: dict):
                 if not channels:
                     continue
 
+                member = guild.get_member(int(member_id))
+
                 for channel in channels:
                     # Do not format difficulties when minimal (or pp) information is specified
                     update_mode = get_update_mode(member_id)
@@ -1094,7 +1097,6 @@ async def notify_recent_events(member_id: str, data: dict):
         elif beatmap_info is not None:
             user_id = osu_config.data["profiles"][member_id]
             mode = beatmap_info.gamemode
-            member = discord.utils.get(client.get_all_members(), id=int(member_id))
 
             params = {
                 "mode": mode.name,
@@ -1122,15 +1124,18 @@ async def notify_recent_events(member_id: str, data: dict):
                 "beatmap_id": osu_score["beatmap"]["id"],
             }
             beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.name))
-            embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position)
-            embed.set_author(name="{0} set a new leaderboard score".format(data["new"]["username"]),
-                             icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
             # Send the message to all guilds
             member = client.get_user(int(member_id))
             for guild in member.mutual_guilds:
                 channels = get_notify_channels(guild, "score")
                 if not channels:
                     continue
+                member = guild.get_member(int(member_id))
+
+                embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position)
+                embed.set_author(name="{0} set a new leaderboard score".format(data["new"]["username"]),
+                                 icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
+
                 for channel in channels:
                     try:
                         await client.send_message(channel, embed=embed)
