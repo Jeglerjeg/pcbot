@@ -180,17 +180,17 @@ def get_leaderboard_update_status(member_id: str):
     return not bool(osu_config.data["opt_in_leaderboard"])
 
 
-def format_mode_name(mode: api.GameMode):
+def format_mode_name(mode: api.GameMode, short_name: bool = False):
     """ Return formatted mode name for user facing modes. """
     name = ""
     if mode is api.GameMode.osu:
-        name = "osu!"
+        name = "osu!" if not short_name else "S"
     elif mode is api.GameMode.mania:
-        name = "osu!mania"
+        name = "osu!mania" if not short_name else "M"
     elif mode is api.GameMode.taiko:
-        name = "osu!taiko"
+        name = "osu!taiko" if not short_name else "T"
     elif mode is api.GameMode.fruits:
-        name = "osu!catch"
+        name = "osu!catch" if not short_name else "C"
     return name
 
 
@@ -817,7 +817,7 @@ async def format_beatmapset_diffs(beatmapset: dict):
     for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
         m += "\n{gamemode: <2}{name: <{diff_len}}  {stars: <7}{drain: <7}{pp}".format(
-            gamemode=api.GameMode(int(diff["mode_int"])).name[0],
+            gamemode=format_mode_name(api.GameMode(int(diff["mode_int"])), short_name=True),
             name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
             diff_len=diff_length,
             stars="{:.2f}\u2605".format(float(diff["difficulty_rating"])),
