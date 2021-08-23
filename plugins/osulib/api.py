@@ -21,7 +21,7 @@ requests_sent = 0
 mapcache_path = "plugins/osulib/mapdatacache"
 setcache_path = "plugins/osulib/setdatacache"
 
-in_memory_beatmaps = {}
+beatmap_memory_cache = {}
 
 mode_names = {
     "osu": ["standard", "osu", "std", "osu!"],
@@ -229,8 +229,8 @@ def retrieve_cache(map_id: int, map_type: str, mode: str = None):
             os.makedirs(mapcache_path)
         beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
         filename = str(map_id) + "-" + mode + ".json"
-    if filename is not None and filename in in_memory_beatmaps:
-        result = in_memory_beatmaps[filename]
+    if filename is not None and filename in beatmap_memory_cache:
+        result = beatmap_memory_cache[filename]
     elif os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
             result = json.load(fp)
@@ -265,8 +265,8 @@ async def beatmap_lookup(params, map_id, mode):
     result = retrieve_cache(map_id, "map", mode)
     valid_result = validate_cache(result)
     filename = str(map_id) + "-" + mode + ".json"
-    if valid_result and filename not in in_memory_beatmaps:
-        in_memory_beatmaps[filename] = result
+    if valid_result and filename not in beatmap_memory_cache:
+        beatmap_memory_cache[filename] = result
     elif not valid_result:
         response = await beatmapset_lookup(params=params)
         beatmapset = response.copy()
@@ -282,7 +282,7 @@ async def beatmap_lookup(params, map_id, mode):
                 if str(convert["id"]) == str(map_id) and convert["mode"] == mode:
                     convert["beatmapset"] = beatmapset
                     result = convert
-        in_memory_beatmaps[filename] = result
+        beatmap_memory_cache[filename] = result
     return result
 
 
