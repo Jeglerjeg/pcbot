@@ -206,29 +206,29 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
 
     # Find the performance page number of the respective ranks
 
-    formatted = "\u2139`{} {:.2f}pp {:+.2f}pp`".format(mode.name.replace("Standard", "osu!"),
-                                                       float(data_new["statistics"]["pp"]), pp)
-    formatted += (" [\U0001f30d]({}?page={})`#{:,}{}`".format(rankings_url, pp_rank // 50 + 1, pp_rank,
-                                                              "" if int(rank) == 0 else " {:+}".format(int(rank))))
-    formatted += (" [{}]({}?country={}&page={})`#{:,}{}`".format(utils.text_to_emoji(iso), rankings_url, iso,
-                                                                 pp_country_rank // 50 + 1, pp_country_rank,
-                                                                 "" if int(country_rank) == 0 else " {:+}".format(
-                                                                     int(country_rank))))
+    formatted = ["\u2139`{} {:.2f}pp {:+.2f}pp`".format(mode.name.replace("Standard", "osu!"),
+                                                        float(data_new["statistics"]["pp"]), pp),
+                 " [\U0001f30d]({}?page={})`#{:,}{}`".format(rankings_url, pp_rank // 50 + 1, pp_rank,
+                                                             "" if int(rank) == 0 else " {:+}".format(int(rank))),
+                 " [{}]({}?country={}&page={})`#{:,}{}`".format(utils.text_to_emoji(iso), rankings_url, iso,
+                                                                pp_country_rank // 50 + 1, pp_country_rank,
+                                                                "" if int(country_rank) == 0 else " {:+}".format(
+                                                                    int(country_rank)))]
     rounded_acc = round(accuracy, 3)
     if rounded_acc > 0:
-        formatted += "\n\U0001f4c8"  # Graph with upwards trend
+        formatted.append("\n\U0001f4c8")  # Graph with upwards trend
     elif rounded_acc < 0:
-        formatted += "\n\U0001f4c9"  # Graph with downwards trend
+        formatted.append("\n\U0001f4c9")  # Graph with downwards trend
     else:
-        formatted += "\n\U0001f3af"  # Dart
+        formatted.append("\n\U0001f3af")  # Dart
 
-    formatted += "`{:.3f}%".format(float(data_new["statistics"]["hit_accuracy"]))
+    formatted.append("`{:.3f}%".format(float(data_new["statistics"]["hit_accuracy"])))
     if not rounded_acc == 0:
-        formatted += " {:+}%`".format(rounded_acc)
+        formatted.append(" {:+}%`".format(rounded_acc))
     else:
-        formatted += "`"
+        formatted.append("`")
 
-    return formatted
+    return "".join(formatted)
 
 
 async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
@@ -241,9 +241,9 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         return ""
 
     # Add the stream url and return immediately if twitch is not setup
-    text = "**Watch live @** <{}>".format(stream_url)
+    text = ["**Watch live @** <{}>".format(stream_url)]
     if not twitch.client_id:
-        return text + "\n"
+        return text.append("\n")
 
     # Try getting the vod information of the current stream
     try:
@@ -253,7 +253,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         assert vod_request["_total"] >= 1
     except Exception:
         logging.error(traceback.format_exc())
-        return text + "\n"
+        return text.append("\n")
 
     vod = vod_request["videos"][0]
 
@@ -274,8 +274,8 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     timestamp_play_started = timestamp_score_created - beatmap_length
 
     # Add the vod url with timestamp to the formatted text
-    text += " | **[`Video of this play :)`]({0}?t={1}s)**\n".format(vod["url"], int(timestamp_play_started))
-    return text
+    text.append(" | **[`Video of this play :)`]({0}?t={1}s)**\n".format(vod["url"], int(timestamp_play_started)))
+    return "".join(text)
 
 
 async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, rank: int = None,
@@ -385,7 +385,7 @@ def get_user_url(member_id: str):
     """ Return the user website URL. """
     user_id = osu_config.data["profiles"][member_id]
 
-    return host + "users/" + user_id
+    return "".join([host, "users/", user_id])
 
 
 def get_formatted_score_time(osu_score: dict):
@@ -394,22 +394,23 @@ def get_formatted_score_time(osu_score: dict):
     if pendulum:
         score_time = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
         if score_time.in_seconds() < 60:
-            time_string = "{} ago".format(str(score_time.in_seconds()) + (" seconds"
-                                          if score_time.in_seconds() > 1 else " second"))
+            time_string = "{} ago".format("".join([str(score_time.in_seconds()), (" seconds"
+                                          if score_time.in_seconds() > 1 else " second")]))
         elif score_time.in_minutes() < 60:
-            time_string = "{} ago".format(str(score_time.in_minutes()) + (" minutes" if score_time.in_minutes() > 1
-                                                                          else " minute"))
+            time_string = "{} ago".format("".join([str(score_time.in_minutes()),
+                                                   (" minutes" if score_time.in_minutes() > 1 else " minute")]))
         elif score_time.in_hours() < 24:
-            time_string = "{} ago".format(str(score_time.in_hours()) + (" hours" if score_time.in_hours() > 1 else
-                                                                        " hour"))
+            time_string = "{} ago".format("".join([str(score_time.in_hours()),
+                                                   (" hours" if score_time.in_hours() > 1 else " hour")]))
         elif score_time.in_days() <= 31:
-            time_string = "{} ago".format(str(score_time.in_days()) + (" days" if score_time.in_days() > 1 else " day"))
+            time_string = "{} ago".format("".join([str(score_time.in_days()),
+                                                   (" days" if score_time.in_days() > 1 else " day")]))
         elif score_time.in_months() < 12:
-            time_string = "{} ago".format(
-                str(score_time.in_months()) + (" months" if score_time.in_months() > 1 else " month"))
+            time_string = "{} ago".format("".join([str(score_time.in_months()),
+                                                   (" months" if score_time.in_months() > 1 else " month")]))
         else:
-            time_string = "{} ago".format(str(score_time.in_years()) + (" years" if score_time.in_years() > 1 else
-                                                                        " year"))
+            time_string = "{} ago".format("".join([str(score_time.in_years()),
+                                                   (" years" if score_time.in_years() > 1 else " year")]))
 
     return time_string
 
@@ -572,7 +573,7 @@ async def get_new_score(member_id: str):
 async def get_formatted_score_list(member: discord.Member, osu_scores: dict, limit: int):
     """ Return a list of formatted scores along with time since the score was set. """
     mode = get_mode(str(member.id))
-    m = ""
+    m = []
     for i, osu_score in enumerate(osu_scores):
         if i > limit - 1:
             break
@@ -596,11 +597,12 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: dict, lim
             potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
                                                                           score_pp.max_pp - float(osu_score["pp"]))
 
-        m += "".join(["{}.\n".format(str(i + 1)),
-                      await format_new_score(mode, osu_score, beatmap, rank=None,
-                                             member=osu_tracking[str(member.id)]["member"]),
-                      (potential_string + "\n" if potential_string is not None else ""), time_since_string, "\n\n"])
-    return m
+        m.append("".join(["{}.\n".format(str(i + 1)),
+                 await format_new_score(mode, osu_score, beatmap, rank=None,
+                                        member=osu_tracking[str(member.id)]["member"]),
+                          (potential_string + "\n" if potential_string is not None else ""),
+                          time_since_string, "\n\n"]))
+    return "".join(m)
 
 
 def get_diff(old: dict, new: dict, value: str, statistics=False):
@@ -616,10 +618,11 @@ def get_notify_channels(guild: discord.Guild, data_type: str):
     if str(guild.id) not in osu_config.data["guild"]:
         return None
 
-    if data_type + "-channels" not in osu_config.data["guild"][str(guild.id)]:
+    if "".join([data_type, "-channels"]) not in osu_config.data["guild"][str(guild.id)]:
         return None
 
-    return [guild.get_channel(int(s)) for s in osu_config.data["guild"][str(guild.id)][data_type + "-channels"]
+    return [guild.get_channel(int(s)) for s in osu_config.data["guild"][str(guild.id)]["".join([data_type,
+                                                                                                "-channels"])]
             if guild.get_channel(int(s))]
 
 
@@ -673,12 +676,12 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
     """ Return a formatted score as an embed """
     embed = discord.Embed(color=member.color, url=get_user_url(str(member.id)))
     embed.description = formatted_score
-    footer = ""
+    footer = []
 
     # Add potential pp in the footer
     if potential_pp:
-        footer += "Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp.max_pp,
-                                                             potential_pp.max_pp - float(osu_score["pp"]))
+        footer.append("Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp.max_pp,
+                                                                 potential_pp.max_pp - float(osu_score["pp"])))
 
     # Add completion rate to footer if score is failed
     if osu_score is not None and osu_score["passed"] is False:
@@ -687,10 +690,10 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
 
         beatmap_objects = osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] \
                                                                 + osu_score["beatmap"]["count_spinners"]
-        footer += "\nCompletion rate: {completion_rate:.2f}% ({partial_sr}\u2605)".format(
-            completion_rate=(objects / beatmap_objects) * 100, partial_sr=round(potential_pp.partial_stars, 2))
+        footer.append("\nCompletion rate: {completion_rate:.2f}% ({partial_sr}\u2605)".format(
+            completion_rate=(objects / beatmap_objects) * 100, partial_sr=round(potential_pp.partial_stars, 2)))
 
-    embed.set_footer(text=footer)
+    embed.set_footer(text="".join(footer))
     return embed
 
 
