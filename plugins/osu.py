@@ -298,9 +298,9 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
         sign="!" if acc == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
         modslist=Mods.format_mods(osu_score["mods"]),
         acc=acc,
-        pp=round(osu_score["pp"], 2),
+        pp=round(osu_score["pp"], 2) if not isinstance(osu_score["pp"], str) else osu_score["pp"],
         rank=osu_score["rank"],
-        score='{:,}'.format(osu_score["score"]),
+        score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
         count300=osu_score["statistics"]["count_300"],
         count100=osu_score["statistics"]["count_100"],
         count50=osu_score["statistics"]["count_50"],
@@ -544,11 +544,12 @@ async def calculate_no_choke_top_plays(osu_scores: list):
                                               maxcombo=osu_score["max_combo"]).split())
         if (score_pp.max_pp - osu_score["pp"]) > 10:
             no_choke_score = osu_score.copy()
-            no_choke_score["pp"] = score_pp.max_pp
+            no_choke_score["pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
             no_choke_score["perfect"] = True
             no_choke_score["accuracy"] = full_combo_acc
             no_choke_score["statistics"]["count_miss"] = 0
             no_choke_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
+            no_choke_score["score"] = None
             no_choke_list.append(no_choke_score)
     return no_choke_list
 
@@ -627,7 +628,7 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
 
         potential_string = None
         # Add potential pp to the score
-        if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
+        if score_pp is not None and not isinstance(osu_score["pp"], str) and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
                 and not osu_score["perfect"]:
             potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
                                                                           score_pp.max_pp - float(osu_score["pp"]))
