@@ -637,8 +637,8 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
 
         potential_string = None
         # Add potential pp to the score
-        if score_pp is not None and not isinstance(osu_score["pp"], str) and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 \
-                and not osu_score["perfect"]:
+        if score_pp is not None and not isinstance(osu_score["pp"], str) and \
+                score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 and not osu_score["perfect"]:
             potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
                                                                           score_pp.max_pp - float(osu_score["pp"]))
 
@@ -1813,18 +1813,19 @@ async def top(message: discord.Message, *options):
         "No osu! profile assigned to **{}**!".format(member.name)
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
-    if nochoke:
-        osu_score_list = copy.deepcopy(osu_tracking[str(member.id)]["scores"])
-        osu_scores = await calculate_no_choke_top_plays(osu_score_list)
-    else:
-        osu_scores = osu_tracking[str(member.id)]["scores"]
-    sorted_scores = await get_sorted_scores(osu_scores, list_type)
-    m = await get_formatted_score_list(member, sorted_scores, 5)
-    e = discord.Embed(color=member.color)
-    e.description = m
-    e.set_author(name=osu_tracking[str(member.id)]["new"]["username"],
-                 icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
-    e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
+    async with message.channel.typing():
+        if nochoke:
+            osu_score_list = copy.deepcopy(osu_tracking[str(member.id)]["scores"])
+            osu_scores = await calculate_no_choke_top_plays(osu_score_list)
+        else:
+            osu_scores = osu_tracking[str(member.id)]["scores"]
+        sorted_scores = await get_sorted_scores(osu_scores, list_type)
+        m = await get_formatted_score_list(member, sorted_scores, 5)
+        e = discord.Embed(color=member.color)
+        e.description = m
+        e.set_author(name=osu_tracking[str(member.id)]["new"]["username"],
+                     icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
+        e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
 
 
