@@ -546,12 +546,14 @@ async def calculate_no_choke_top_plays(osu_scores: list):
         if (score_pp.max_pp - osu_score["pp"]) > 10:
             no_choke_score = osu_score.copy()
             no_choke_score["pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
+            no_choke_score["new_pp"] = score_pp.max_pp
             no_choke_score["perfect"] = True
             no_choke_score["accuracy"] = full_combo_acc
             no_choke_score["statistics"]["count_miss"] = 0
             no_choke_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
             no_choke_score["score"] = None
             no_choke_list.append(no_choke_score)
+    no_choke_list.sort(key=itemgetter("new_pp"), reverse=True)
     return no_choke_list
 
 
@@ -705,7 +707,7 @@ async def get_sorted_scores(osu_scores: list, list_type: str):
     elif list_type == "score":
         sorted_scores = sorted(osu_scores, key=itemgetter("score"), reverse=True)
     else:
-        sorted_scores = sorted(osu_scores, key=itemgetter("pp"), reverse=True)
+        sorted_scores = osu_scores
     return sorted_scores
 
 
