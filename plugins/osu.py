@@ -41,6 +41,7 @@ from operator import itemgetter
 
 import aiohttp
 import discord
+
 try:
     import pytz
 except ImportError:
@@ -315,7 +316,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
         # Escaping asterisk doesn't work in italics
         version=beatmap["version"],
         stars=float(beatmap["difficulty_rating"]),
-        maxcombo=osu_score["max_combo"],
+        maxcombo=osu_score["max_combo"] if not osu_score["perfect"] else beatmap["max_combo"],
         max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap and beatmap["max_combo"] is not None
         else "",
         scoreboard_rank="#{} ".format(rank) if rank else "",
@@ -395,8 +396,8 @@ def get_formatted_score_time(osu_score: dict):
     if pendulum:
         score_time = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
         if score_time.in_seconds() < 60:
-            time_string = "{} ago".format("".join([str(score_time.in_seconds()), (" seconds"
-                                          if score_time.in_seconds() > 1 else " second")]))
+            time_string = "{} ago".format("".join([str(score_time.in_seconds()),
+                                                   (" seconds" if score_time.in_seconds() > 1 else " second")]))
         elif score_time.in_minutes() < 60:
             time_string = "{} ago".format("".join([str(score_time.in_minutes()),
                                                    (" minutes" if score_time.in_minutes() > 1 else " minute")]))
@@ -519,6 +520,39 @@ async def update_user_data(member_id: str, profile: str):
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
+async def calculate_no_choke_top_plays(osu_scores: list):
+    """ Calculates and returns a new list of unchoked plays. """
+    non_perfect_scores = []
+    no_choke_list = []
+    mode = api.GameMode.osu
+    for osu_score in osu_scores:
+        if not osu_score["perfect"]:
+            non_perfect_scores.append(osu_score)
+    for osu_score in non_perfect_scores:
+        mods = api.Mods.format_mods(osu_score["mods"])
+        full_combo_acc = calculate_acc(mode, osu_score, exclude_misses=True)
+        score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=True,
+                                      *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
+                                       "{scorerank}rank {countmiss}m {maxcombo}x"
+                                      .format(acc=calculate_acc(mode, osu_score),
+                                              potential_acc=full_combo_acc,
+                                              scorerank="F" if osu_score["passed"] is False else osu_score["rank"],
+                                              c300=osu_score["statistics"]["count_300"],
+                                              c100=osu_score["statistics"]["count_100"],
+                                              c50=osu_score["statistics"]["count_50"],
+                                              modslist="+" + mods + " " if mods != "Nomod" else "",
+                                              countmiss=osu_score["statistics"]["count_miss"],
+                                              maxcombo=osu_score["max_combo"]).split())
+        if (score_pp.max_pp - osu_score["pp"]) > 10:
+            no_choke_score = osu_score.copy()
+            no_choke_score["pp"] = score_pp.max_pp
+            no_choke_score["perfect"] = True
+            no_choke_score["accuracy"] = full_combo_acc
+            no_choke_score["statistics"]["count_miss"] = 0
+            no_choke_list.append(no_choke_score)
+    return no_choke_list
+
+
 async def get_new_score(member_id: str):
     """ Compare old user scores with new user scores and return the discovered
     new score if there is any. When a score is returned, it's position in the
@@ -599,8 +633,8 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
                                                                           score_pp.max_pp - float(osu_score["pp"]))
 
         m.append("".join(["{}.\n".format(str(i + 1)),
-                 await format_new_score(mode, osu_score, beatmap, rank=None,
-                                        member=osu_tracking[str(member.id)]["member"]),
+                          await format_new_score(mode, osu_score, beatmap, rank=None,
+                                                 member=osu_tracking[str(member.id)]["member"]),
                           (potential_string + "\n" if potential_string is not None else ""),
                           time_since_string, "\n\n"]))
     return "".join(m)
@@ -641,22 +675,22 @@ async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
                                                                        or beatmap["status"] == "approved"
                                                                        or beatmap["status"] == "loved"),
                                           *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
-                                          "{scorerank}rank {countmiss}m {maxcombo}x"
-                                           .format(acc=calculate_acc(mode, osu_score),
-                                                   potential_acc=calculate_acc(mode, osu_score, exclude_misses=True),
-                                                   scorerank="F" if osu_score["passed"] is False else osu_score["rank"],
-                                                   c300=osu_score["statistics"]["count_300"],
-                                                   c100=osu_score["statistics"]["count_100"],
-                                                   c50=osu_score["statistics"]["count_50"],
-                                                   modslist="+" + mods + " " if mods != "Nomod" else "",
-                                                   countmiss=osu_score["statistics"]["count_miss"],
-                                                   maxcombo=osu_score["max_combo"]).split())
+                                           "{scorerank}rank {countmiss}m {maxcombo}x"
+                                          .format(acc=calculate_acc(mode, osu_score),
+                                                  potential_acc=calculate_acc(mode, osu_score, exclude_misses=True),
+                                                  scorerank="F" if osu_score["passed"] is False else osu_score["rank"],
+                                                  c300=osu_score["statistics"]["count_300"],
+                                                  c100=osu_score["statistics"]["count_100"],
+                                                  c50=osu_score["statistics"]["count_50"],
+                                                  modslist="+" + mods + " " if mods != "Nomod" else "",
+                                                  countmiss=osu_score["statistics"]["count_miss"],
+                                                  maxcombo=osu_score["max_combo"]).split())
         except Exception:
             logging.error(traceback.format_exc())
     return score_pp
 
 
-def get_sorted_scores(osu_scores: list, list_type: str):
+async def get_sorted_scores(osu_scores: list, list_type: str):
     """ Sort scores by newest or oldest scores. """
     if list_type == "oldest":
         sorted_scores = sorted(osu_scores, key=itemgetter("created_at"))
@@ -668,6 +702,8 @@ def get_sorted_scores(osu_scores: list, list_type: str):
         sorted_scores = sorted(osu_scores, key=itemgetter("max_combo"), reverse=True)
     elif list_type == "score":
         sorted_scores = sorted(osu_scores, key=itemgetter("score"), reverse=True)
+    elif list_type == "nochoke":
+        sorted_scores = sorted(await calculate_no_choke_top_plays(osu_scores), key=itemgetter("pp"), reverse=True)
     else:
         sorted_scores = osu_scores
     return sorted_scores
@@ -1366,6 +1402,7 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
     await osu_config.asyncsave()
     await client.say(message, "Unlinked **{}'s** osu! profile.".format(member.name))
 
+
 gamemodes = ", ".join(format_mode_name(gm) for gm in api.GameMode)
 
 
@@ -1537,8 +1574,8 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
     embed = get_formatted_score_embed(member, osu_score, await format_new_score(mode, osu_score, beatmap,
                                                                                 scoreboard_rank),
                                       score_pp if score_pp is not None and score_pp.max_pp is not None and
-                                      score_pp.max_pp - osu_score["pp"] > 1
-                                      and not bool(osu_score["perfect"] and osu_score["passed"]) else None)
+                                      score_pp.max_pp - osu_score["pp"] > 1 and not
+                                      bool(osu_score["perfect"] and osu_score["passed"]) else None)
     embed.set_author(name=osu_score["user"]["username"], icon_url=osu_score["user"]["avatar_url"],
                      url=get_user_url(str(member.id)))
     embed.set_thumbnail(url=osu_score["beatmapset"]["covers"]["list@2x"] if bool(
@@ -1738,7 +1775,7 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
 
 async def top(message: discord.Message, *options):
     """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
-     Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
+     Alternative sorting methods are "oldest", "newest", "combo", "score" "nochoke" and "acc" """
     member = None
     list_type = "pp"
     for value in options:
@@ -1752,6 +1789,8 @@ async def top(message: discord.Message, *options):
             list_type = value
         elif value == "score":
             list_type = value
+        elif value == "nochoke":
+            list_type = value
         else:
             member = utils.find_member(guild=message.guild, name=value)
 
@@ -1762,7 +1801,7 @@ async def top(message: discord.Message, *options):
         "No osu! profile assigned to **{}**!".format(member.name)
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
-    osu_scores = get_sorted_scores(osu_tracking[str(member.id)]["scores"], list_type)
+    osu_scores = await get_sorted_scores(osu_tracking[str(member.id)]["scores"], list_type)
     m = await get_formatted_score_list(member, osu_scores, 5)
     e = discord.Embed(color=member.color)
     e.description = m
@@ -1770,6 +1809,7 @@ async def top(message: discord.Message, *options):
                  icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
     e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
+
 
 plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 osu.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
