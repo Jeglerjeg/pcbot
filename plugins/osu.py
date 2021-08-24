@@ -27,7 +27,7 @@ Commands:
     osu
     pp
 """
-
+import copy
 import importlib
 import asyncio
 import logging
@@ -522,13 +522,11 @@ async def update_user_data(member_id: str, profile: str):
 
 async def calculate_no_choke_top_plays(osu_scores: list):
     """ Calculates and returns a new list of unchoked plays. """
-    non_perfect_scores = []
     no_choke_list = []
     mode = api.GameMode.osu
     for osu_score in osu_scores:
-        if not osu_score["perfect"]:
-            non_perfect_scores.append(osu_score)
-    for osu_score in non_perfect_scores:
+        if osu_score["perfect"]:
+            continue
         mods = api.Mods.format_mods(osu_score["mods"])
         full_combo_acc = calculate_acc(mode, osu_score, exclude_misses=True)
         score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=True,
@@ -544,15 +542,14 @@ async def calculate_no_choke_top_plays(osu_scores: list):
                                               countmiss=osu_score["statistics"]["count_miss"],
                                               maxcombo=osu_score["max_combo"]).split())
         if (score_pp.max_pp - osu_score["pp"]) > 10:
-            no_choke_score = osu_score.copy()
-            no_choke_score["pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
-            no_choke_score["new_pp"] = score_pp.max_pp
-            no_choke_score["perfect"] = True
-            no_choke_score["accuracy"] = full_combo_acc
-            no_choke_score["statistics"]["count_miss"] = 0
-            no_choke_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
-            no_choke_score["score"] = None
-            no_choke_list.append(no_choke_score)
+            osu_score["pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
+            osu_score["new_pp"] = score_pp.max_pp
+            osu_score["perfect"] = True
+            osu_score["accuracy"] = full_combo_acc
+            osu_score["statistics"]["count_miss"] = 0
+            osu_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
+            osu_score["score"] = None
+            no_choke_list.append(osu_score)
     no_choke_list.sort(key=itemgetter("new_pp"), reverse=True)
     return no_choke_list
 
@@ -1806,7 +1803,8 @@ async def top(message: discord.Message, *options):
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
     if nochoke:
-        osu_scores = await calculate_no_choke_top_plays(osu_tracking[str(member.id)]["scores"])
+        osu_score_list = copy.deepcopy(osu_tracking[str(member.id)]["scores"])
+        osu_scores = await calculate_no_choke_top_plays(osu_score_list)
     else:
         osu_scores = osu_tracking[str(member.id)]["scores"]
     sorted_scores = await get_sorted_scores(osu_scores, list_type)
