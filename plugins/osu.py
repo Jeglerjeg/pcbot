@@ -559,7 +559,7 @@ async def calculate_no_choke_top_plays(osu_scores: list):
             osu_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
             osu_score["score"] = None
             no_choke_cache[user_id].append(osu_score)
-    no_choke_cache[user_id].sort(key=itemgetter("new_pp"), reverse=True)
+    no_choke_cache[user_id].sort(key=itemgetter("pp"), reverse=True)
     return no_choke_cache[user_id]
 
 
