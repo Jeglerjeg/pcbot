@@ -299,7 +299,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
         sign="!" if acc == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
         modslist=Mods.format_mods(osu_score["mods"]),
         acc=acc,
-        pp=round(osu_score["pp"], 2) if not isinstance(osu_score["pp"], str) else osu_score["pp"],
+        pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
         rank=osu_score["rank"],
         score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
         count300=osu_score["statistics"]["count_300"],
@@ -550,8 +550,8 @@ async def calculate_no_choke_top_plays(osu_scores: list):
                                               countmiss=osu_score["statistics"]["count_miss"],
                                               maxcombo=osu_score["max_combo"]).split())
         if (score_pp.max_pp - osu_score["pp"]) > 10:
-            osu_score["pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
-            osu_score["new_pp"] = score_pp.max_pp
+            osu_score["new_pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
+            osu_score["pp"] = score_pp.max_pp
             osu_score["perfect"] = True
             osu_score["accuracy"] = full_combo_acc
             osu_score["statistics"]["count_miss"] = 0
@@ -1720,6 +1720,20 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
     await client.send_message(message.channel, embed=embed)
 
 
+def generate_full_no_choke_score_list(no_choke_scores: list, original_scores: list):
+    """ Insert no_choke plays into full score list. """
+    no_choke_ids = []
+    for osu_score in no_choke_scores:
+        no_choke_ids.append(osu_score["best_id"])
+    for osu_score in list(original_scores):
+        if osu_score["best_id"] in no_choke_ids:
+            original_scores.remove(osu_score)
+    for osu_score in no_choke_scores:
+        original_scores.append(osu_score)
+    original_scores.sort(key=itemgetter("pp"), reverse=True)
+    return original_scores
+
+
 async def top(message: discord.Message, *options):
     """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
      You can also add "nochoke" as an option to display a list of unchoked top scores instead.
@@ -1752,15 +1766,23 @@ async def top(message: discord.Message, *options):
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
     async with message.channel.typing():
         if nochoke:
-            osu_score_list = copy.deepcopy(osu_tracking[str(member.id)]["scores"])
-            osu_scores = await calculate_no_choke_top_plays(osu_score_list)
+            osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
+            full_osu_score_list = generate_full_no_choke_score_list(
+                osu_scores, copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
+            new_total_pp = calculate_total_user_pp(str(member.id), full_osu_score_list)
+            author_text = "{} ({} => {}, +{})".format(osu_tracking[str(member.id)]["new"]["username"],
+                                                      round(osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2),
+                                                      round(new_total_pp, 2),
+                                                      round(new_total_pp -
+                                                            osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
         else:
             osu_scores = osu_tracking[str(member.id)]["scores"]
+            author_text = osu_tracking[str(member.id)]["new"]["username"]
         sorted_scores = get_sorted_scores(osu_scores, list_type)
         m = await get_formatted_score_list(member, sorted_scores, 5)
         e = discord.Embed(color=member.color)
         e.description = m
-        e.set_author(name=osu_tracking[str(member.id)]["new"]["username"],
+        e.set_author(name=author_text,
                      icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
         e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
@@ -1775,6 +1797,15 @@ def init_guild_config(guild: discord.Guild):
     if str(guild.id) not in osu_config.data["guild"]:
         osu_config.data["guild"][str(guild.id)] = {}
         osu_config.save()
+
+
+def calculate_total_user_pp(member_id: str, osu_scores: list):
+    """ Calculates the user's total PP. """
+    total_pp = 0
+    for i, osu_score in enumerate(osu_scores):
+        total_pp += osu_score["pp"] * 0.95 ** i
+    total_pp += 416.6667 * (1 - 0.9994 ** osu_tracking[member_id]["new"]["statistics"]["play_count"])
+    return total_pp
 
 
 @osu.command(aliases="configure cfg")
