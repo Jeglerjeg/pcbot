@@ -548,6 +548,7 @@ async def calculate_no_choke_top_plays(osu_scores: list):
             no_choke_score["perfect"] = True
             no_choke_score["accuracy"] = full_combo_acc
             no_choke_score["statistics"]["count_miss"] = 0
+            no_choke_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
             no_choke_list.append(no_choke_score)
     return no_choke_list
 
@@ -701,10 +702,8 @@ async def get_sorted_scores(osu_scores: list, list_type: str):
         sorted_scores = sorted(osu_scores, key=itemgetter("max_combo"), reverse=True)
     elif list_type == "score":
         sorted_scores = sorted(osu_scores, key=itemgetter("score"), reverse=True)
-    elif list_type == "nochoke":
-        sorted_scores = sorted(await calculate_no_choke_top_plays(osu_scores), key=itemgetter("pp"), reverse=True)
     else:
-        sorted_scores = osu_scores
+        sorted_scores = sorted(osu_scores, key=itemgetter("pp"), reverse=True)
     return sorted_scores
 
 
@@ -1712,9 +1711,11 @@ async def mapinfo(message: discord.Message, beatmap_url: str):
 
 async def top(message: discord.Message, *options):
     """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
-     Alternative sorting methods are "oldest", "newest", "combo", "score" "nochoke" and "acc" """
+     You can also add "nochoke" as an option to display a list of unchoked top scores instead.
+     Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
     member = None
     list_type = "pp"
+    nochoke = False
     for value in options:
         if value == "newest":
             list_type = value
@@ -1727,7 +1728,7 @@ async def top(message: discord.Message, *options):
         elif value == "score":
             list_type = value
         elif value == "nochoke":
-            list_type = value
+            nochoke = True
         else:
             member = utils.find_member(guild=message.guild, name=value)
 
@@ -1738,8 +1739,12 @@ async def top(message: discord.Message, *options):
         "No osu! profile assigned to **{}**!".format(member.name)
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
-    osu_scores = await get_sorted_scores(osu_tracking[str(member.id)]["scores"], list_type)
-    m = await get_formatted_score_list(member, osu_scores, 5)
+    if nochoke:
+        osu_scores = await calculate_no_choke_top_plays(osu_tracking[str(member.id)]["scores"])
+    else:
+        osu_scores = osu_tracking[str(member.id)]["scores"]
+    sorted_scores = await get_sorted_scores(osu_scores, list_type)
+    m = await get_formatted_score_list(member, sorted_scores, 5)
     e = discord.Embed(color=member.color)
     e.description = m
     e.set_author(name=osu_tracking[str(member.id)]["new"]["username"],
