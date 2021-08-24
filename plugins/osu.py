@@ -700,7 +700,7 @@ async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
     return score_pp
 
 
-async def get_sorted_scores(osu_scores: list, list_type: str):
+def get_sorted_scores(osu_scores: list, list_type: str):
     """ Sort scores by newest or oldest scores. """
     if list_type == "oldest":
         sorted_scores = sorted(osu_scores, key=itemgetter("created_at"))
@@ -1819,7 +1819,7 @@ async def top(message: discord.Message, *options):
             osu_scores = await calculate_no_choke_top_plays(osu_score_list)
         else:
             osu_scores = osu_tracking[str(member.id)]["scores"]
-        sorted_scores = await get_sorted_scores(osu_scores, list_type)
+        sorted_scores = get_sorted_scores(osu_scores, list_type)
         m = await get_formatted_score_list(member, sorted_scores, 5)
         e = discord.Embed(color=member.color)
         e.description = m
