@@ -1830,9 +1830,13 @@ async def top(message: discord.Message, *options):
     async with message.channel.typing():
         if nochoke:
             osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
+            total_pp_without_bonus_pp = 0
+            for osu_score in osu_tracking[str(member.id)]["scores"]:
+                total_pp_without_bonus_pp += osu_score["weight"]["pp"]
+            bonus_pp = osu_tracking[str(member.id)]["new"]["statistics"]["pp"] - total_pp_without_bonus_pp
             full_osu_score_list = generate_full_no_choke_score_list(
                 osu_scores, copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
-            new_total_pp = calculate_total_user_pp(str(member.id), full_osu_score_list)
+            new_total_pp = (calculate_total_user_pp(full_osu_score_list) + bonus_pp)
             author_text = "{} ({} => {}, +{})".format(osu_tracking[str(member.id)]["new"]["username"],
                                                       round(osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2),
                                                       round(new_total_pp, 2),
@@ -1862,12 +1866,11 @@ def init_guild_config(guild: discord.Guild):
         osu_config.save()
 
 
-def calculate_total_user_pp(member_id: str, osu_scores: list):
+def calculate_total_user_pp(osu_scores: list):
     """ Calculates the user's total PP. """
     total_pp = 0
     for i, osu_score in enumerate(osu_scores):
-        total_pp += osu_score["pp"] * 0.95 ** i
-    total_pp += 416.6667 * (1 - 0.9994 ** osu_tracking[member_id]["new"]["statistics"]["play_count"])
+        total_pp += osu_score["pp"] * (0.95 ** i)
     return total_pp
 
 
