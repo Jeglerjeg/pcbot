@@ -92,7 +92,6 @@ time_elapsed = 0  # The registered time it takes to process all information betw
 previous_update = None  # The time osu user data was last updated. None until first update has run
 logging_interval = 30  # The time it takes before posting logging information to the console. TODO: setup logging
 rank_regex = re.compile(r"#\d+")
-no_choke_cache = {}
 
 pp_threshold = osu_config.data.get("pp_threshold", 0.13)
 score_request_limit = osu_config.data.get("score_request_limit", 100)
@@ -523,18 +522,10 @@ async def update_user_data(member_id: str, profile: str):
 
 async def calculate_no_choke_top_plays(osu_scores: list):
     """ Calculates and returns a new list of unchoked plays. """
-    user_id = osu_scores[0]["user"]["id"]
     mode = api.GameMode.osu
-    no_choke_cache_ids = []
-    if user_id in no_choke_cache:
-        for osu_score in osu_scores:
-            no_choke_cache_ids.append(osu_score["best_id"])
-    else:
-        no_choke_cache[user_id] = []
+    no_choke_list = []
     for osu_score in osu_scores:
         if osu_score["perfect"]:
-            continue
-        if osu_score["best_id"] in no_choke_cache_ids:
             continue
         mods = api.Mods.format_mods(osu_score["mods"])
         full_combo_acc = calculate_acc(mode, osu_score, exclude_misses=True)
@@ -558,9 +549,9 @@ async def calculate_no_choke_top_plays(osu_scores: list):
             osu_score["statistics"]["count_miss"] = 0
             osu_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
             osu_score["score"] = None
-            no_choke_cache[user_id].append(osu_score)
-    no_choke_cache[user_id].sort(key=itemgetter("pp"), reverse=True)
-    return no_choke_cache[user_id]
+            no_choke_list.append(osu_score)
+    no_choke_list.sort(key=itemgetter("pp"), reverse=True)
+    return no_choke_list
 
 
 async def get_new_score(member_id: str):
@@ -1232,14 +1223,13 @@ async def on_ready():
 
 async def on_reload(name: str):
     """ Preserve the tracking cache. """
-    global osu_tracking, recent_map_events, time_elapsed, previous_update, previous_score_updates, no_choke_cache
+    global osu_tracking, recent_map_events, time_elapsed, previous_update, previous_score_updates
     local_tracking = osu_tracking
     local_events = recent_map_events
     local_requests = api.requests_sent
     local_update_time_elapsed = time_elapsed
     local_update_time = previous_update
     local_score_updates = previous_score_updates
-    local_no_choke_cache = no_choke_cache
 
     importlib.reload(plugins.osulib.api)
     importlib.reload(plugins.osulib.ordr)
@@ -1253,7 +1243,6 @@ async def on_reload(name: str):
     time_elapsed = local_update_time_elapsed
     previous_update = local_update_time
     previous_score_updates = local_score_updates
-    no_choke_cache = local_no_choke_cache
 
 
 def get_timestamps_with_url(content: str):
