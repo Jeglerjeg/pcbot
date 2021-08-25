@@ -316,7 +316,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
         # Escaping asterisk doesn't work in italics
         version=beatmap["version"],
         stars=float(beatmap["difficulty_rating"]),
-        maxcombo=beatmap["max_combo"] if osu_score["perfect"] and mode is api.GameMode.osu
+        maxcombo=beatmap["max_combo"] if osu_score["perfect"] and mode is api.GameMode.osu and osu_score["passed"]
         else osu_score["max_combo"],
         max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap and beatmap["max_combo"] is not None
         else "",
