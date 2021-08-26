@@ -1812,13 +1812,12 @@ async def top(message: discord.Message, *options):
 
     if not member:
         member = message.author
-
     assert str(member.id) in osu_config.data["profiles"], \
         "No osu! profile assigned to **{}**!".format(member.name)
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
-    async with message.channel.typing():
-        if nochoke:
+    if nochoke:
+        async with message.channel.typing():
             osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
             full_osu_score_list = generate_full_no_choke_score_list(
                 osu_scores, copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
@@ -1828,9 +1827,16 @@ async def top(message: discord.Message, *options):
                                                       round(new_total_pp, 2),
                                                       round(new_total_pp -
                                                             osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
-        else:
-            osu_scores = osu_tracking[str(member.id)]["scores"]
-            author_text = osu_tracking[str(member.id)]["new"]["username"]
+            sorted_scores = get_sorted_scores(osu_scores, list_type)
+            m = await get_formatted_score_list(member, sorted_scores, 5)
+            e = discord.Embed(color=member.color)
+            e.description = m
+            e.set_author(name=author_text,
+                         icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
+            e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
+    else:
+        osu_scores = osu_tracking[str(member.id)]["scores"]
+        author_text = osu_tracking[str(member.id)]["new"]["username"]
         sorted_scores = get_sorted_scores(osu_scores, list_type)
         m = await get_formatted_score_list(member, sorted_scores, 5)
         e = discord.Embed(color=member.color)
