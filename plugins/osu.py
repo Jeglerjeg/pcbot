@@ -440,7 +440,7 @@ def is_playing(member: discord.Member):
     return False
 
 
-async def retrieve_osu_scores(profile: str, mode: api.GameMode):
+async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: datetime):
     """ Retrieves"""
     params = {
         "mode": mode.name,
@@ -448,7 +448,7 @@ async def retrieve_osu_scores(profile: str, mode: api.GameMode):
     }
     fetched_scores = await api.get_user_scores(profile, "best", params=params)
     if fetched_scores is not None:
-        user_scores = (dict(score_list=fetched_scores, time_updated=datetime.utcnow()))
+        user_scores = (dict(score_list=fetched_scores, time_updated=timestamp))
     else:
         user_scores = None
     return user_scores
@@ -488,6 +488,7 @@ async def update_user_data(member_id: str, profile: str):
 
     # Get the user data for the player
     fetched_scores = None
+    current_time = datetime.utcnow()
     mode = get_mode(str(member_id))
     try:
         params = {
@@ -502,7 +503,7 @@ async def update_user_data(member_id: str, profile: str):
 
         # User is already tracked
         if "scores" not in osu_tracking[str(member_id)]:
-            fetched_scores = await retrieve_osu_scores(profile, mode)
+            fetched_scores = await retrieve_osu_scores(profile, mode, current_time)
     except aiohttp.ServerDisconnectedError:
         return
     except asyncio.TimeoutError:
@@ -526,7 +527,7 @@ async def update_user_data(member_id: str, profile: str):
         osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
 
     osu_tracking[str(member_id)]["new"] = user_data
-    osu_tracking[str(member_id)]["new"]["time_updated"] = datetime.utcnow()
+    osu_tracking[str(member_id)]["new"]["time_updated"] = current_time
     osu_tracking[str(member_id)]["new"]["events"] = user_recent
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
@@ -580,7 +581,7 @@ async def get_new_score(member_id: str):
     profile = osu_config.data["profiles"][member_id]
     mode = get_mode(member_id)
     try:
-        user_scores = await retrieve_osu_scores(profile, mode)
+        user_scores = await retrieve_osu_scores(profile, mode, datetime.utcnow())
     except aiohttp.ServerDisconnectedError:
         return None
     except asyncio.TimeoutError:
