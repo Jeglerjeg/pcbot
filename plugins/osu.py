@@ -525,7 +525,7 @@ async def update_user_data(member_id: str, profile: str):
         osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
 
     osu_tracking[str(member_id)]["new"] = user_data
-    osu_tracking[str(member_id)]["new"]["time_updated"] = datetime.utcnow().isoformat()
+    osu_tracking[str(member_id)]["new"]["time_updated"] = datetime.utcnow()
     osu_tracking[str(member_id)]["new"]["events"] = user_recent
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
@@ -1473,7 +1473,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     mode = get_mode(str(member.id))
     update_mode = get_update_mode(str(member.id))
     if str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)]:
-        timestamp = datetime.fromisoformat(osu_tracking[str(member.id)]["new"]["time_updated"])
+        timestamp = osu_tracking[str(member.id)]["new"]["time_updated"]
     else:
         timestamp = None
     if timestamp:
