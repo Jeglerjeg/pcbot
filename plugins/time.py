@@ -170,8 +170,8 @@ async def wait_for_reminder(cd, seconds):
     """ Wait for and send the reminder. This is a separate function so that . """
     try:
         await asyncio.sleep(seconds)
-    except asyncio.futures.CancelledError:
-        pass
+    except asyncio.CancelledError:
+        return
 
     channel = client.get_channel(int(cd["channel"]))
     author = channel.guild.get_member(int(cd["author"]))
