@@ -6,7 +6,6 @@
 """
 
 import asyncio
-import logging
 from operator import itemgetter
 
 import discord
