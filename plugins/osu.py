@@ -1752,6 +1752,7 @@ async def score(message: discord.Message, *options):
     if mods:
         osu_score["mods"] = wrap(mods, 2)
         osu_score["pp"] = None
+        osu_score["score"] = None
         scoreboard_rank = None
     else:
         scoreboard_rank = osu_scores["position"]
