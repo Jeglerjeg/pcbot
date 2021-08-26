@@ -1828,13 +1828,17 @@ async def top(message: discord.Message, *options):
 
     if not member:
         member = message.author
+    mode = get_mode(str(member.id))
     assert str(member.id) in osu_config.data["profiles"], \
         "No osu! profile assigned to **{}**!".format(member.name)
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
+    assert mode is api.GameMode.osu if nochoke else True, \
+        "No-choke lists are only supported for osu!standard"
+    assert mode is api.GameMode.osu if list_type == "combo" else True, \
+        "Sort by combo is only available for osu!standard"
     if nochoke:
         async with message.channel.typing():
-            assert get_mode(str(member.id)) is api.GameMode.osu, "No-choke lists are only supported for osu!standard!"
             osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
             full_osu_score_list = generate_full_no_choke_score_list(
                 osu_scores["score_list"], copy.deepcopy(osu_tracking[str(member.id)]["scores"]["score_list"]))
