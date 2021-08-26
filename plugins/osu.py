@@ -90,6 +90,7 @@ not_playing_skip = osu_config.data.get("not_playing_skip", 10)
 time_elapsed = 0  # The registered time it takes to process all information between updates (changes each update)
 previous_update = None  # The time osu user data was last updated. None until first update has run
 logging_interval = 30  # The time it takes before posting logging information to the console. TODO: setup logging
+no_choke_cache = {}
 rank_regex = re.compile(r"#\d+")
 
 pp_threshold = osu_config.data.get("pp_threshold", 0.13)
@@ -533,34 +534,41 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
     """ Calculates and returns a new list of unchoked plays. """
     mode = api.GameMode.osu
     no_choke_list = []
-    for osu_score in osu_scores["score_list"]:
-        if osu_score["perfect"]:
-            continue
-        mods = api.Mods.format_mods(osu_score["mods"])
-        full_combo_acc = calculate_acc(mode, osu_score, exclude_misses=True)
-        score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=True,
-                                      *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
-                                       "{scorerank}rank {countmiss}m {maxcombo}x"
-                                      .format(acc=calculate_acc(mode, osu_score),
-                                              potential_acc=full_combo_acc,
-                                              scorerank="F" if osu_score["passed"] is False else osu_score["rank"],
-                                              c300=osu_score["statistics"]["count_300"],
-                                              c100=osu_score["statistics"]["count_100"],
-                                              c50=osu_score["statistics"]["count_50"],
-                                              modslist="+" + mods + " " if mods != "Nomod" else "",
-                                              countmiss=osu_score["statistics"]["count_miss"],
-                                              maxcombo=osu_score["max_combo"]).split())
-        if (score_pp.max_pp - osu_score["pp"]) > 10:
-            osu_score["new_pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
-            osu_score["pp"] = score_pp.max_pp
-            osu_score["perfect"] = True
-            osu_score["accuracy"] = full_combo_acc
-            osu_score["statistics"]["count_miss"] = 0
-            osu_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
-            osu_score["score"] = None
-            no_choke_list.append(osu_score)
-    no_choke_list.sort(key=itemgetter("pp"), reverse=True)
-    return dict(score_list=no_choke_list, time_updated=datetime.utcnow())
+    profile_id = osu_scores["score_list"][0]["user"]["id"]
+    if profile_id not in no_choke_cache or (profile_id in no_choke_cache and
+                                            no_choke_cache[profile_id]["time_updated"] < osu_scores["time_updated"]):
+        for osu_score in osu_scores["score_list"]:
+            if osu_score["perfect"]:
+                continue
+            mods = api.Mods.format_mods(osu_score["mods"])
+            full_combo_acc = calculate_acc(mode, osu_score, exclude_misses=True)
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=True,
+                                          *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
+                                           "{scorerank}rank {countmiss}m {maxcombo}x"
+                                          .format(acc=calculate_acc(mode, osu_score),
+                                                  potential_acc=full_combo_acc,
+                                                  scorerank="F" if osu_score["passed"] is False else osu_score["rank"],
+                                                  c300=osu_score["statistics"]["count_300"],
+                                                  c100=osu_score["statistics"]["count_100"],
+                                                  c50=osu_score["statistics"]["count_50"],
+                                                  modslist="+" + mods + " " if mods != "Nomod" else "",
+                                                  countmiss=osu_score["statistics"]["count_miss"],
+                                                  maxcombo=osu_score["max_combo"]).split())
+            if (score_pp.max_pp - osu_score["pp"]) > 10:
+                osu_score["new_pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
+                osu_score["pp"] = score_pp.max_pp
+                osu_score["perfect"] = True
+                osu_score["accuracy"] = full_combo_acc
+                osu_score["statistics"]["count_miss"] = 0
+                osu_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
+                osu_score["score"] = None
+                no_choke_list.append(osu_score)
+        no_choke_list.sort(key=itemgetter("pp"), reverse=True)
+        no_choke_cache[profile_id] = dict(score_list=no_choke_list, time_updated=datetime.utcnow())
+        no_chokes = no_choke_cache[profile_id]
+    else:
+        no_chokes = no_choke_cache[profile_id]
+    return no_chokes
 
 
 async def get_new_score(member_id: str):
