@@ -1807,8 +1807,8 @@ async def top(message: discord.Message, *options):
     list_type = "pp"
     nochoke = False
     for value in options:
-        if value == "newest":
-            list_type = value
+        if value in ("newest", "recent"):
+            list_type = "newest"
         elif value == "oldest":
             list_type = value
         elif value == "acc":
