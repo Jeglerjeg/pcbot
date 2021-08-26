@@ -6,6 +6,7 @@
 """
 
 import asyncio
+import logging
 from operator import itemgetter
 
 import discord
@@ -125,7 +126,7 @@ async def create(message: discord.Message, tag: tag_arg, *time, timezone: tz_arg
         return
 
     seconds = (dt.diff(pendulum.now(timezone)).in_seconds())
-    assert seconds > 0, "A countdown has to be set in the future."
+    assert dt > pendulum.now(timezone), "A countdown has to be set in the future."
 
     cd = dict(time=dt.to_datetime_string(), tz=timezone, tz_name=timezone_name, tag=tag,
               author=str(message.author.id), channel=str(message.channel.id))
