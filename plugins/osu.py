@@ -439,6 +439,20 @@ def is_playing(member: discord.Member):
     return False
 
 
+async def retrieve_osu_scores(profile: str, mode: api.GameMode):
+    """ Retrieves"""
+    params = {
+        "mode": mode.name,
+        "limit": score_request_limit,
+    }
+    fetched_scores = await api.get_user_scores(profile, "best", params=params)
+    if fetched_scores is not None:
+        user_scores = (dict(score_list=fetched_scores, time_updated=datetime.utcnow()))
+    else:
+        user_scores = None
+    return user_scores
+
+
 async def update_user_data(member_id: str, profile: str):
     """ Go through all registered members playing osu!, and update their data. """
     global osu_tracking
@@ -487,12 +501,7 @@ async def update_user_data(member_id: str, profile: str):
 
         # User is already tracked
         if "scores" not in osu_tracking[str(member_id)]:
-            # If this is the first time, update the user's list of scores for later
-            params = {
-                "mode": mode.name,
-                "limit": score_request_limit,
-            }
-            fetched_scores = await api.get_user_scores(profile, "best", params=params)
+            fetched_scores = await retrieve_osu_scores(profile, mode)
     except aiohttp.ServerDisconnectedError:
         return
     except asyncio.TimeoutError:
@@ -521,11 +530,11 @@ async def update_user_data(member_id: str, profile: str):
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
-async def calculate_no_choke_top_plays(osu_scores: list):
+async def calculate_no_choke_top_plays(osu_scores: dict):
     """ Calculates and returns a new list of unchoked plays. """
     mode = api.GameMode.osu
     no_choke_list = []
-    for osu_score in osu_scores:
+    for osu_score in osu_scores["score_list"]:
         if osu_score["perfect"]:
             continue
         mods = api.Mods.format_mods(osu_score["mods"])
@@ -552,7 +561,7 @@ async def calculate_no_choke_top_plays(osu_scores: list):
             osu_score["score"] = None
             no_choke_list.append(osu_score)
     no_choke_list.sort(key=itemgetter("pp"), reverse=True)
-    return no_choke_list
+    return dict(score_list=no_choke_list, time_updated=datetime.utcnow())
 
 
 async def get_new_score(member_id: str):
@@ -561,12 +570,9 @@ async def get_new_score(member_id: str):
     player's top plays can be retrieved with score["pos"]. """
     # Download a list of the user's scores
     profile = osu_config.data["profiles"][member_id]
-    params = {
-        "mode": get_mode(member_id).name,
-        "limit": score_request_limit,
-    }
+    mode = get_mode(member_id)
     try:
-        user_scores = await api.get_user_scores(profile, "best", params=params)
+        user_scores = await retrieve_osu_scores(profile, mode)
     except aiohttp.ServerDisconnectedError:
         return None
     except asyncio.TimeoutError:
@@ -583,11 +589,11 @@ async def get_new_score(member_id: str):
 
     old_best_id = []
 
-    for old_score in osu_tracking[member_id]["scores"]:
+    for old_score in osu_tracking[member_id]["scores"]["score_list"]:
         old_best_id.append(old_score["best_id"])
 
     # Compare the scores from top to bottom and try to find a new one
-    for i, osu_score in enumerate(user_scores):
+    for i, osu_score in enumerate(user_scores["score_list"]):
         if osu_score["best_id"] not in old_best_id:
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
@@ -598,7 +604,7 @@ async def get_new_score(member_id: str):
             osu_tracking[member_id]["scores"] = user_scores
 
             # Calculate the difference in pp from the score below
-            if i < len(osu_tracking[member_id]["scores"]) - 2:
+            if i < len(user_scores["score_list"]) - 2:
                 pp = float(osu_score["pp"])
                 diff = pp - float(user_scores[i + 1]["pp"])
             else:
@@ -607,11 +613,11 @@ async def get_new_score(member_id: str):
     return None
 
 
-async def get_formatted_score_list(member: discord.Member, osu_scores: list, limit: int):
+async def get_formatted_score_list(member: discord.Member, osu_scores: dict, limit: int):
     """ Return a list of formatted scores along with time since the score was set. """
     mode = get_mode(str(member.id))
     m = []
-    for i, osu_score in enumerate(osu_scores):
+    for i, osu_score in enumerate(osu_scores["score_list"]):
         if i > limit - 1:
             break
         params = {
@@ -692,21 +698,21 @@ async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
     return score_pp
 
 
-def get_sorted_scores(osu_scores: list, list_type: str):
+def get_sorted_scores(osu_scores: dict, list_type: str):
     """ Sort scores by newest or oldest scores. """
     if list_type == "oldest":
-        sorted_scores = sorted(osu_scores, key=itemgetter("created_at"))
+        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("created_at"))
     elif list_type == "newest":
-        sorted_scores = sorted(osu_scores, key=itemgetter("created_at"), reverse=True)
+        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("created_at"), reverse=True)
     elif list_type == "acc":
-        sorted_scores = sorted(osu_scores, key=itemgetter("accuracy"), reverse=True)
+        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("accuracy"), reverse=True)
     elif list_type == "combo":
-        sorted_scores = sorted(osu_scores, key=itemgetter("max_combo"), reverse=True)
+        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("max_combo"), reverse=True)
     elif list_type == "score":
-        sorted_scores = sorted(osu_scores, key=itemgetter("score"), reverse=True)
+        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("score"), reverse=True)
     else:
-        sorted_scores = osu_scores
-    return sorted_scores
+        sorted_scores = osu_scores["score_list"]
+    return dict(score_list=sorted_scores, time_updated=osu_scores["time_updated"])
 
 
 def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, potential_pp: PPStats):
@@ -1148,7 +1154,7 @@ async def notify_recent_events(member_id: str, data: dict):
                 continue
 
             top100_best_id = []
-            for old_score in data["scores"]:
+            for old_score in data["scores"]["score_list"]:
                 top100_best_id.append(old_score["best_id"])
 
             if osu_score["best_id"] in top100_best_id:
@@ -1818,9 +1824,10 @@ async def top(message: discord.Message, *options):
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
     if nochoke:
         async with message.channel.typing():
+            assert get_mode(str(member.id)) is api.GameMode.osu, "No-choke lists are only supported for osu!standard!"
             osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
             full_osu_score_list = generate_full_no_choke_score_list(
-                osu_scores, copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
+                osu_scores["score_list"], copy.deepcopy(osu_tracking[str(member.id)]["scores"]["score_list"]))
             new_total_pp = calculate_total_user_pp(full_osu_score_list, str(member.id))
             author_text = "{} ({} => {}, +{})".format(osu_tracking[str(member.id)]["new"]["username"],
                                                       round(osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2),
@@ -1864,7 +1871,7 @@ def calculate_total_user_pp(osu_scores: list, member_id: str):
     for i, osu_score in enumerate(osu_scores):
         total_pp += osu_score["pp"] * (0.95 ** i)
     total_pp_without_bonus_pp = 0
-    for osu_score in osu_tracking[member_id]["scores"]:
+    for osu_score in osu_tracking[member_id]["scores"]["score_list"]:
         total_pp_without_bonus_pp += osu_score["weight"]["pp"]
     bonus_pp = osu_tracking[member_id]["new"]["statistics"]["pp"] - total_pp_without_bonus_pp
     return total_pp + bonus_pp
