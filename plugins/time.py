@@ -121,6 +121,8 @@ async def create(message: discord.Message, tag: tag_arg, *time, timezone: tz_arg
 
     timezone_name = timezone
     dt, timezone = await init_dt(message, " ".join(time), timezone)
+    if dt is None or timezone is None:
+        return
 
     seconds = (dt.diff(pendulum.now(timezone)).in_seconds())
     assert seconds > 0, "A countdown has to be set in the future."
