@@ -613,7 +613,7 @@ async def get_new_score(member_id: str):
             # Calculate the difference in pp from the score below
             if i < len(user_scores["score_list"]) - 2:
                 pp = float(osu_score["pp"])
-                diff = pp - float(user_scores[i + 1]["pp"])
+                diff = pp - float(user_scores["score_list"][i + 1]["pp"])
             else:
                 diff = 0
             return dict(osu_score, pos=i + 1, diff=diff)
