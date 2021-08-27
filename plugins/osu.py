@@ -827,8 +827,6 @@ async def notify_pp(member_id: str, data: dict):
         if osu_score:
             embed.set_thumbnail(url=thumbnail_url)
 
-        embed.description = "".join(m)
-
         # The top line of the format will differ depending on whether we found a score or not
         if osu_score:
             embed.set_author(
