@@ -73,7 +73,7 @@ def make_twitch_embed(member: discord.Member, response: dict):
 
     e = discord.Embed(title="Playing " + streaming_activity.game, url=streaming_activity.url,
                       description=streaming_activity.name, color=member.color)
-    e.set_author(name=member.name, url=streaming_activity.url, icon_url=member.avatar_url)
+    e.set_author(name=member.name, url=streaming_activity.url, icon_url=member.display_avatar.url)
     e.set_thumbnail(url=response["stream"]["preview"]["small"] + "?date=" + datetime.now().ctime().replace(" ", "%20"))
     return e
 
@@ -114,7 +114,7 @@ def started_streaming(before: discord.Member, after: discord.Member):
 
 
 @plugins.event()
-async def on_member_update(before: discord.Member, after: discord.Member):
+async def on_presemce_update(before: discord.Member, after: discord.Member):
     """ Notify given channels whenever a member goes live. """
 
     # Make sure the member just started streaming

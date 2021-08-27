@@ -1333,7 +1333,7 @@ async def osu(message: discord.Message, *options):
     }
     signature = await utils.retrieve_page("https://lemmmy.pw/osusig/sig.php", head=True, **params, **dark)
     embed = discord.Embed(color=member.color)
-    embed.set_author(name=member.display_name, icon_url=member.avatar_url, url=get_user_url(str(member.id)))
+    embed.set_author(name=member.display_name, icon_url=member.display_avatar.url, url=get_user_url(str(member.id)))
     embed.set_image(url=signature.url)
     await client.send_message(message.channel, embed=embed)
 
@@ -1480,7 +1480,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
         e.set_footer(text="User data last updated:\n")
     else:
         e = discord.Embed(color=member.color)
-    e.set_author(name=member.display_name, icon_url=member.avatar_url, url=host + "users/" + user_id)
+    e.set_author(name=member.display_name, icon_url=member.display_avatar.url, url=host + "users/" + user_id)
     e.add_field(name="Game Mode", value=format_mode_name(mode))
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if is_playing(member) else "NO")
