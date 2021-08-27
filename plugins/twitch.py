@@ -73,7 +73,7 @@ def make_twitch_embed(member: discord.Member, response: dict):
 
     e = discord.Embed(title="Playing " + streaming_activity.game, url=streaming_activity.url,
                       description=streaming_activity.name, color=member.color)
-    e.set_author(name=member.name, url=streaming_activity.url, icon_url=member.avatar_url)
+    e.set_author(name=member.name, url=streaming_activity.url, icon_url=member.display_avatar.url)
     e.set_thumbnail(url=response["stream"]["preview"]["small"] + "?date=" + datetime.now().ctime().replace(" ", "%20"))
     return e
 
@@ -112,7 +112,7 @@ def started_streaming(before: discord.Member, after: discord.Member):
 
 
 @plugins.event()
-async def on_member_update(before: discord.Member, after: discord.Member):
+async def on_presence_update(before: discord.Member, after: discord.Member):
     """ Notify given channels whenever a member goes live. """
 
     # Make sure the member just started streaming
@@ -130,7 +130,7 @@ async def on_member_update(before: discord.Member, after: discord.Member):
         try:
             twitch_id = await twitch.get_id(after)
         except twitch.RequestFailed as e:  # Could not find the streamer due to a request error
-            logging.info("Could not get twitch id of {}: {}".format(after, e))
+            logging.info("Could not get twitch id of %s: %s", after, e)
             return
         except twitch.UserNotResolved as e:  # Ignore them if the id was not found.
             logging.debug(e)
@@ -140,7 +140,7 @@ async def on_member_update(before: discord.Member, after: discord.Member):
         try:
             stream_response = await twitch.request("streams/" + twitch_id)
         except twitch.RequestFailed as e:
-            logging.info("Could not get twitch stream of {} (id: {}): {}".format(after, twitch_id, e))
+            logging.info("Could not get twitch stream of %s (id: %s): %s", after, twitch_id, e)
             return
 
         # If the member isn't actually streaming, return (should not be the case as discord uses the twitch api too)
