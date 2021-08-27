@@ -441,6 +441,8 @@ async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: datet
     }
     fetched_scores = await api.get_user_scores(profile, "best", params=params)
     if fetched_scores is not None:
+        for i, osu_score in enumerate(fetched_scores):
+            osu_score["pos"] = i+1
         user_scores = (dict(score_list=fetched_scores, time_updated=timestamp))
     else:
         user_scores = None
@@ -557,6 +559,8 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
                 osu_score["score"] = None
                 no_choke_list.append(osu_score)
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
+        for i, osu_score in enumerate(no_choke_list):
+            osu_score["pos"] = i+1
         no_choke_cache[profile_id] = dict(score_list=no_choke_list, time_updated=datetime.utcnow())
         no_chokes = no_choke_cache[profile_id]
     else:
@@ -609,7 +613,7 @@ async def get_new_score(member_id: str):
                 diff = pp - float(user_scores["score_list"][i + 1]["pp"])
             else:
                 diff = 0
-            return dict(osu_score, pos=i + 1, diff=diff)
+            return dict(osu_score, diff=diff)
     return None
 
 
@@ -640,7 +644,7 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: dict, lim
             potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
                                                                           score_pp.max_pp - float(osu_score["pp"]))
 
-        m.append("".join(["{}.\n".format(str(i + 1)),
+        m.append("".join(["{}.\n".format(osu_score["pos"]),
                           await format_new_score(mode, osu_score, beatmap, rank=None,
                                                  member=osu_tracking[str(member.id)]["member"]),
                           (potential_string + "\n" if potential_string is not None else ""),
