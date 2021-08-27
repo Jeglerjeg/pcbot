@@ -452,8 +452,6 @@ async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: datet
 
 async def update_user_data(member_id: str, profile: str):
     """ Go through all registered members playing osu!, and update their data. """
-    global osu_tracking
-
     # Go through each member playing and give them an "old" and a "new" subsection
     # for their previous and latest user data
     # Skip members who disabled tracking
