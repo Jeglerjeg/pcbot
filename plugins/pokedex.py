@@ -169,8 +169,6 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
         elif resize:
             sprite = BytesIO(sprite)
 
-        await client.send_file(message.channel, sprite, filename="{}.png".format(name))
-
     # Format Pokemon GO specific info
     pokemon_go_info = ""
     if "evolution_cost" in pokemon:
@@ -200,9 +198,10 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
         **pokemon
     )
     embed = discord.Embed(color=message.author.color)
+    embed.set_image(url="attachment://{}.png".format(name))
     embed.description = formatted_message
 
-    await client.send_message(message.channel, embed=embed)
+    await client.send_message(message.channel, file=(discord.File(sprite, filename="{}.png".format(name))), embed=embed)
 
 
 @pokedex_.command()
