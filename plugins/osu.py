@@ -1380,6 +1380,21 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     await client.say(message, "Set your osu! profile to `{}`.".format(osu_user["username"]))
 
 
+@osu.command(hidden=True, owner=True)
+async def wipe_tracking(message: discord.Message, member: discord.Member = None):
+    if member:
+        if str(member.id) in osu_tracking:
+            del osu_tracking[str(member.id)]
+            await client.say(message, "Deleted {} from tracking.".format(member.name))
+        else:
+            await client.say(message, "User not in tracking.")
+    else:
+        previous_length = len(osu_tracking)
+        for entry in list(osu_tracking):
+            del osu_tracking[entry]
+        await client.say(message, "Deleted {} entries.".format(previous_length))
+
+
 @osu.command(aliases="unset")
 async def unlink(message: discord.Message, member: discord.Member = Annotate.Self):
     """ Unlink your osu! account or unlink the member specified (**Owner only**). """
