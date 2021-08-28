@@ -614,7 +614,7 @@ async def get_new_score(member_id: str):
             else:
                 diff = 0
             return dict(osu_score, diff=diff)
-    return None
+    return dict()
 
 
 async def get_formatted_score_list(member: discord.Member, osu_scores: dict, limit: int):
@@ -645,7 +645,7 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: dict, lim
                                                                           score_pp.max_pp - float(osu_score["pp"]))
 
         m.append("".join(["{}.\n".format(osu_score["pos"]),
-                          await format_new_score(mode, osu_score, beatmap, rank=None,
+                          await format_new_score(mode, osu_score, beatmap,
                                                  member=osu_tracking[str(member.id)]["member"]),
                           (potential_string + "\n" if potential_string is not None else ""),
                           time_since_string, "\n\n"]))
@@ -764,20 +764,15 @@ async def notify_pp(member_id: str, data: dict):
     m = []
     potential_pp = None
     thumbnail_url = None
-
+    osu_score = {}  # type: dict
     # Since the user got pp they probably have a new score in their own top 100
     # If there is a score, there is also a beatmap
-    if update_mode is UpdateModes.PP:
-        osu_score = None
-    else:
+    if update_mode is not UpdateModes.PP:
         for i in range(3):
             osu_score = await get_new_score(member_id)
-            if osu_score is not None:
+            if osu_score:
                 break
             await asyncio.sleep(osu_config.data["score_update_delay"])
-        else:
-            osu_score = None
-            logging.info("%s gained PP, but no new score was found", member_id)
 
     # If a new score was found, format the score
     if osu_score:
