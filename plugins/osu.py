@@ -561,7 +561,7 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
         for i, osu_score in enumerate(no_choke_list):
             osu_score["pos"] = i+1
-        no_choke_cache[profile_id] = dict(score_list=no_choke_list, time_updated=datetime.utcnow())
+        no_choke_cache[profile_id] = dict(score_list=no_choke_list, time_updated=datetime.now(tz=timezone.utc))
         no_chokes = no_choke_cache[profile_id]
     else:
         no_chokes = no_choke_cache[profile_id]
