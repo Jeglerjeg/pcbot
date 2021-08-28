@@ -592,14 +592,9 @@ async def get_new_score(member_id: str):
     if user_scores is None:
         return None
 
-    old_best_id = []
-
-    for old_score in osu_tracking[member_id]["scores"]["score_list"]:
-        old_best_id.append(old_score["best_id"])
-
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(user_scores["score_list"]):
-        if osu_score["best_id"] not in old_best_id:
+        if osu_tracking[member_id]["scores"]["time_updated"] < datetime.fromisoformat(osu_score["created_at"]):
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=user_scores,
@@ -732,7 +727,7 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
                                                                  potential_pp.max_pp - float(osu_score["pp"])))
 
     # Add completion rate to footer if score is failed
-    if osu_score is not None and osu_score["passed"] is False:
+    if osu_score and osu_score["passed"] is False:
         objects = osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] + \
                   osu_score["statistics"]["count_50"] + osu_score["statistics"]["count_miss"]
 
