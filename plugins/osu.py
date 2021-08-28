@@ -481,7 +481,7 @@ async def update_user_data(member_id: str, profile: str):
 
     # Get the user data for the player
     fetched_scores = None
-    current_time = datetime.utcnow()
+    current_time = datetime.now(tz=timezone.utc)
     mode = get_mode(str(member_id))
     try:
         params = {
