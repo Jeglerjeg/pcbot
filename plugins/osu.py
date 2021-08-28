@@ -1780,21 +1780,16 @@ async def top(message: discord.Message, *options):
                                                             osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
             sorted_scores = get_sorted_scores(osu_scores, list_type)
             m = await get_formatted_score_list(member, sorted_scores, 5)
-            e = discord.Embed(color=member.color)
-            e.description = m
-            e.set_author(name=author_text,
-                         icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
-            e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     else:
         osu_scores = osu_tracking[str(member.id)]["scores"]
         author_text = osu_tracking[str(member.id)]["new"]["username"]
         sorted_scores = get_sorted_scores(osu_scores, list_type)
         m = await get_formatted_score_list(member, sorted_scores, 5)
-        e = discord.Embed(color=member.color)
-        e.description = m
-        e.set_author(name=author_text,
-                     icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
-        e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
+    e = discord.Embed(color=member.color)
+    e.description = m
+    e.set_author(name=author_text,
+                 icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
+    e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
 
 
