@@ -1828,8 +1828,6 @@ async def top(message: discord.Message, *options):
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
     assert mode is api.GameMode.osu if nochoke else True, \
         "No-choke lists are only supported for osu!standard"
-    assert mode is api.GameMode.osu if list_type == "combo" else True, \
-        "Sort by combo is only available for osu!standard"
     if nochoke:
         async with message.channel.typing():
             osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
