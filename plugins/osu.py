@@ -1707,7 +1707,7 @@ async def score(message: discord.Message, *options):
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
-        beatmap_id = None
+        beatmap_info = None
         match = False
         async for m in message.channel.history(limit=10):
             to_search = [m.content]
@@ -1719,7 +1719,7 @@ async def score(message: discord.Message, *options):
             found_url = utils.http_url_pattern.search("".join(to_search))
             if found_url:
                 try:
-                    beatmap_id = await api.beatmap_from_url(found_url.group(), return_type="id")
+                    beatmap_info = await api.beatmap_from_url(found_url.group(), return_type="info")
                     match = True
                     break
                 except SyntaxError:
@@ -1728,18 +1728,17 @@ async def score(message: discord.Message, *options):
         assert match, "No beatmap link found"
     else:
         try:
-            beatmap_id = await api.beatmap_from_url(beatmap_url, return_type="id")
+            beatmap_info = await api.beatmap_from_url(beatmap_url, return_type="info")
         except SyntaxError as e:
             await client.say(message, str(e))
             return
 
     user_id = osu_config.data["profiles"][str(member.id)]
     mode = get_mode(str(member.id))
-
     params = {
-        "mode": mode.name,
+        "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
-    osu_scores = await api.get_user_beatmap_score(beatmap_id, user_id, params=params)
+    osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
     assert osu_scores, "Found no scores by **{}**.".format(member.name)
 
     osu_score = osu_scores["score"]
@@ -1754,9 +1753,11 @@ async def score(message: discord.Message, *options):
     params = {
         "beatmap_id": osu_score["beatmap"]["id"],
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"],
+                                        mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
 
-    embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, scoreboard_rank)
+    embed = await create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
+                                             if beatmap_info.gamemode else mode, scoreboard_rank)
     embed.set_footer(text="".join([embed.footer.text, ("".join(["\n", get_formatted_score_time(osu_score)
                                                        if not mods and pendulum else ""]))]))
     await client.send_message(message.channel, embed=embed)

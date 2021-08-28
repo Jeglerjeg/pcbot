@@ -416,6 +416,8 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
         if return_type == "id":
             return beatmap_info.beatmap_id
             # Only download the beatmap of the id, so that only this beatmap will be returned
+        elif return_type == "info":
+            return beatmap_info
         params = {
             "beatmap_id": beatmap_info.beatmap_id,
         }
@@ -442,6 +444,9 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
 
     if return_type == "id":
         return beatmap["id"]
+    elif return_type == "info":
+        beatmap_url = "https://osu.ppy.sh/beatmaps/{}".format(beatmap["id"])
+        return parse_beatmap_url(beatmap_url)
     return beatmap
 
 
