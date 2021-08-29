@@ -584,7 +584,7 @@ async def get_new_score(member_id: str):
     profile = osu_config.data["profiles"][member_id]
     mode = get_mode(member_id)
     try:
-        user_scores = await retrieve_osu_scores(profile, mode, datetime.utcnow())
+        user_scores = await retrieve_osu_scores(profile, mode, datetime.now(tz=timezone.utc))
     except aiohttp.ServerDisconnectedError:
         return None
     except asyncio.TimeoutError:
@@ -1387,6 +1387,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
 @osu.command(hidden=True, owner=True)
 async def wipe_tracking(message: discord.Message, member: discord.Member = None):
+    """ Wipe all tracked members or just the specified member. """
     if member:
         if str(member.id) in osu_tracking:
             del osu_tracking[str(member.id)]
