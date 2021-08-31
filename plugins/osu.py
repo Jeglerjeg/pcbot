@@ -800,7 +800,7 @@ async def notify_pp(member_id: str, data: dict):
     m.append(format_user_diff(mode, old, new))
 
     # Send the message to all guilds
-    member = client.get_user(int(member_id))
+    member = data["member"]
     if not member:
         return
     for guild in member.mutual_guilds:
@@ -1092,7 +1092,7 @@ async def notify_recent_events(member_id: str, data: dict):
             recent_map_events.append(new_event)
 
             # Send the message to all guilds
-            member = client.get_user(int(member_id))
+            member = data["member"]
             if not member:
                 continue
             for guild in member.mutual_guilds:
@@ -1156,7 +1156,7 @@ async def notify_recent_events(member_id: str, data: dict):
             }
             beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.name))
             # Send the message to all guilds
-            member = client.get_user(int(member_id))
+            member = data["member"]
             if not member:
                 continue
             for guild in member.mutual_guilds:
