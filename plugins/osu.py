@@ -800,6 +800,8 @@ async def notify_pp(member_id: str, data: dict):
 
     # Send the message to all guilds
     member = client.get_user(int(member_id))
+    if not member:
+        return
     for guild in member.mutual_guilds:
         channels = get_notify_channels(guild, "score")
         if not channels:
