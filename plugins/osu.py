@@ -799,9 +799,6 @@ async def notify_pp(member_id: str, data: dict):
     m.append(format_user_diff(mode, old, new))
 
     # Send the message to all guilds
-    member = data["member"]
-    if not member:
-        return
     for guild in member.mutual_guilds:
         channels = get_notify_channels(guild, "score")
         if not channels:
