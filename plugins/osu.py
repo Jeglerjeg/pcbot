@@ -1176,6 +1176,8 @@ async def on_ready():
     global time_elapsed, previous_update
     no_key = False
 
+    await client.wait_until_ready()
+
     # Notify the owner when they have not set their API key
     if osu_config.data["client_secret"] == "change to your client secret" or \
             osu_config.data["client_id"] == "change to your client ID":
