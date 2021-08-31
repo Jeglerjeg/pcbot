@@ -1092,6 +1092,8 @@ async def notify_recent_events(member_id: str, data: dict):
 
             # Send the message to all guilds
             member = client.get_user(int(member_id))
+            if not member:
+                continue
             for guild in member.mutual_guilds:
                 channels = get_notify_channels(guild, "map")  # type: list
 
@@ -1154,6 +1156,8 @@ async def notify_recent_events(member_id: str, data: dict):
             beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.name))
             # Send the message to all guilds
             member = client.get_user(int(member_id))
+            if not member:
+                continue
             for guild in member.mutual_guilds:
                 channels = get_notify_channels(guild, "score")
                 if not channels:
