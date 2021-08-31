@@ -231,7 +231,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     """ Format the stream url and a VOD button when possible. """
     stream_url = None
     for activity in member.activities:
-        if activity is discord.ActivityType.streaming:
+        if activity == discord.ActivityType.streaming:
             stream_url = activity.url
     if not stream_url:
         return ""
@@ -427,7 +427,7 @@ def is_playing(member: discord.Member):
         if activity is not None and activity.name is not None:
             if "osu!" in activity.name.lower():
                 return True
-            if activity is discord.ActivityType.streaming and "osu!" in activity.game.lower():
+            if activity == discord.ActivityType.streaming and "osu!" in activity.game.lower():
                 return True
 
     return False
