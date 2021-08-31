@@ -1165,7 +1165,7 @@ async def notify_recent_events(member_id: str, data: dict):
                     continue
                 member = guild.get_member(int(member_id))
 
-                embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position)
+                embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position, twitch_link=True)
                 embed.set_author(name="{0} set a new leaderboard score".format(data["new"]["username"]),
                                  icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
 
@@ -1570,7 +1570,7 @@ if oppai:
 
 
 async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, beatmap: dict,
-                                     mode: api.GameMode, scoreboard_rank: bool = False):
+                                     mode: api.GameMode, scoreboard_rank: bool = False, twitch_link: bool = False):
     """ Returns a score embed for use outside of automatic score notifications. """
     score_pp = await get_score_pp(osu_score, beatmap, member)
     mods = Mods.format_mods(osu_score["mods"])
@@ -1589,7 +1589,8 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
                                                str(osu_score["beatmap"]["id"]), osu_score)
 
     embed = get_formatted_score_embed(member, osu_score, await format_new_score(mode, osu_score, beatmap,
-                                                                                scoreboard_rank),
+                                                                                scoreboard_rank,
+                                                                                member if twitch_link else None),
                                       score_pp if score_pp is not None and score_pp.max_pp is not None and
                                       score_pp.max_pp - osu_score["pp"] > 1 and not
                                       bool(osu_score["perfect"] and osu_score["passed"]) else None)
