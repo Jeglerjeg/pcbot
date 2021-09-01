@@ -1623,7 +1623,8 @@ async def recent(message: discord.Message, member: discord.Member = Annotate.Sel
     }
     beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score["beatmap"]["id"]), mode=mode.name))
 
-    embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode)
+    embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode,
+                                             twitch_link=True if osu_score["passed"] else False)
     await client.send_message(message.channel, embed=embed)
 
 
