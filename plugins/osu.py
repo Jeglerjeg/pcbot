@@ -260,10 +260,10 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     beatmap_length = int(beatmap["hit_length"])
 
     # Convert beatmap length when speed mods are enabled
-    mods = Mods.list_mods(osu_score["mods"])
-    if Mods.DT in mods or Mods.NC in mods:
+    mods = osu_score["mods"]
+    if "DT" in mods or "NC" in mods:
         beatmap_length /= 1.5
-    elif Mods.HT in mods:
+    elif "HT" in mods:
         beatmap_length /= 0.75
 
     # Get the timestamp in the VOD when the score was created
