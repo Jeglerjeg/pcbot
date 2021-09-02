@@ -258,7 +258,6 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     # Find the timestamp of where the play would have started without pausing the game
     score_created = datetime.fromisoformat(osu_score["created_at"])
     vod_created = datetime.strptime(vod["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-    vod_created.replace(tzinfo=timezone.utc)
     beatmap_length = int(beatmap["hit_length"])
 
     # Convert beatmap length when speed mods are enabled
@@ -269,7 +268,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         beatmap_length /= 0.75
 
     # Get the timestamp in the VOD when the score was created
-    timestamp_score_created = (score_created - vod_created).total_seconds()
+    timestamp_score_created = (score_created - vod_created.replace(tzinfo=timezone.utc)).total_seconds()
     timestamp_play_started = timestamp_score_created - beatmap_length
 
     # Add the vod url with timestamp to the formatted text
