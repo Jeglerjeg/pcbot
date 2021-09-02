@@ -241,7 +241,8 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     # Add the stream url and return immediately if twitch is not setup
     text = ["**[Watch live here!]({})**".format(stream_url)]
     if not twitch.client_id:
-        return text.append("\n")
+        text.append("\n")
+        return "".join(text)
 
     # Try getting the vod information of the current stream
     try:
@@ -251,14 +252,20 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         assert vod_request["_total"] >= 1
     except Exception:
         logging.error(traceback.format_exc())
-        return text.append("\n")
+        text.append("\n")
+        return "".join(text)
 
     vod = vod_request["videos"][0]
 
     # Find the timestamp of where the play would have started without pausing the game
     score_created = datetime.fromisoformat(osu_score["created_at"])
-    vod_created = datetime.strptime(vod["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+    vod_created = datetime.strptime(vod["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
     beatmap_length = int(beatmap["total_length"])
+
+    # Return if the stream was started after the score was set
+    if vod_created > score_created:
+        text.append("\n")
+        return "".join(text)
 
     # Convert beatmap length when speed mods are enabled
     mods = osu_score["mods"]
@@ -268,7 +275,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         beatmap_length /= 0.75
 
     # Get the timestamp in the VOD when the score was created
-    timestamp_score_created = (score_created - vod_created.replace(tzinfo=timezone.utc)).total_seconds()
+    timestamp_score_created = (score_created - vod_created).total_seconds()
     timestamp_play_started = timestamp_score_created - beatmap_length
 
     # Add the vod url with timestamp to the formatted text
