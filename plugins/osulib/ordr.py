@@ -283,5 +283,3 @@ async def send_render_job(option):
 async def establish_ws_connection():
     await ordr_client.connect(ws_link)
     await ordr_client.wait()
-
-asyncio.run_coroutine_threadsafe(establish_ws_connection(), client.loop)

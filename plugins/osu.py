@@ -1185,6 +1185,7 @@ async def on_ready():
     global time_elapsed, previous_update
     no_key = False
 
+    await ordr.establish_ws_connection()
     await client.wait_until_ready()
 
     # Notify the owner when they have not set their API key
