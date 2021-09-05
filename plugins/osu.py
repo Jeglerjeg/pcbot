@@ -1227,7 +1227,8 @@ async def on_ready():
 
 async def on_reload(name: str):
     """ Preserve the tracking cache. """
-    global osu_tracking, recent_map_events, time_elapsed, previous_update, previous_score_updates, no_choke_cache, last_rendered
+    global osu_tracking, recent_map_events, time_elapsed, previous_update, previous_score_updates, no_choke_cache, \
+        last_rendered
     local_tracking = osu_tracking
     local_events = recent_map_events
     local_renders = last_rendered
@@ -1655,49 +1656,26 @@ async def render(message: discord.Message, *options):
             replay_url = attachment.url
 
     if message.author.id in last_rendered:
-        time_since_render = datetime.now() - last_rendered[message.author.id]
-        in_minutes = time_since_render.total_seconds() / 60
-        if in_minutes < 5:
+        time_since_render = datetime.utcnow() - last_rendered[message.author.id]
+        if time_since_render.total_seconds() < 300:
             await client.say(message, "It's been less than 5 minutes since your last render. "
                                       "Please wait before trying again")
             return
 
     assert replay_url, "No replay provided"
+    placeholder_msg = await client.send_message(message.channel, "Sending render...")
     render_job = await ordr.send_render_job(replay_url)
 
-    assert isinstance(render_job, dict), \
-        "An error occured when sending this replay:\n{}".format(render_job)
-
-    if "renderID" not in render_job:
-        await client.say(message, "An error occured when sending this replay:\n{}".format(render_job["message"]))
+    if not isinstance(render_job, dict):
+        await placeholder_msg.edit("An error occured when sending this replay. The bot might be rate-limited.")
         return
 
-    last_rendered[message.author.id] = datetime.now()
+    if "renderID" not in render_job:
+        await placeholder_msg.edit("An error occured when sending this replay. The bot might be rate-limited.")
+        return
 
-    e = discord.Embed(color=message.author.color)
-    e.description = "Progress: Rendering 0%"
-
-    placeholder_msg = await client.send_message(message.channel, embed=e)
-
-    render_complete = False
-    video_url = ""
-
-    while not render_complete:
-        ordr_render = await ordr.get_render(render_job["renderID"])
-        if not utils.http_url_pattern.match(ordr_render["videoUrl"]):
-            await asyncio.sleep(10)
-            if "error" in ordr_render["progress"].lower():
-                e.description = "{}".format(ordr_render["progress"])
-                await placeholder_msg.edit(embed=e)
-                return
-
-            e.description = "Progress: {}".format(ordr_render["progress"])
-            await placeholder_msg.edit(embed=e)
-        else:
-            video_url = ordr_render["videoUrl"]
-            render_complete = True
-
-    await placeholder_msg.edit(content=video_url, embed=None)
+    last_rendered[message.author.id] = datetime.utcnow()
+    ordr.requested_renders[int(render_job["renderID"])] = dict(message=placeholder_msg, edited=datetime.utcnow())
 
 
 async def score(message: discord.Message, *options):
