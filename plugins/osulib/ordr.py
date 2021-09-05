@@ -168,6 +168,25 @@ async def render_progress(data: str):
             requested_renders[render_id]["edited"] = datetime.utcnow()
 
 
+@ordr_client.event()
+async def connect():
+    logging.info("Client successfully connected to ordr websocket.")
+
+
+@ordr_client.event()
+async def disconnect():
+    logging.info("Disconnected from ordr websocket. Attempting to reconnect.")
+    await asyncio.sleep(1)
+    await establish_ws_connection()
+
+
+@ordr_client.event()
+async def connect_error():
+    logging.info("Connection to ordr websocket failed. Attempt to reconnect.")
+    await asyncio.sleep(1)
+    await establish_ws_connection()
+
+
 async def get_render(render_id: int):
     """ Return an ordr render by it's ID """
     params = {
