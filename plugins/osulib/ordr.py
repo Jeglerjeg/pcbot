@@ -2,10 +2,21 @@
 
     Can render replays and fetch replays by ID
 """
+import asyncio
+import bot
+from datetime import datetime
+import socketio
 from aiohttp import FormData
+import plugins
 from pcbot import utils, config, Config
 
 host = "https://ordr-api.issou.best/"
+ws_link = "https://ordr-ws.issou.best"
+requested_renders = {}
+
+ordr_client = socketio.AsyncClient()
+
+client = plugins.client  # type: bot.Client
 
 ordr_config = Config("ordr", pretty=True, data=dict(
     verificationKey="change to your API key",
@@ -55,6 +66,103 @@ ordr_config = Config("ordr", pretty=True, data=dict(
     showHitCounter="true",  # Whether or not the hit counter (100s, 50s, misses) should be shown
     showKeyOverlay="true"  # Whether or not the key overlay should be shown
 ))
+
+
+@ordr_client.event()
+async def render_done(render_id: int):
+    if render_id in requested_renders:
+        completed_render = await get_render(render_id)
+        await requested_renders[render_id]["message"].edit(completed_render["videoUrl"])
+        requested_renders.pop(render_id)
+
+
+@ordr_client.event()
+async def render_failed(data: str):
+    data = data.split(" ")
+    render_id = int(data[0])
+    error_code = int(data[1])
+    if render_id in requested_renders:
+        if error_code == 1:
+            await requested_renders[render_id]["message"].edit("Render stopped due to an emergency.")
+            requested_renders.pop(render_id)
+        elif error_code == 2:
+            await requested_renders[render_id]["message"].edit("Error parsing replay.")
+            requested_renders.pop(render_id)
+        elif error_code == 3:
+            await requested_renders[render_id]["message"].edit("Error parsing replay.")
+            requested_renders.pop(render_id)
+        elif error_code == 4:
+            await requested_renders[render_id]["message"].edit("Beatmap mirrors unavailable.")
+            requested_renders.pop(render_id)
+        elif error_code == 5:
+            await requested_renders[render_id]["message"].edit("Replay file corrupted.")
+            requested_renders.pop(render_id)
+        elif error_code == 6:
+            await requested_renders[render_id]["message"].edit("Only osu!standard is supported for replay rendering.")
+            requested_renders.pop(render_id)
+        elif error_code == 7:
+            await requested_renders[render_id]["message"].edit("Replay has no input data.")
+            requested_renders.pop(render_id)
+        elif error_code == 8:
+            await requested_renders[render_id]["message"].edit(
+                "Custom difficulties or unsubmitted maps are unsupported.")
+            requested_renders.pop(render_id)
+        elif error_code == 9:
+            await requested_renders[render_id]["message"].edit("Audio for this beatmap is unavailable.")
+            requested_renders.pop(render_id)
+        elif error_code == 10:
+            await requested_renders[render_id]["message"].edit("Cannot connect to osu!api.")
+            requested_renders.pop(render_id)
+        elif error_code == 11:
+            await requested_renders[render_id]["message"].edit("Auto is not supported.")
+            requested_renders.pop(render_id)
+        elif error_code == 12:
+            await requested_renders[render_id]["message"].edit("Invalid characters in replay username.")
+            requested_renders.pop(render_id)
+        elif error_code == 13:
+            await requested_renders[render_id]["message"].edit("The beatmap is longer than 15 minutes.")
+            requested_renders.pop(render_id)
+        elif error_code == 14:
+            await requested_renders[render_id]["message"].edit("Beatmap not found on any mirrors.")
+            requested_renders.pop(render_id)
+        elif error_code == 15:
+            await requested_renders[render_id]["message"].edit("This play is banned from ordr.")
+            requested_renders.pop(render_id)
+        elif error_code == 16:
+            await requested_renders[render_id]["message"].edit("This IP is banned from ordr.")
+            requested_renders.pop(render_id)
+        elif error_code == 17:
+            await requested_renders[render_id]["message"].edit("This username is banned from ordr.")
+            requested_renders.pop(render_id)
+        elif error_code == 18:
+            await requested_renders[render_id]["message"].edit("An unknown error from the renderer occured.")
+            requested_renders.pop(render_id)
+        elif error_code == 19:
+            await requested_renders[render_id]["message"].edit("The renderer cannot download the beatmap.")
+            requested_renders.pop(render_id)
+        elif error_code == 20:
+            await requested_renders[render_id]["message"].edit(
+                "Beatmap version is not the same on mirrors as the replay.")
+            requested_renders.pop(render_id)
+        elif error_code == 21:
+            await requested_renders[render_id]["message"].edit("Replay is corrupted (danser can't process it).")
+            requested_renders.pop(render_id)
+        elif error_code == 22:
+            await requested_renders[render_id]["message"].edit("Server-side error finalizing the video.")
+            requested_renders.pop(render_id)
+        elif error_code == 23:
+            await requested_renders[render_id]["message"].edit("Server-side error preparing the replay.")
+            requested_renders.pop(render_id)
+
+
+@ordr_client.event()
+async def render_progress(data: str):
+    data = data.split(" ", 1)
+    render_id = int(data[0])
+    progress = data[1]
+    if render_id in requested_renders:
+        if (datetime.utcnow() - requested_renders[render_id]["edited"]).total_seconds() > 1:
+            await requested_renders[render_id]["message"].edit(progress)
 
 
 async def get_render(render_id: int):
@@ -148,3 +256,10 @@ async def send_render_job(option):
         results = e
 
     return results
+
+
+async def establish_ws_connection():
+    await ordr_client.connect(ws_link)
+    await ordr_client.wait()
+
+asyncio.run_coroutine_threadsafe(establish_ws_connection(), client.loop)
