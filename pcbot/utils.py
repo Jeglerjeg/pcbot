@@ -123,7 +123,7 @@ def permission(*perms: str):
     def decorator(func):
         @wraps(func)
         async def wrapped(message: discord.Message, *args, **kwargs):
-            member_perms = message.author.permissions_in(message.channel)
+            member_perms = message.channel.permissions_for(message.author)
 
             if all(getattr(member_perms, perm, False) for perm in perms):
                 await func(message, *args, **kwargs)
@@ -153,12 +153,14 @@ def role(*roles: str):
     return decorator
 
 
-async def subprocess(*args, pipe=None, carriage_return=False):
+async def subprocess(*args, pipe=None, carriage_return=False, no_stderr: bool = False):
     """ Run a subprocess and return the output.
 
     :param args: Arguments to be passed to the subprocess
     :param pipe: Any optional input for the stdin.
     :param carriage_return: When True, carriage returns, \r, are not removed from the result.
+    :param no_stderr: Certain subprocesses always return stderr output (such as git pull) and it
+    may therefore be desirable to not raise an exception
     """
     process = await sub.create_subprocess_exec(*args, stdout=sub.PIPE, stdin=sub.PIPE, stderr=sub.PIPE)
     stdout, stderr = await process.communicate(input=bytes(pipe, encoding="utf-8") if pipe else None)
@@ -171,7 +173,7 @@ async def subprocess(*args, pipe=None, carriage_return=False):
         stdout = stdout.replace("\r", "")
         stderr = stderr.replace("\r", "")
 
-    if stderr:
+    if stderr and not no_stderr:
         raise Exception(stderr)
 
     return stdout
@@ -511,7 +513,7 @@ async def convert_to_embed(text: str, *, author: discord.Member = None, **kwargs
 
     # Set the author if given
     if author:
-        embed.set_author(name=author.display_name, icon_url=author.avatar_url, url=url)
+        embed.set_author(name=author.display_name, icon_url=author.display_avatar.url, url=url)
 
     return embed
 

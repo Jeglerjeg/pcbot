@@ -21,13 +21,15 @@ requests_sent = 0
 mapcache_path = "plugins/osulib/mapdatacache"
 setcache_path = "plugins/osulib/setdatacache"
 
+beatmap_memory_cache = {}
+
 replay_path = os.path.join("plugins/osulib/", "replay.osr")
 
 mode_names = {
-    "Standard": ["standard", "osu", "std"],
-    "Taiko": ["taiko"],
-    "Catch": ["catch", "ctb", "fruits"],
-    "Mania": ["mania", "keys"]
+    "osu": ["standard", "osu", "std", "osu!"],
+    "taiko": ["taiko", "osu!taiko"],
+    "fruits": ["catch", "ctb", "fruits", "osu!catch"],
+    "mania": ["mania", "keys", "osu!mania"]
 }
 
 
@@ -61,17 +63,17 @@ async def get_access_token(client_id, client_secret):
 
 class GameMode(Enum):
     """ Enum for gamemodes. """
-    Standard = 0
-    Taiko = 1
-    Catch = 2
-    Mania = 3
+    osu = 0
+    taiko = 1
+    fruits = 2
+    mania = 3
 
     @classmethod
     def get_mode(cls, mode: str):
         """ Return the mode with the specified string. """
         for mode_name, names in mode_names.items():
             for name in names:
-                if name.startswith(mode.lower()):
+                if name.lower().startswith(mode.lower()):
                     return GameMode.__members__[mode_name]
 
         return None
@@ -161,7 +163,6 @@ def def_section(api_name: str, first_element: bool = False):
         for i in range(request_tries):
             try:
                 response = await utils.download_json(url + api_name, headers=headers, **params)
-
             except ValueError as e:
                 logging.warning("ValueError Calling %s: %s", url + api_name, e)
             else:
@@ -216,9 +217,11 @@ def cache_beatmapset(beatmap: dict, map_id: int):
                 json.dump(convert, fp)
 
 
-def validate_cache(map_id: int, map_type: str, mode: str = None):
-    """ Check if the map is cached and if the cache is still valid. """
+def retrieve_cache(map_id: int, map_type: str, mode: str = None):
+    """ Retrieves beatmap or beatmapset cache from memory or file if it exists """
     # Check if cache should be validated for beatmap or beatmapset
+    result = None
+    filename = None
     if map_type == "set":
         if not os.path.exists(setcache_path):
             os.makedirs(setcache_path)
@@ -227,38 +230,46 @@ def validate_cache(map_id: int, map_type: str, mode: str = None):
         if not os.path.exists(mapcache_path):
             os.makedirs(mapcache_path)
         beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
-    # Check whether the file exists and if the cache is still valid
-    if os.path.isfile(beatmap_path):
+        filename = str(map_id) + "-" + mode + ".json"
+    if filename is not None and filename in beatmap_memory_cache:
+        result = beatmap_memory_cache[filename]
+    elif os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
             result = json.load(fp)
-        cached_time = datetime.fromisoformat(result["time_cached"])
-        time_now = datetime.utcnow()
-        previous_sr_update = datetime(2021, 8, 5)
-        diff = time_now - cached_time
-        if cached_time < previous_sr_update:
-            return False
-        if result["status"] == "loved":
-            if diff.days > 30:
-                return False
-        if result["status"] == "pending" or result["status"] == "graveyard" or result["status"] == "wip" \
-                or result["status"] == "qualified":
-            if diff.days > 7:
-                return False
-        return True
+    return result
 
-    return False
+
+def validate_cache(beatmap: dict):
+    """ Check if the map cache is still valid. """
+    if beatmap is None:
+        return False
+    valid_result = True
+    cached_time = datetime.fromisoformat(beatmap["time_cached"])
+    time_now = datetime.utcnow()
+    previous_sr_update = datetime(2021, 8, 5)
+    diff = time_now - cached_time
+    if cached_time < previous_sr_update:
+        valid_result = False
+    elif beatmap["status"] == "loved":
+        if diff.days > 30:
+            valid_result = False
+    elif beatmap["status"] == "pending" or beatmap["status"] == "graveyard" or beatmap["status"] == "wip" \
+            or beatmap["status"] == "qualified":
+        if diff.days > 7:
+            valid_result = False
+
+    return valid_result
 
 
 # Define all osu! API requests using the template
 async def beatmap_lookup(params, map_id, mode):
     """ Looks up a beatmap unless cache exists"""
-    valid_result = validate_cache(map_id, "map", mode)
-    result = None
-    if valid_result:
-        beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
-        with open(beatmap_path, encoding="utf-8") as fp:
-            result = json.load(fp)
-    else:
+    result = retrieve_cache(map_id, "map", mode)
+    valid_result = validate_cache(result)
+    filename = str(map_id) + "-" + mode + ".json"
+    if valid_result and filename not in beatmap_memory_cache:
+        beatmap_memory_cache[filename] = result
+    elif not valid_result:
         response = await beatmapset_lookup(params=params)
         beatmapset = response.copy()
         del beatmapset["beatmaps"]
@@ -273,6 +284,7 @@ async def beatmap_lookup(params, map_id, mode):
                 if str(convert["id"]) == str(map_id) and convert["mode"] == mode:
                     convert["beatmapset"] = beatmapset
                     result = convert
+        beatmap_memory_cache[filename] = result
     return result
 
 
@@ -319,11 +331,9 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
 
 async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     """ Returns a beatmapset using beatmapset ID"""
-    if force_redownload:
-        valid_result = False
-    else:
-        valid_result = validate_cache(beatmapset_id, "set")
-    if not valid_result:
+    result = retrieve_cache(beatmapset_id, "set")
+    valid_result = validate_cache(result)
+    if not valid_result or force_redownload:
         request = def_section("beatmapsets/{}".format(beatmapset_id))
         result = await request()
         cache_beatmapset(result, result["id"])
@@ -374,7 +384,6 @@ def parse_beatmap_url(url: str):
         if match_v2_beatmapset.group("mode") is None:
             return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"), beatmap_id=None,
                                   gamemode=None)
-
         return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"),
                               beatmap_id=match_v2_beatmapset.group("beatmap_id"),
                               gamemode=GameMode.get_mode(match_v2_beatmapset.group("mode")))
@@ -406,6 +415,8 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
         if return_type == "id":
             return beatmap_info.beatmap_id
             # Only download the beatmap of the id, so that only this beatmap will be returned
+        elif return_type == "info":
+            return beatmap_info
         params = {
             "beatmap_id": beatmap_info.beatmap_id,
         }
@@ -432,6 +443,9 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
 
     if return_type == "id":
         return beatmap["id"]
+    elif return_type == "info":
+        beatmap_url = "https://osu.ppy.sh/beatmaps/{}".format(beatmap["id"])
+        return parse_beatmap_url(beatmap_url)
     return beatmap
 
 
