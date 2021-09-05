@@ -3,6 +3,8 @@
     Can render replays and fetch replays by ID
 """
 import asyncio
+import logging
+
 import bot
 from datetime import datetime
 import socketio
@@ -161,8 +163,9 @@ async def render_progress(data: str):
     render_id = int(data[0])
     progress = data[1]
     if render_id in requested_renders:
-        if (datetime.utcnow() - requested_renders[render_id]["edited"]).total_seconds() > 1:
+        if (datetime.utcnow() - requested_renders[render_id]["edited"]).total_seconds() > 5:
             await requested_renders[render_id]["message"].edit(progress)
+            requested_renders[render_id]["edited"] = datetime.utcnow()
 
 
 async def get_render(render_id: int):
