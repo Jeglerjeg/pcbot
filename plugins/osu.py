@@ -239,7 +239,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         return ""
 
     # Add the stream url and return immediately if twitch is not setup
-    text = ["**[Watch live here!]({})**".format(stream_url)]
+    text = ["**[Watch live here]({})**".format(stream_url)]
     if not twitch.client_id:
         text.append("\n")
         return "".join(text)
@@ -279,7 +279,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     timestamp_play_started = timestamp_score_created - beatmap_length
 
     # Add the vod url with timestamp to the formatted text
-    text.append(" | **[`Video of this play :)`]({0}?t={1}s)**\n".format(vod["url"], int(timestamp_play_started)))
+    text.append(" | **[`Video of this play`]({0}?t={1}s)**\n".format(vod["url"], int(timestamp_play_started)))
     return "".join(text)
 
 
