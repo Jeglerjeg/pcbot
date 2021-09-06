@@ -858,7 +858,6 @@ async def notify_pp(member_id: str, data: dict):
 
         for i, channel in enumerate(channels):
             try:
-                logging.info(embed)
                 await client.send_message(channel, embed=embed)
 
                 # In the primary guild and if the user sets a score, send a mention and delete it
