@@ -599,7 +599,7 @@ async def get_new_score(member_id: str):
         return None
     if user_scores is None:
         return None
-
+    new_scores = []
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(user_scores["score_list"]):
         if osu_tracking[member_id]["scores"]["time_updated"] < datetime.fromisoformat(osu_score["created_at"]):
@@ -609,7 +609,6 @@ async def get_new_score(member_id: str):
                                                         old_scores=osu_tracking[member_id]["scores"],
                                                         old=dict(osu_tracking[member_id]["old"]),
                                                         new=dict(osu_tracking[member_id]["new"]))
-            osu_tracking[member_id]["scores"] = user_scores
 
             # Calculate the difference in pp from the score below
             if i < len(user_scores["score_list"]) - 2:
@@ -617,15 +616,17 @@ async def get_new_score(member_id: str):
                 diff = pp - float(user_scores["score_list"][i + 1]["pp"])
             else:
                 diff = 0
-            return dict(osu_score, diff=diff)
-    return dict()
+            new_scores.append(dict(osu_score, diff=diff))
+    if new_scores:
+        osu_tracking[member_id]["scores"] = user_scores
+    return new_scores
 
 
-async def get_formatted_score_list(member: discord.Member, osu_scores: dict, limit: int):
+async def get_formatted_score_list(member: discord.Member, osu_scores: list, limit: int, no_time: bool = False):
     """ Return a list of formatted scores along with time since the score was set. """
     mode = get_mode(str(member.id))
     m = []
-    for i, osu_score in enumerate(osu_scores["score_list"]):
+    for i, osu_score in enumerate(osu_scores):
         if i > limit - 1:
             break
         params = {
@@ -640,6 +641,8 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: dict, lim
         # Add time since play to the score
         score_datetime = datetime.fromisoformat(osu_score["created_at"])
         time_since_string = "<t:{}:R>".format(int(score_datetime.timestamp()))
+        position_string = "{}.".format(osu_score["pos"]) if "diff" not in osu_score else "{}. (+{diff:.2f}pp)".format(
+            osu_score["pos"], diff=osu_score["diff"])
 
         potential_string = None
         # Add potential pp to the score
@@ -648,10 +651,11 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: dict, lim
             potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
                                                                           score_pp.max_pp - float(osu_score["pp"]))
 
-        m.append("".join(["{}.\n".format(osu_score["pos"]),
+        m.append("".join(["{}\n".format(position_string),
                           await format_new_score(mode, osu_score, beatmap),
-                          (potential_string + "\n" if potential_string is not None else ""),
-                          time_since_string, "\n\n"]))
+                          ("".join([potential_string, "\n"]) if potential_string is not None else ""),
+                          "".join([time_since_string, "\n"]) if not no_time else "",
+                          "\n" if not i == limit - 1 else ""]))
     return "".join(m)
 
 
@@ -767,18 +771,21 @@ async def notify_pp(member_id: str, data: dict):
     m = []
     potential_pp = None
     thumbnail_url = None
-    osu_score = {}  # type: dict
+    osu_score = None
+    osu_scores = []  # type: list
     # Since the user got pp they probably have a new score in their own top 100
     # If there is a score, there is also a beatmap
     if update_mode is not UpdateModes.PP:
         for i in range(3):
-            osu_score = await get_new_score(member_id)
-            if osu_score:
+            osu_scores = await get_new_score(member_id)
+            if osu_scores:
                 break
             await asyncio.sleep(osu_config.data["score_update_delay"])
-
+        else:
+            logging.info("{} gained PP, but no new score was found.".format(member_id))
     # If a new score was found, format the score
-    if osu_score:
+    if len(osu_scores) == 1:
+        osu_score = osu_scores[0]
         if osu_score["best_id"] in previous_score_updates:
             return
 
@@ -802,6 +809,17 @@ async def notify_pp(member_id: str, data: dict):
             m.append("".join([await format_minimal_score(mode, osu_score, beatmap, scoreboard_rank, member), "\n"]))
         else:
             m.append(await format_new_score(mode, osu_score, beatmap, scoreboard_rank, member))
+    elif len(osu_scores) > 1:
+        for osu_score in list(osu_scores):
+            # There might not be any events
+            osu_score["scoreboard_rank"] = None
+            if new["events"]:
+                osu_score["scoreboard_rank"] = api.rank_from_events(new["events"],
+                                                                    str(osu_score["beatmap"]["id"]), osu_score)
+        m.append(await get_formatted_score_list(member, osu_scores, limit=5, no_time=True))
+        thumbnail_url = data["new"]["avatar_url"]
+    else:
+        osu_score = None
 
     # Always add the difference in pp along with the ranks
     m.append(format_user_diff(mode, old, new))
@@ -815,26 +833,33 @@ async def notify_pp(member_id: str, data: dict):
 
         primary_guild = get_primary_guild(str(member.id))
         is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
-
-        embed = get_formatted_score_embed(member, osu_score, "".join(m), potential_pp if potential_pp is not None
-                                          and potential_pp.max_pp is not None and
-                                          potential_pp.max_pp - osu_score["pp"] > 1
-                                          and not bool(osu_score["perfect"] and osu_score["passed"]) else None)
-        if osu_score:
+        if not osu_scores or len(osu_scores) == 1:
+            embed = get_formatted_score_embed(member, osu_score, "".join(m), potential_pp if potential_pp is not None
+                                              and potential_pp.max_pp is not None and potential_pp.max_pp -
+                                              osu_score["pp"] > 1 and not bool(osu_score["perfect"]
+                                                                               and osu_score["passed"]) else None)
+        else:
+            embed = discord.Embed(color=member.color)
+            embed.description = "".join(m)
+        if osu_scores:
             embed.set_thumbnail(url=thumbnail_url)
 
         # The top line of the format will differ depending on whether we found a score or not
-        if osu_score:
+        if len(osu_scores) == 1:
             embed.set_author(
                 name="{0} set a new best (#{pos}/{1} +{diff:.2f}pp)".format(data["new"]["username"],
                                                                             score_request_limit, **osu_score),
                 icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
+        elif len(osu_scores) > 1:
+            embed.set_author(name="{0} set new best scores".format(data["new"]["username"]),
+                             icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
         else:
-            embed.set_author(
-                name=data["new"]["username"], icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
+            embed.set_author(name=data["new"]["username"], icon_url=data["new"]["avatar_url"],
+                             url=get_user_url(str(member.id)))
 
         for i, channel in enumerate(channels):
             try:
+                logging.info(embed)
                 await client.send_message(channel, embed=embed)
 
                 # In the primary guild and if the user sets a score, send a mention and delete it
@@ -1837,12 +1862,12 @@ async def top(message: discord.Message, *options):
                                                       round(new_total_pp -
                                                             osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
             sorted_scores = get_sorted_scores(osu_scores, list_type)
-            m = await get_formatted_score_list(member, sorted_scores, 5)
+            m = await get_formatted_score_list(member, sorted_scores["score_list"], 5)
     else:
         osu_scores = osu_tracking[str(member.id)]["scores"]
         author_text = osu_tracking[str(member.id)]["new"]["username"]
         sorted_scores = get_sorted_scores(osu_scores, list_type)
-        m = await get_formatted_score_list(member, sorted_scores, 5)
+        m = await get_formatted_score_list(member, sorted_scores["score_list"], 5)
     e = discord.Embed(color=member.color)
     e.description = m
     e.set_author(name=author_text,
