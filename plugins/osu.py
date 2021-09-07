@@ -815,7 +815,8 @@ async def notify_pp(member_id: str, data: dict):
             if new["events"]:
                 osu_score["scoreboard_rank"] = api.rank_from_events(new["events"],
                                                                     str(osu_score["beatmap"]["id"]), osu_score)
-        m.append(await get_formatted_score_list(member, osu_scores, limit=len(osu_scores), no_time=True))
+        m.append(await get_formatted_score_list(member, osu_scores,
+                                                limit=len(osu_scores) if len(osu_scores) <= 5 else 5, no_time=True))
         thumbnail_url = data["new"]["avatar_url"]
     else:
         osu_score = None
