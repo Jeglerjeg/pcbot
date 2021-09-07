@@ -176,7 +176,7 @@ async def connect():
 @ordr_client.event()
 async def disconnect():
     logging.info("Disconnected from ordr websocket. Attempting to reconnect.")
-    await asyncio.sleep(1)
+    await asyncio.sleep(5)
     await establish_ws_connection()
 
 
@@ -184,7 +184,7 @@ async def disconnect():
 async def connect_error(data):
     logging.error(data)
     logging.info("Connection to ordr websocket failed. Attempt to reconnect.")
-    await asyncio.sleep(1)
+    await asyncio.sleep(5)
     await establish_ws_connection()
 
 
