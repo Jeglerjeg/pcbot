@@ -2,7 +2,6 @@
 
     Can render replays and fetch replays by ID
 """
-import asyncio
 import logging
 
 import bot
@@ -176,16 +175,12 @@ async def connect():
 @ordr_client.event()
 async def disconnect():
     logging.info("Disconnected from ordr websocket. Attempting to reconnect.")
-    await asyncio.sleep(5)
-    await establish_ws_connection()
 
 
 @ordr_client.event()
 async def connect_error(data):
     logging.error(data)
-    logging.info("Connection to ordr websocket failed. Attempt to reconnect.")
-    await asyncio.sleep(5)
-    await establish_ws_connection()
+    logging.info("Connection to ordr websocket failed.")
 
 
 async def get_render(render_id: int):
