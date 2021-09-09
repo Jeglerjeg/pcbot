@@ -782,14 +782,13 @@ async def notify_pp(member_id: str, data: dict):
             await asyncio.sleep(osu_config.data["score_update_delay"])
         else:
             logging.info("{} gained PP, but no new score was found.".format(member_id))
-    # If a new score was found, format the score
+    for osu_score in list(osu_scores):
+        if osu_score["best_id"] in previous_score_updates:
+            osu_scores.pop(osu_score)
+        previous_score_updates.append(osu_score["best_id"])
+    # If a new score was found, format the score(s)
     if len(osu_scores) == 1:
         osu_score = osu_scores[0]
-        if osu_score["best_id"] in previous_score_updates:
-            return
-
-        previous_score_updates.append(osu_score["best_id"])
-
         params = {
             "beatmap_id": osu_score["beatmap"]["id"],
         }
