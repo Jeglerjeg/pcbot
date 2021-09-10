@@ -914,9 +914,13 @@ async def format_beatmap_info(beatmapset: dict):
         if not diff["passcount"] == 0 and not diff["playcount"] == 0:
             pass_rate = "{:.2f}%".format((diff["passcount"] / diff["playcount"]) * 100)
 
-        m.append("\n{name: <{diff_len}}  {drain: <7}{bpm: <5}{passrate}\n\nOD   CS   AR   HP   Max Combo\n{od: <5}"
-                 "{cs: <5}{ar: <5}{hp: <5}{maxcombo}\n\nAim PP  Speed PP  Acc PP  Total PP\n{aim_pp: <8}{speed_pp: <10}"
-                 "{acc_pp: <8}{pp}\n\nAim Stars  Speed Stars  Total Stars\n{aim_stars: <11}{speed_stars: <13}"
+        m.append("\n{name: <{diff_len}}  {drain: <7}{bpm: <5}{passrate}\n\n"
+                 "OD   CS   AR   HP   Max Combo\n"
+                 "{od: <5}{cs: <5}{ar: <5}{hp: <5}{maxcombo}\n\n"
+                 "Aim PP  Speed PP  Acc PP  Total PP\n"
+                 "{aim_pp: <8}{speed_pp: <10}{acc_pp: <8}{pp}\n\n"
+                 "Aim Stars  Speed Stars  Total Stars\n"
+                 "{aim_stars: <11}{speed_stars: <13}"
                  "{stars}".format(
                   name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 2] + "...",
                   diff_len=diff_length,
@@ -934,7 +938,7 @@ async def format_beatmap_info(beatmapset: dict):
                   aim_stars="{:.2f}\u2605".format(float(diff["aim_stars"])),
                   speed_stars="{:.2f}\u2605".format(float(diff["speed_stars"])),
                   bpm=int(diff["bpm"]) if diff["bpm"] else "None",
-                  maxcombo="{}x".format(diff["max_combo"])
+                  maxcombo="{}x".format(diff["max_combo"]) if diff["max_combo"] else "None"
                  ))
     m.append("```")
     return "".join(m)
