@@ -3,12 +3,11 @@
     Can render replays and fetch replays by ID
 """
 import logging
-
-import bot
 from datetime import datetime
+
 import socketio
 from aiohttp import FormData
-import plugins
+
 from pcbot import utils, config, Config
 
 host = "https://ordr-api.issou.best/"
@@ -16,8 +15,6 @@ ws_link = "https://ordr-ws.issou.best"
 requested_renders = {}
 
 ordr_client = socketio.AsyncClient()
-
-client = plugins.client  # type: bot.Client
 
 ordr_config = Config("ordr", pretty=True, data=dict(
     verificationKey="change to your API key",
