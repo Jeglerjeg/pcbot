@@ -96,6 +96,7 @@ max_diff_length = 22  # The maximum amount of characters in a beatmap difficulty
 
 asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
                                                       osu_config.data.get("client_secret")), client.loop)
+asyncio.run_coroutine_threadsafe(ordr.establish_ws_connection(), client.loop)
 host = "https://osu.ppy.sh/"
 rankings_url = "https://osu.ppy.sh/rankings/osu/performance"
 
@@ -1213,7 +1214,6 @@ async def on_ready():
     global time_elapsed, previous_update
     no_key = False
 
-    await ordr.establish_ws_connection()
     await client.wait_until_ready()
 
     # Notify the owner when they have not set their API key
