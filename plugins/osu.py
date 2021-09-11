@@ -96,7 +96,6 @@ max_diff_length = 22  # The maximum amount of characters in a beatmap difficulty
 
 asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
                                                       osu_config.data.get("client_secret")), client.loop)
-asyncio.run_coroutine_threadsafe(ordr.establish_ws_connection(), client.loop)
 host = "https://osu.ppy.sh/"
 rankings_url = "https://osu.ppy.sh/rankings/osu/performance"
 
@@ -1187,6 +1186,7 @@ async def on_ready():
     no_key = False
 
     await client.wait_until_ready()
+    await ordr.establish_ws_connection()
 
     # Notify the owner when they have not set their API key
     if osu_config.data["client_secret"] == "change to your client secret" or \
@@ -1240,7 +1240,6 @@ async def on_reload(name: str):
     local_no_choke_cache = no_choke_cache
 
     importlib.reload(plugins.osulib.api)
-    importlib.reload(plugins.osulib.ordr)
     importlib.reload(plugins.osulib.args)
     importlib.reload(plugins.osulib.pp)
     await plugins.reload(name)
