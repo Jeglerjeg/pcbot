@@ -938,7 +938,7 @@ async def format_beatmap_info(beatmapset: dict):
                   cs=diff["cs"],
                   aim_stars="{:.2f}\u2605".format(float(diff["aim_stars"])),
                   speed_stars="{:.2f}\u2605".format(float(diff["speed_stars"])),
-                  bpm=int(diff["bpm"]) if diff["bpm"] else "None",
+                  bpm=int(diff["bpm"]),
                   maxcombo="{}x".format(diff["max_combo"]) if diff["max_combo"] else "None"
                  ))
     m.append("```")

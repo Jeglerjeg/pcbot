@@ -15,6 +15,7 @@ Commands:
 """
 
 import asyncio
+import logging
 from collections import defaultdict
 
 import discord
@@ -88,10 +89,10 @@ add_setting("NSFW filter", permissions=["manage_guild"])
 add_setting("Changelog", permissions=["manage_guild"], default=False)
 
 
-async def manage_mute(message: discord.Message, *members: discord.Member, mute_member=None):
+async def manage_mute(message: discord.Message, *members: discord.Member, mute=None):
     """ Add or remove Muted role for given members.
 
-    :param mute_member: either member.add_roles or member.remove_roles
+    :param mute: either member.add_roles or member.remove_roles
     :return: list of muted/unmuted members or None """
     # Manage Roles is required to add or remove the Muted role
     assert message.channel.permissions_for(message.guild.me).manage_roles, \
@@ -112,9 +113,9 @@ async def manage_mute(message: discord.Message, *members: discord.Member, mute_m
 
         while True:
             try:
-                if mute_member:
+                if mute:
                     await member.add_roles(muted_role)
-                if not mute_member:
+                if not mute:
                     await member.remove_roles(muted_role)
             except discord.errors.Forbidden:
                 await client.say(message, "I do not have permission to give members the `Muted` role.")
@@ -131,7 +132,7 @@ async def manage_mute(message: discord.Message, *members: discord.Member, mute_m
 @plugins.command(pos_check=True, permissions="manage_messages")
 async def mute(message: discord.Message, *members: discord.Member):
     """ Mute the specified members. """
-    muted_members = await manage_mute(message, *members, mute_member=True)
+    muted_members = await manage_mute(message, *members, mute=True)
 
     # Some members were muted, success!
     if muted_members:
@@ -141,7 +142,7 @@ async def mute(message: discord.Message, *members: discord.Member):
 @plugins.command(pos_check=True, permissions="manage_messages")
 async def unmute(message: discord.Message, *members: discord.Member):
     """ Unmute the specified members. """
-    muted_members = await manage_mute(message, *members, mute_member=False)
+    muted_members = await manage_mute(message, *members, mute=False)
 
     # Some members were unmuted, success!
     if muted_members:
@@ -154,7 +155,7 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
     the reason for being timed out and post the reason in the guild's
     changelog if it has one. """
     client.loop.create_task(client.delete_message(message))
-    muted_members = await manage_mute(message, member, mute_member=True)
+    muted_members = await manage_mute(message, member, mute=True)
 
     # Do not progress if the members were not successfully muted
     # At this point, manage_mute will have reported any errors
@@ -174,7 +175,7 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
 
     # Sleep for the given hours and unmute the member
     await asyncio.sleep(minutes * 60)  # Since asyncio.sleep takes seconds, multiply by 60^2
-    await manage_mute(message, *muted_members, mute_member=False)
+    await manage_mute(message, *muted_members, mute=False)
 
 
 @plugins.command(aliases="muteall mute* unmuteall unmute*", permissions="manage_messages")
@@ -218,12 +219,12 @@ async def purge(message: discord.Message, *instances: members_and_channels, num:
 
     channel = message.channel
     for instance in instances:
-        if isinstance(instance, discord.TextChannel):
+        if type(instance) is discord.TextChannel:
             channel = instance
             instances.remove(instance)
             break
 
-    assert not any(i for i in instances if isinstance(i, discord.TextChannel)), "**I can only purge in one channel.**"
+    assert not any(i for i in instances if type(i) is discord.TextChannel), "**I can only purge in one channel.**"
     to_delete = []
 
     async for m in channel.history(limit=100, before=message):
@@ -262,7 +263,7 @@ async def check_nsfw(message: discord.Message):
         if message.channel.permissions_for(message.guild.me).manage_messages:
             await client.delete_message(message)
 
-        nsfw_channel = discord.utils.find(lambda c: "nsfw" in c.name or c.is_nsfw(), message.guild.channels)
+        nsfw_channel = discord.utils.find(lambda c: "nsfw" in c.name, message.guild.channels)
 
         if nsfw_channel:
             await client.say(message, "{0.mention}: **Please post NSFW content in {1.mention}**".format(
@@ -289,21 +290,20 @@ def get_changelog_channel(guild: discord.Guild):
     """ Return the changelog channel for a guild. """
     setup_default_config(guild)
     if not moderate.data[str(guild.id)]["changelog"]:
-        return None
+        return
 
     channel = discord.utils.get(guild.channels, name="changelog")
     if channel is None:
-        return None
+        return
 
     permissions = channel.permissions_for(guild.me)
     if not permissions.send_messages or not permissions.read_messages:
-        return None
+        return
 
     return channel
 
 
 async def log_change(channel: discord.TextChannel, message: str):
-    """ Log change to changelog channel. """
     embed = discord.Embed(description=message)
     await client.send_message(channel, embed=embed)
 
@@ -330,12 +330,12 @@ async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
 
         if not message.attachments == []:
             attachments = ""
-            for attachment in message.attachments:
-                attachments += attachment.filename + "\n"
+            for i in range(len(message.attachments)):
+                attachments += message.attachments[i].filename + "\n"
             await log_change(
                 changelog_channel,
-                "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}\nAttachments:\n"
-                "``{1}``".format(message, attachments)
+                "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}\nAttachments:\n``{"
+                "1}``".format(message, attachments)
             )
         else:
             await log_change(
