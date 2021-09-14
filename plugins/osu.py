@@ -527,6 +527,8 @@ async def update_user_data(member_id: str, profile: str):
     if "new" in osu_tracking[str(member_id)]:
         # Move the "new" data into the "old" data of this user
         osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
+    if not osu_tracking[str(member_id)]["member"] == member:
+        osu_tracking[str(member_id)]["member"] = member
 
     osu_tracking[str(member_id)]["new"] = user_data
     osu_tracking[str(member_id)]["new"]["time_updated"] = current_time
@@ -782,7 +784,7 @@ async def notify_pp(member_id: str, data: dict):
                 break
             await asyncio.sleep(osu_config.data["score_update_delay"])
         else:
-            logging.info("{} gained PP, but no new score was found.".format(member_id))
+            logging.info("%s gained PP, but no new score was found.", member_id)
     for osu_score in list(osu_scores):
         if osu_score["best_id"] in previous_score_updates:
             osu_scores.pop(osu_score)
@@ -1661,7 +1663,7 @@ async def recent(message: discord.Message, member: discord.Member = Annotate.Sel
     beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score["beatmap"]["id"]), mode=mode.name))
 
     embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode,
-                                             twitch_link=True if osu_score["passed"] else False)
+                                             twitch_link=osu_score["passed"])
     await client.send_message(message.channel, embed=embed)
 
 
@@ -1932,6 +1934,7 @@ async def debug(message: discord.Message):
     """ Display some debug info. """
     client_time = "<t:{}:F>".format(
         int(client.time_started.replace(tzinfo=timezone.utc).timestamp()))
+    member_list = ["`{}`".format(d["member"].name) for d in osu_tracking.values() if is_playing(d["member"])]
     await client.say(message, "Sent `{}` requests since the bot started ({}).\n"
                               "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
@@ -1945,7 +1948,6 @@ async def debug(message: discord.Message):
                                time_elapsed,
                                "<t:{}:F>".format(int(previous_update.timestamp()))
                                if previous_update is not None else "Not updated yet.",
-                               utils.format_objects(*[d["member"] for d in osu_tracking.values()
-                                                      if is_playing(d["member"])], dec="`"), len(osu_tracking)
+                               ", ".join(member_list) if member_list else "None", len(osu_tracking)
                                )
                      )
