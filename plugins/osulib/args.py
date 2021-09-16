@@ -82,6 +82,7 @@ parser.add("c50", r"(\d+)x50", arg_type=int, default=0)
 
 parser.add("misses", r"(\d+)(?:m|xm(?:iss)?)", arg_type=int, default=0)
 parser.add("combo", r"(\d+)x", arg_type=int)
+parser.add("objects", r"(\d+)objects", arg_type=int)
 parser.add("mods", r"\+(\w+)", arg_type=mods)
 parser.add("score_version", r"(?:score)?v([12])", arg_type=int, default=1)
 
@@ -92,8 +93,6 @@ parser.add("hp", r"hp([0-9.]+)", arg_type=float)
 
 parser.add("hits", r"(\d+)hits", arg_type=int)
 parser.add("pp", r"([0-9.]+)pp", arg_type=float)
-
-parser.add("rank", r"((\w+)rank)", arg_type=str)
 
 
 def parse(*args):

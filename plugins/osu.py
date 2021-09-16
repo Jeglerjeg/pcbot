@@ -49,7 +49,7 @@ except ImportError:
 import bot
 import plugins
 from pcbot import Config, utils, Annotate, config as botconfig
-from plugins.osulib import api, Mods, calculate_pp, oppai, ClosestPPStats, PPStats, ordr
+from plugins.osulib import api, Mods, calculate_pp, ClosestPPStats, PPStats, ordr
 from plugins.twitchlib import twitch
 
 client = plugins.client  # type: bot.Client
@@ -546,20 +546,8 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
         for osu_score in osu_scores["score_list"]:
             if osu_score["perfect"]:
                 continue
-            mods = api.Mods.format_mods(osu_score["mods"])
             full_combo_acc = calculate_acc(mode, osu_score, exclude_misses=True)
-            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=True,
-                                          *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
-                                           "{scorerank}rank {countmiss}m {maxcombo}x"
-                                          .format(acc=calculate_acc(mode, osu_score),
-                                                  potential_acc=full_combo_acc,
-                                                  scorerank="F" if osu_score["passed"] is False else osu_score["rank"],
-                                                  c300=osu_score["statistics"]["count_300"],
-                                                  c100=osu_score["statistics"]["count_100"],
-                                                  c50=osu_score["statistics"]["count_50"],
-                                                  modslist="+" + mods + " " if mods != "Nomod" else "",
-                                                  countmiss=osu_score["statistics"]["count_miss"],
-                                                  maxcombo=osu_score["max_combo"]).split())
+            score_pp = await get_score_pp(osu_score, mode)
             if (score_pp.max_pp - osu_score["pp"]) > 10:
                 osu_score["new_pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
                 osu_score["pp"] = score_pp.max_pp
@@ -636,7 +624,7 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
         }
         mods = Mods.format_mods(osu_score["mods"])
         beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
-        score_pp = await get_score_pp(osu_score, beatmap, member)
+        score_pp = await get_score_pp(osu_score, mode, beatmap)
         if score_pp is not None:
             beatmap["difficulty_rating"] = get_beatmap_sr(score_pp, beatmap, mode, mods)
 
@@ -682,30 +670,30 @@ def get_notify_channels(guild: discord.Guild, data_type: str):
             if guild.get_channel(int(s))]
 
 
-async def get_score_pp(osu_score: dict, beatmap: dict, member: discord.Member):
+async def get_score_pp(osu_score: dict, mode: api.GameMode, beatmap: dict = None):
     """ Return PP for a given score. """
-    mode = get_mode(str(member.id))
     mods = Mods.format_mods(osu_score["mods"])
     score_pp = None
     if mode is api.GameMode.osu:
         try:
-            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), potential=True,
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]),
                                           ignore_osu_cache=not bool(beatmap["status"] == "ranked"
-                                                                    or beatmap["status"] == "approved"),
-                                          ignore_memory_cache=not bool(beatmap["status"] == "ranked"
-                                                                       or beatmap["status"] == "approved"
-                                                                       or beatmap["status"] == "loved"),
+                                                                    or beatmap["status"] == "approved") if beatmap
+                                          else False,
                                           *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
-                                           "{scorerank}rank {countmiss}m {maxcombo}x"
+                                           "{countmiss}m {maxcombo}x {objects}objects"
                                           .format(acc=calculate_acc(mode, osu_score),
                                                   potential_acc=calculate_acc(mode, osu_score, exclude_misses=True),
-                                                  scorerank="F" if osu_score["passed"] is False else osu_score["rank"],
                                                   c300=osu_score["statistics"]["count_300"],
                                                   c100=osu_score["statistics"]["count_100"],
                                                   c50=osu_score["statistics"]["count_50"],
                                                   modslist="".join(["+", mods, " "]) if mods != "Nomod" else "",
                                                   countmiss=osu_score["statistics"]["count_miss"],
-                                                  maxcombo=osu_score["max_combo"]).split())
+                                                  maxcombo=osu_score["max_combo"],
+                                                  objects=osu_score["statistics"]["count_300"] +
+                                                  osu_score["statistics"]["count_100"] +
+                                                  osu_score["statistics"]["count_50"] +
+                                                  osu_score["statistics"]["count_miss"]).split())
         except Exception:
             logging.error(traceback.format_exc())
     return score_pp
@@ -803,7 +791,7 @@ async def notify_pp(member_id: str, data: dict):
         if new["events"]:
             scoreboard_rank = api.rank_from_events(new["events"], str(osu_score["beatmap"]["id"]), osu_score)
         # Calculate PP and change beatmap SR if using a difficult adjusting mod
-        potential_pp = await get_score_pp(osu_score, beatmap, member)
+        potential_pp = await get_score_pp(osu_score, mode, beatmap)
         mods = Mods.format_mods(osu_score["mods"])
         beatmap["difficulty_rating"] = get_beatmap_sr(potential_pp, beatmap, mode, mods)
         if update_mode is UpdateModes.Minimal:
@@ -919,26 +907,18 @@ async def format_beatmap_info(beatmapset: dict):
         m.append("\n{name: <{diff_len}}  {drain: <7}{bpm: <5}{passrate}\n\n"
                  "OD   CS   AR   HP   Max Combo\n"
                  "{od: <5}{cs: <5}{ar: <5}{hp: <5}{maxcombo}\n\n"
-                 "Aim PP  Speed PP  Acc PP  Total PP\n"
-                 "{aim_pp: <8}{speed_pp: <10}{acc_pp: <8}{pp}\n\n"
-                 "Aim Stars  Speed Stars  Total Stars\n"
-                 "{aim_stars: <11}{speed_stars: <13}"
-                 "{stars}".format(
+                 "Total PP   Total Stars\n"
+                 "{pp: <12}{stars}".format(
                   name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 2] + "...",
                   diff_len=diff_length,
                   stars="{:.2f}\u2605".format(float(diff["difficulty_rating"])),
                   pp="{}pp".format(int(diff.get("pp", "0"))),
                   drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)),
-                  aim_pp="{}pp".format(int(diff.get("aim_pp", "0"))),
-                  speed_pp="{}pp".format(int(diff.get("speed_pp", "0"))),
-                  acc_pp="{}pp".format(int(diff.get("acc_pp", "0"))),
                   passrate=pass_rate,
                   od=diff["accuracy"],
                   ar=diff["ar"],
                   hp=diff["drain"],
                   cs=diff["cs"],
-                  aim_stars="{:.2f}\u2605".format(float(diff["aim_stars"])),
-                  speed_stars="{:.2f}\u2605".format(float(diff["speed_stars"])),
                   bpm=int(diff["bpm"]) if diff["bpm"] else "None",
                   maxcombo="{}x".format(diff["max_combo"]) if diff["max_combo"] else "None"
                  ))
@@ -996,13 +976,8 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
         if ignore_osu_cache:
             # If the diff is cached and unchanged, use the cached pp
             if map_id in cached_mapset:
-                if diff["checksum"] == cached_mapset[map_id]["md5"] and "speed_pp" in cached_mapset[map_id]:
+                if diff["checksum"] == cached_mapset[map_id]["md5"]:
                     diff["pp"] = cached_mapset[map_id]["pp"]
-                    diff["aim_pp"] = cached_mapset[map_id]["aim_pp"]
-                    diff["speed_pp"] = cached_mapset[map_id]["speed_pp"]
-                    diff["acc_pp"] = cached_mapset[map_id]["acc_pp"]
-                    diff["aim_stars"] = cached_mapset[map_id]["aim_stars"]
-                    diff["speed_stars"] = cached_mapset[map_id]["speed_stars"]
                     continue
 
                 # If it was changed, add an asterisk to the beatmap name (this is a really stupid place to do this)
@@ -1010,28 +985,18 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
-            pp_stats = await calculate_pp(int(map_id), ignore_osu_cache=ignore_osu_cache, map_calc=True)
+            pp_stats = await calculate_pp(int(map_id), ignore_osu_cache=ignore_osu_cache)
         except ValueError:
             logging.error(traceback.format_exc())
             continue
 
         diff["pp"] = pp_stats.pp
-        diff["aim_pp"] = pp_stats.aim_pp
-        diff["speed_pp"] = pp_stats.speed_pp
-        diff["acc_pp"] = pp_stats.acc_pp
-        diff["aim_stars"] = pp_stats.aim_stars
-        diff["speed_stars"] = pp_stats.speed_stars
 
         if ignore_osu_cache:
             # Cache the difficulty
             osu_config.data["map_cache"][set_id][map_id] = {
                 "md5": diff["checksum"],
                 "pp": pp_stats.pp,
-                "aim_stars": pp_stats.aim_stars,
-                "speed_stars": pp_stats.speed_stars,
-                "aim_pp": pp_stats.aim_pp,
-                "speed_pp": pp_stats.speed_pp,
-                "acc_pp": pp_stats.acc_pp,
             }
     if ignore_osu_cache:
         await osu_config.asyncsave()
@@ -1574,13 +1539,23 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
     uploaded .osu file.
 
     Options are a parsed set of command-line arguments:  /
-    `([acc]% | [num_100s]x100 [num_50s]x50) +[mods] [combo]x [misses]m scorev[scoring_version] ar[ar] od[od] cs[cs]`
+    `([acc]% | [num_100s]x100 [num_50s]x50) +[mods] [combo]x [misses]m`
 
     **Additionally**, PCBOT includes a *find closest pp* feature. This works as an
     argument in the options, formatted like `[pp_value]pp`
     """
     try:
-        pp_stats = await calculate_pp(beatmap_url, *options, ignore_osu_cache=True)
+        beatmap_info = api.parse_beatmap_url(beatmap_url)
+        assert beatmap_info.beatmap_id, "Please link to a specific difficulty."
+
+        params = {
+            "beatmap_id": beatmap_info.beatmap_id,
+        }
+        beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id,
+                                            mode=beatmap_info.gamemode.name))
+
+        pp_stats = await calculate_pp(beatmap_url, *options, ignore_osu_cache=not bool(beatmap["status"] == "ranked" or
+                                                                                       beatmap["status"] == "approved"))
     except ValueError as e:
         await client.say(message, str(e))
         return
@@ -1597,19 +1572,18 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
 
     await client.say(message,
                      "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`."
-                     .format(" ".join(options), artist=pp_stats.artist, title=pp_stats.title, version=pp_stats.version,
-                             stars=pp_stats.stars, pp=pp_stats.pp))
+                     .format(" ".join(options), artist=beatmap["beatmapset"]["artist"],
+                             title=beatmap["beatmapset"]["title"], version=beatmap["version"], stars=pp_stats.stars,
+                             pp=pp_stats.pp))
 
-
-if oppai:
-    plugins.command(name="pp", aliases="oppai")(pp_)
-    osu.command(name="pp", aliases="oppai")(pp_)
+plugins.command(name="pp", aliases="oppai")(pp_)
+osu.command(name="pp", aliases="oppai")(pp_)
 
 
 async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, beatmap: dict,
                                      mode: api.GameMode, scoreboard_rank: bool = False, twitch_link: bool = False):
     """ Returns a score embed for use outside of automatic score notifications. """
-    score_pp = await get_score_pp(osu_score, beatmap, member)
+    score_pp = await get_score_pp(osu_score, mode, beatmap)
     mods = Mods.format_mods(osu_score["mods"])
 
     if score_pp is not None and osu_score["pp"] is None:
