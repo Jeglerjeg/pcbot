@@ -94,11 +94,12 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False):
     return beatmap_path
 
 
-async def calculate_pp(beatmap_url_or_id, *options, ignore_osu_cache: bool = False):
+async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_osu_cache: bool = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
+    :param mode: which mode to calculate PP for
     :param ignore_osu_cache: When true, does not download or use .osu file cache
     """
 
@@ -106,6 +107,9 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_osu_cache: bool = Fal
     args = parse_options(*options)
 
     # Calculate the mod bitmask and apply settings if needed
+    if args.mods and api.Mods.NC in args.mods:
+        args.mods.remove(api.Mods.NC)
+        args.mods.append(api.Mods.DT)
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
     # If the pp arg is given, return using the closest pp function
@@ -113,16 +117,26 @@ async def calculate_pp(beatmap_url_or_id, *options, ignore_osu_cache: bool = Fal
     #    return await find_closest_pp(args)
 
     # Calculate the pp
-    pp_info = pp_bindings.std_pp(beatmap_path, mods_bitmask, args.combo, args.acc, args.potential_acc, args.c300,
-                                 args.c100, args.c50, args.misses, args.objects)
+    max_pp = None
+    if mode is api.GameMode.osu:
+        pp_info = pp_bindings.std_pp(beatmap_path, mods_bitmask, args.combo, args.acc, args.potential_acc, args.c300,
+                                     args.c100, args.c50, args.misses, args.objects)
+        max_pp = pp_info["max_pp"]
+    elif mode is api.GameMode.taiko:
+        pp_info = pp_bindings.taiko_pp(beatmap_path, mods_bitmask, args.combo, args.acc, args.c300,
+                                       args.c100, args.misses, args.objects)
+    elif mode is api.GameMode.mania:
+        pp_info = pp_bindings.mania_pp(beatmap_path, mods_bitmask, args.score, args.objects)
+    else:
+        pp_info = pp_bindings.catch_pp(beatmap_path, mods_bitmask, args.combo, args.c300, args.c100,
+                                       args.c50, args.dropmiss, args.misses, args.objects)
     pp = pp_info["pp"]
     total_stars = pp_info["total_stars"]
     partial_stars = pp_info["partial_stars"]
-    max_pp = pp_info["max_pp"]
     return PPStats(pp, total_stars, partial_stars, max_pp)
 
 
-async def find_closest_pp(ez, args):
+async def find_closest_pp(args):
     """ Find the accuracy required to get the given amount of pp from this map. """
     # Define a partial command for easily setting the pp value by 100s count
     def calc(accuracy: float):
