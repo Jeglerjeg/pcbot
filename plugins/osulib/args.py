@@ -83,6 +83,8 @@ parser.add("c50", r"(\d+)x50", arg_type=int, default=0)
 parser.add("misses", r"(\d+)(?:m|xm(?:iss)?)", arg_type=int, default=0)
 parser.add("combo", r"(\d+)x", arg_type=int)
 parser.add("objects", r"(\d+)objects", arg_type=int)
+parser.add("score", r"(\d+)score", arg_type=int)
+parser.add("dropmiss", r"(\d+)dropmiss", arg_type=int)
 parser.add("mods", r"\+(\w+)", arg_type=mods)
 parser.add("score_version", r"(?:score)?v([12])", arg_type=int, default=1)
 

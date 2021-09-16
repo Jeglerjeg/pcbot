@@ -424,8 +424,8 @@ def get_formatted_score_time(osu_score: dict):
 def get_beatmap_sr(score_pp: PPStats, beatmap: dict, mode: api.GameMode, mods: str):
     """ Change beatmap SR if using SR adjusting mods. """
     difficulty_rating = score_pp.stars \
-        if mode is api.GameMode.osu and mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF",
-                                                     "RX") else beatmap["difficulty_rating"]
+        if mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF", "RX") \
+        else beatmap["difficulty_rating"]
     return difficulty_rating
 
 
@@ -676,7 +676,7 @@ async def get_score_pp(osu_score: dict, mode: api.GameMode, beatmap: dict = None
     score_pp = None
     if mode is api.GameMode.osu:
         try:
-            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]),
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
                                           ignore_osu_cache=not bool(beatmap["status"] == "ranked"
                                                                     or beatmap["status"] == "approved") if beatmap
                                           else False,
@@ -694,6 +694,61 @@ async def get_score_pp(osu_score: dict, mode: api.GameMode, beatmap: dict = None
                                                   osu_score["statistics"]["count_100"] +
                                                   osu_score["statistics"]["count_50"] +
                                                   osu_score["statistics"]["count_miss"]).split())
+        except Exception:
+            logging.error(traceback.format_exc())
+
+    elif mode is api.GameMode.taiko:
+        try:
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
+                                          ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                    or beatmap["status"] == "approved") if beatmap
+                                          else False,
+                                          *"{modslist}{acc:.2%} {c300}x300 {c100}x100 "
+                                           "{countmiss}m {maxcombo}x {objects}objects"
+                                          .format(acc=calculate_acc(mode, osu_score),
+                                                  c300=osu_score["statistics"]["count_300"],
+                                                  c100=osu_score["statistics"]["count_100"],
+                                                  modslist="".join(["+", mods, " "]) if mods != "Nomod" else "",
+                                                  countmiss=osu_score["statistics"]["count_miss"],
+                                                  maxcombo=osu_score["max_combo"],
+                                                  objects=osu_score["statistics"]["count_300"] +
+                                                  osu_score["statistics"]["count_100"] +
+                                                  osu_score["statistics"]["count_miss"]).split())
+        except Exception:
+            logging.error(traceback.format_exc())
+
+    elif mode is api.GameMode.mania:
+        try:
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
+                                          ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                    or beatmap["status"] == "approved") if beatmap
+                                          else False,
+                                          *"{modslist} {score}score {objects}objects"
+                                          .format(modslist="".join(["+", mods, " "]) if mods != "Nomod" else "",
+                                                  score=osu_score["score"],
+                                                  objects=osu_score["statistics"]["count_300"] +
+                                                  osu_score["statistics"]["count_geki"] +
+                                                  osu_score["statistics"]["count_katu"] +
+                                                  osu_score["statistics"]["count_100"] +
+                                                  osu_score["statistics"]["count_miss"]).split())
+        except Exception:
+            logging.error(traceback.format_exc())
+
+    elif mode is api.GameMode.fruits:
+        try:
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
+                                          ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                    or beatmap["status"] == "approved") if beatmap
+                                          else False,
+                                          *"{modslist}{c300}x300 {c100}x100 {c50}x50 {dropmiss}dropmiss "
+                                           "{countmiss}m {maxcombo}x"
+                                          .format(c300=osu_score["statistics"]["count_300"],
+                                                  c100=osu_score["statistics"]["count_100"],
+                                                  c50=osu_score["statistics"]["count_50"],
+                                                  dropmiss=osu_score["statistics"]["count_katu"],
+                                                  modslist="".join(["+", mods, " "]) if mods != "Nomod" else "",
+                                                  countmiss=osu_score["statistics"]["count_miss"],
+                                                  maxcombo=osu_score["max_combo"]).split())
         except Exception:
             logging.error(traceback.format_exc())
     return score_pp
@@ -969,9 +1024,6 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
 
     for diff in beatmapset["beatmaps"]:
         map_id = str(diff["id"])
-        # Skip any diff that's not standard osu!
-        if int(diff["mode_int"]) != api.GameMode.osu.value:
-            continue
 
         if ignore_osu_cache:
             # If the diff is cached and unchanged, use the cached pp
@@ -985,7 +1037,8 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
-            pp_stats = await calculate_pp(int(map_id), ignore_osu_cache=ignore_osu_cache)
+            pp_stats = await calculate_pp(int(map_id), mode=api.GameMode.get_mode(diff["mode"]),
+                                          ignore_osu_cache=ignore_osu_cache)
         except ValueError:
             logging.error(traceback.format_exc())
             continue
@@ -1547,6 +1600,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
     try:
         beatmap_info = api.parse_beatmap_url(beatmap_url)
         assert beatmap_info.beatmap_id, "Please link to a specific difficulty."
+        assert beatmap_info.gamemode, "Please link to a specific mode."
 
         params = {
             "beatmap_id": beatmap_info.beatmap_id,
@@ -1554,8 +1608,9 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
         beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id,
                                             mode=beatmap_info.gamemode.name))
 
-        pp_stats = await calculate_pp(beatmap_url, *options, ignore_osu_cache=not bool(beatmap["status"] == "ranked" or
-                                                                                       beatmap["status"] == "approved"))
+        pp_stats = await calculate_pp(beatmap_url, *options, mode=beatmap_info.gamemode,
+                                      ignore_osu_cache=not bool(beatmap["status"] == "ranked" or
+                                                                beatmap["status"] == "approved"))
     except ValueError as e:
         await client.say(message, str(e))
         return
