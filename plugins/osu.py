@@ -1163,7 +1163,7 @@ async def notify_recent_events(member_id: str, data: dict):
 
                     if new_event.count > 1:
                         embed.set_footer(text="updated {} times since".format(new_event.count))
-                        embed.timestamp = new_event.time_created
+                        embed.timestamp = new_event.time_created.replace(tzinfo=timezone.utc)
 
                     # Delete the previous message if there is one
                     if to_delete:
