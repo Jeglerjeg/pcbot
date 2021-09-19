@@ -1458,7 +1458,9 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
         member = message.author
 
     # The member might not be linked to any profile
-    assert str(member.id) in osu_config.data["profiles"], "No osu! profile assigned to **{}**!".format(member.name)
+    assert str(member.id) in osu_config.data["profiles"], \
+        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+            member.name, botconfig.guild_command_prefix(member.guild))
 
     # Clear the tracking data when unlinking user
     if str(member.id) in osu_tracking:
@@ -1479,7 +1481,8 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
 
     Gamemodes are: `{modes}`. """
     assert str(message.author.id) in osu_config.data["profiles"], \
-        "No osu! profile assigned to **{}**!".format(message.author.name)
+        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        message.author.name, botconfig.guild_command_prefix(message.author.guild))
 
     user_id = osu_config.data["profiles"][str(message.author.id)]
 
@@ -1504,7 +1507,9 @@ async def leaderboard_notifications(message: discord.Message, notify_setting: st
     it's in your top100 PP scores. """
     member = message.author
     # Make sure the member is assigned
-    assert str(member.id) in osu_config.data["profiles"], "No osu! profile assigned to **{}**!".format(member.name)
+    assert str(member.id) in osu_config.data["profiles"], \
+    "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        member.name, botconfig.guild_command_prefix(member.guild))
 
     if notify_setting.lower() == "on":
         osu_config.data["leaderboard"][str(member.id)] = True
@@ -1522,7 +1527,9 @@ async def leaderboard_notifications(message: discord.Message, notify_setting: st
 async def info(message: discord.Message, member: discord.Member = Annotate.Self):
     """ Display configuration info. """
     # Make sure the member is assigned
-    assert str(member.id) in osu_config.data["profiles"], "No osu! profile assigned to **{}**!".format(member.name)
+    assert str(member.id) in osu_config.data["profiles"], \
+        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        member.name, botconfig.guild_command_prefix(member.guild))
 
     user_id = osu_config.data["profiles"][str(member.id)]
     mode = get_mode(str(member.id))
@@ -1556,7 +1563,8 @@ async def notify(message: discord.Message, mode: UpdateModes.get_mode):
 
     Update modes are: `{modes}`. """
     assert str(message.author.id) in osu_config.data["profiles"], \
-        "No osu! profile assigned to **{}**!".format(message.author.name)
+        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        message.author.name, botconfig.guild_command_prefix(message.author.guild))
 
     osu_config.data["update_mode"][str(message.author.id)] = mode.name
     await osu_config.asyncsave()
@@ -1573,7 +1581,9 @@ async def url(message: discord.Message, member: discord.Member = Annotate.Self,
               section: str.lower = None):
     """ Display the member's osu! profile URL. """
     # Member might not be registered
-    assert str(member.id) in osu_config.data["profiles"], "No osu! profile assigned to **{}**!".format(member.name)
+    assert str(member.id) in osu_config.data["profiles"], \
+        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        member.name, botconfig.guild_command_prefix(member.guild))
 
     # Send the URL since the member is registered
     await client.say(message, "**{0.display_name}'s profile:** <{1}{2}>".format(
@@ -1665,7 +1675,8 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
 async def recent(message: discord.Message, member: discord.Member = Annotate.Self):
     """ Display your or another member's most recent score. """
     assert str(member.id) in osu_config.data["profiles"], \
-        "No osu! profile assigned to **{}**!".format(member.name)
+        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        member.name, botconfig.guild_command_prefix(member.guild))
 
     user_id = osu_config.data["profiles"][str(member.id)]
     mode = get_mode(str(member.id))
@@ -1714,7 +1725,8 @@ async def score(message: discord.Message, *options):
         member = message.author
 
     assert str(member.id) in osu_config.data["profiles"], \
-        "No osu! profile assigned to **{}**!".format(member.name)
+        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        member.name, botconfig.guild_command_prefix(member.guild))
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -1835,7 +1847,8 @@ async def top(message: discord.Message, *options):
         member = message.author
     mode = get_mode(str(member.id))
     assert str(member.id) in osu_config.data["profiles"], \
-        "No osu! profile assigned to **{}**!".format(member.name)
+        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
+        member.name, botconfig.guild_command_prefix(member.guild))
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again"
     assert mode is api.GameMode.osu if nochoke else True, \
