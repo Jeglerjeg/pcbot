@@ -1,5 +1,6 @@
-""" Implement pp calculation features using oppai-ng.
-    https://github.com/Francesco149/oppai-ng
+""" Implement pp calculation features using rosu-pp python bindings.
+    https://github.com/MaxOhn/rosu-pp
+    https://github.com/Jeglet/pp-bindings
 """
 
 import logging

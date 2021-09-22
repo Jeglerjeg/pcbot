@@ -17,15 +17,6 @@ TUTORIAL:
 
     This plugin might send a lot of requests, so keep up to date with the
     !osu debug command.
-
-    The pp command requires that you setup oppai
-    pip install oppai
-
-    Check the readme in the link above for install instructions.
-
-Commands:
-    osu
-    pp
 """
 import copy
 import importlib
