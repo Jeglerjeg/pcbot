@@ -859,7 +859,6 @@ async def notify_pp(member_id: str, data: dict):
         author_text = "{0} set new best scores".format(data["new"]["username"])
     else:
         author_text = data["new"]["username"]
-        osu_score = None
 
     # Always add the difference in pp along with the ranks
     m.append(format_user_diff(mode, old, new))
@@ -878,12 +877,12 @@ async def notify_pp(member_id: str, data: dict):
                                               and potential_pp.max_pp is not None and potential_pp.max_pp -
                                               osu_score["pp"] > 1 and not bool(osu_score["perfect"]
                                                                                and osu_score["passed"]) else None)
-            embed.set_author(name=author_text, icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
         else:
             embed = discord.Embed(color=member.color)
             embed.description = "".join(m)
         if osu_scores:
             embed.set_thumbnail(url=thumbnail_url)
+        embed.set_author(name=author_text, icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
 
         for i, channel in enumerate(channels):
             try:
