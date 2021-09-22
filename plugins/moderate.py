@@ -203,7 +203,7 @@ def members_and_channels(message: discord.Message, arg: str):
     return utils.find_member(message.guild, arg)
 
 
-@plugins.command(permissions="manage_messages")
+@plugins.command(permissions="manage_messages", aliases="prune delete")
 async def purge(message: discord.Message, *instances: members_and_channels, num: utils.int_range(1, 100)):
     """ Purge the given amount of messages from the specified members or all.
     You may also specify a channel to delete from.
