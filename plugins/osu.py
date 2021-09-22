@@ -822,6 +822,7 @@ async def notify_pp(member_id: str, data: dict):
     for osu_score in list(osu_scores):
         if osu_score["best_id"] in previous_score_updates:
             osu_scores.pop(osu_score)
+            continue
         previous_score_updates.append(osu_score["best_id"])
     # If a new score was found, format the score(s)
     if len(osu_scores) == 1:
@@ -831,6 +832,8 @@ async def notify_pp(member_id: str, data: dict):
         }
         beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
         thumbnail_url = beatmap["beatmapset"]["covers"]["list@2x"]
+        author_text = "{0} set a new best (#{pos}/{1} +{diff:.2f}pp)".format(data["new"]["username"],
+                                                                             score_request_limit, **osu_score)
 
         # There might not be any events
         scoreboard_rank = None
@@ -854,7 +857,9 @@ async def notify_pp(member_id: str, data: dict):
         m.append(await get_formatted_score_list(member, osu_scores,
                                                 limit=len(osu_scores) if len(osu_scores) <= 5 else 5, no_time=True))
         thumbnail_url = data["new"]["avatar_url"]
+        author_text = "{0} set new best scores".format(data["new"]["username"])
     else:
+        author_text = data["new"]["username"]
         osu_score = None
 
     # Always add the difference in pp along with the ranks
@@ -874,24 +879,12 @@ async def notify_pp(member_id: str, data: dict):
                                               and potential_pp.max_pp is not None and potential_pp.max_pp -
                                               osu_score["pp"] > 1 and not bool(osu_score["perfect"]
                                                                                and osu_score["passed"]) else None)
+            embed.set_author(name=author_text, icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
         else:
             embed = discord.Embed(color=member.color)
             embed.description = "".join(m)
         if osu_scores:
             embed.set_thumbnail(url=thumbnail_url)
-
-        # The top line of the format will differ depending on whether we found a score or not
-        if len(osu_scores) == 1:
-            embed.set_author(
-                name="{0} set a new best (#{pos}/{1} +{diff:.2f}pp)".format(data["new"]["username"],
-                                                                            score_request_limit, **osu_score),
-                icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
-        elif len(osu_scores) > 1:
-            embed.set_author(name="{0} set new best scores".format(data["new"]["username"]),
-                             icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
-        else:
-            embed.set_author(name=data["new"]["username"], icon_url=data["new"]["avatar_url"],
-                             url=get_user_url(str(member.id)))
 
         for i, channel in enumerate(channels):
             try:
