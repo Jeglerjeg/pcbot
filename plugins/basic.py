@@ -78,7 +78,7 @@ async def rate(message: discord.Message, to_rate: str = None):
         random.seed()
         await client.say(message, "I rate **{0}** a **{1}/10**".format(member.display_name, num))
     else:
-        random.seed(to_rate)
+        random.seed(to_rate.lower())
         num = random.randint(0, 10)
         random.seed()
         await client.say(message, "I rate **{0}** a **{1}/10**".format(to_rate, num))
