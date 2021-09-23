@@ -308,8 +308,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
         # Escaping asterisk doesn't work in italics
         version=beatmap["version"],
         stars=float(beatmap["difficulty_rating"]),
-        maxcombo=beatmap["max_combo"] if osu_score["perfect"] and mode is api.GameMode.osu and osu_score["passed"]
-        else osu_score["max_combo"],
+        maxcombo=osu_score["max_combo"],
         max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap and beatmap["max_combo"] is not None
         else "",
         scoreboard_rank="#{} ".format(rank) if rank else "",
@@ -542,6 +541,7 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
                 osu_score["pp"] = score_pp.max_pp
                 osu_score["perfect"] = True
                 osu_score["accuracy"] = full_combo_acc
+                osu_score["max_combo"] = score_pp.max_combo
                 osu_score["statistics"]["count_miss"] = 0
                 osu_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
                 osu_score["score"] = None
@@ -1867,7 +1867,7 @@ async def top(message: discord.Message, *options):
         "Scores have not been retrieved for this user yet. Please wait a bit and try again."
     assert mode is api.GameMode.osu if nochoke else True, \
         "No-choke lists are only supported for osu!standard."
-    assert nochoke and not list_type == "score", "No-choke lists can't be sorted by score."
+    assert not list_type == "score" if nochoke else True, "No-choke lists can't be sorted by score."
     if nochoke:
         async with message.channel.typing():
             osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
