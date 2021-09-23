@@ -901,7 +901,7 @@ async def notify_pp(member_id: str, data: dict):
 
 def get_missing_user_string(member: discord.Member):
     """ Format missing user text for all commands needing it. """
-    return "No osu! profile assigned to **{}**! Please assign a profile using {}osu link <username>".format(
+    return "No osu! profile assigned to **{}**! Please assign a profile using **{}osu link <username>**".format(
             member.name, botconfig.guild_command_prefix(member.guild))
 
 
