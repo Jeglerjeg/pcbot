@@ -10,10 +10,8 @@ TUTORIAL:
     See: !help osu config
 
     Members may link their osu! profile with `!osu link <name ...>`. The bot will
-    only keep track of players who either has `osu` in their playing name, e.g:
+    only keep track of players who either has `osu` in their playing name or as the game in their stream, e.g:
         Playing osu!
-    or has their rank as #xxx, for instance:
-        Streaming Chill | #4 Norway
 
     This plugin might send a lot of requests, so keep up to date with the
     !osu debug command.
