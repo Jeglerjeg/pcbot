@@ -1833,9 +1833,10 @@ async def top(message: discord.Message, *options):
         "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
         member.name, botconfig.guild_command_prefix(member.guild))
     assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
-        "Scores have not been retrieved for this user yet. Please wait a bit and try again"
+        "Scores have not been retrieved for this user yet. Please wait a bit and try again."
     assert mode is api.GameMode.osu if nochoke else True, \
-        "No-choke lists are only supported for osu!standard"
+        "No-choke lists are only supported for osu!standard."
+    assert nochoke and not list_type == "score", "No-choke lists can't be sorted by score."
     if nochoke:
         async with message.channel.typing():
             osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
