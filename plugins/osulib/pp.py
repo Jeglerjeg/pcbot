@@ -15,7 +15,7 @@ from .args import parse as parse_options
 host = "https://osu.ppy.sh/"
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
-PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp")
+PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars")
 
 cache_path = "plugins/osulib/mapcache"
@@ -119,10 +119,12 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
 
     # Calculate the pp
     max_pp = None
+    max_combo = None
     if mode is api.GameMode.osu:
         pp_info = pp_bindings.std_pp(beatmap_path, mods_bitmask, args.combo, args.acc, args.potential_acc, args.c300,
                                      args.c100, args.c50, args.misses, args.objects)
         max_pp = pp_info["max_pp"]
+        max_combo = pp_info["max_combo"]
     elif mode is api.GameMode.taiko:
         pp_info = pp_bindings.taiko_pp(beatmap_path, mods_bitmask, args.combo, args.acc, args.c300,
                                        args.c100, args.misses, args.objects)
@@ -134,7 +136,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     pp = pp_info["pp"]
     total_stars = pp_info["total_stars"]
     partial_stars = pp_info["partial_stars"]
-    return PPStats(pp, total_stars, partial_stars, max_pp)
+    return PPStats(pp, total_stars, partial_stars, max_pp, max_combo)
 
 
 async def find_closest_pp(beatmap_path, mods_bitmask, args):
