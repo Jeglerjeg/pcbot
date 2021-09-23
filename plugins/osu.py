@@ -760,7 +760,8 @@ def get_sorted_scores(osu_scores: dict, list_type: str):
     return dict(score_list=sorted_scores, time_updated=osu_scores["time_updated"])
 
 
-def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, potential_pp: PPStats):
+def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, pp_stats: PPStats,
+                              potential_pp: bool = False):
     """ Return a formatted score as an embed """
     embed = discord.Embed(color=member.color, url=get_user_url(str(member.id)))
     embed.description = formatted_score
@@ -768,18 +769,33 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
 
     # Add potential pp in the footer
     if potential_pp:
-        footer.append("Potential: {0:,.2f}pp, {1:+.2f}pp".format(potential_pp.max_pp,
-                                                                 potential_pp.max_pp - float(osu_score["pp"])))
+        footer.append("Potential: {0:,.2f}pp, {1:+.2f}pp".format(pp_stats.max_pp,
+                                                                 pp_stats.max_pp - float(osu_score["pp"])))
+
+    objects = None
+    beatmap_objects = None
+
+    if osu_score["mode"] == "osu":
+        objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] +
+                   osu_score["statistics"]["count_50"] + osu_score["statistics"]["count_miss"])
+        beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
+                           osu_score["beatmap"]["count_spinners"])
+    elif osu_score["mode"] == "taiko":
+        objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] +
+                   osu_score["statistics"]["count_miss"])
+        beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
+                           osu_score["beatmap"]["count_spinners"])
+    elif osu_score["mode"] == "mania":
+        objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_geki"] +
+                   osu_score["statistics"]["count_katu"] + osu_score["statistics"]["count_100"] +
+                   osu_score["statistics"]["count_miss"])
+        beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
+                           osu_score["beatmap"]["count_spinners"])
 
     # Add completion rate to footer if score is failed
-    if osu_score and osu_score["passed"] is False:
-        objects = osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] + \
-                  osu_score["statistics"]["count_50"] + osu_score["statistics"]["count_miss"]
-
-        beatmap_objects = osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] \
-                                                                + osu_score["beatmap"]["count_spinners"]
+    if osu_score and pp_stats and osu_score["passed"] is False and objects:
         footer.append("\nCompletion rate: {completion_rate:.2f}% ({partial_sr}\u2605)".format(
-            completion_rate=(objects / beatmap_objects) * 100, partial_sr=round(potential_pp.partial_stars, 2)))
+            completion_rate=(objects / beatmap_objects) * 100, partial_sr=round(pp_stats.partial_stars, 2)))
 
     embed.set_footer(text="".join(footer))
     return embed
@@ -873,9 +889,9 @@ async def notify_pp(member_id: str, data: dict):
         is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
         if not osu_scores or len(osu_scores) == 1:
             embed = get_formatted_score_embed(member, osu_score, "".join(m), potential_pp if potential_pp is not None
-                                              and potential_pp.max_pp is not None and potential_pp.max_pp -
-                                              osu_score["pp"] > 1 and not bool(osu_score["perfect"]
-                                                                               and osu_score["passed"]) else None)
+                                              and not bool(osu_score["perfect"] and osu_score["passed"]) else None,
+                                              bool(potential_pp.max_pp is not None and potential_pp.max_pp -
+                                                   osu_score["pp"] > 1 and mode is api.GameMode.osu))
         else:
             embed = discord.Embed(color=member.color)
             embed.description = "".join(m)
@@ -1644,9 +1660,10 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
     embed = get_formatted_score_embed(member, osu_score, await format_new_score(mode, osu_score, beatmap,
                                                                                 scoreboard_rank,
                                                                                 member if twitch_link else None),
-                                      score_pp if score_pp is not None and score_pp.max_pp is not None and
-                                      score_pp.max_pp - osu_score["pp"] > 1 and not
-                                      bool(osu_score["perfect"] and osu_score["passed"]) else None)
+                                      score_pp if score_pp is not None and not bool(osu_score["perfect"]
+                                                                                    and osu_score["passed"]) else None,
+                                      bool(score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1
+                                           and mode is api.GameMode.osu))
     embed.set_author(name=osu_score["user"]["username"], icon_url=osu_score["user"]["avatar_url"],
                      url=get_user_url(str(member.id)))
     embed.set_thumbnail(url=osu_score["beatmapset"]["covers"]["list@2x"] if bool(
