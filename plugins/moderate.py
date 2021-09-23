@@ -90,6 +90,7 @@ add_setting("Changelog", permissions=["manage_guild"], default=False)
 async def manage_mute(message: discord.Message, *members: discord.Member, member_mute=None):
     """ Add or remove Muted role for given members.
 
+    :param message: the message object to check bot perms with
     :param member_mute: either member.add_roles or member.remove_roles
     :return: list of muted/unmuted members or None """
     # Manage Roles is required to add or remove the Muted role
@@ -221,7 +222,7 @@ async def purge(message: discord.Message, *instances: members_and_channels, num:
     assert not any(i for i in instances if isinstance(i, discord.TextChannel)), "**I can only purge in one channel.**"
     to_delete = []
 
-    async for m in channel.history(limit=100, before=message):
+    async for m in channel.history(before=message):
         if len(to_delete) >= num:
             break
 
@@ -323,7 +324,7 @@ async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
         if message.author == client.user:
             return
 
-        if not message.attachments == []:
+        if message.attachments:
             attachments = ""
             for attachment in message.attachments:
                 attachments += attachment.filename + "\n"
