@@ -550,6 +550,19 @@ def is_playing(member: discord.Member):
     return False
 
 
+def get_no_choke_scorerank(mods: list, acc: float):
+    """ Get the scorerank of an unchoked play. """
+    if "HD" in mods and acc == 1:
+        scorerank = "XH"
+    elif "HD" in mods:
+        scorerank = "SH"
+    elif acc == 1:
+        scorerank = "X"
+    else:
+        scorerank = "S"
+    return scorerank
+
+
 async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: datetime):
     """ Retrieves"""
     params = {
@@ -663,7 +676,7 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
                 osu_score["accuracy"] = full_combo_acc
                 osu_score["max_combo"] = score_pp.max_combo
                 osu_score["statistics"]["count_miss"] = 0
-                osu_score["rank"] = "S" if (full_combo_acc < 1) else "SS"
+                osu_score["rank"] = get_no_choke_scorerank(osu_score["mods"], full_combo_acc)
                 osu_score["score"] = None
                 no_choke_list.append(osu_score)
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
