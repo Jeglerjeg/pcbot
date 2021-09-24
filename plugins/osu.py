@@ -1056,6 +1056,16 @@ def get_missing_user_string(member: discord.Member):
             member.name, botconfig.guild_command_prefix(member.guild))
 
 
+def get_user(message: discord.Message, username: str):
+    """ Get member by discord username or osu username. """
+    member = utils.find_member(guild=message.guild, name=username)
+    if not member:
+        for data in osu_tracking.values():
+            if data["new"]["username"].lower() == username.lower():
+                member = data["member"]
+    return member
+
+
 async def format_beatmapset_diffs(beatmapset: dict):
     """ Format some difficulty info on a beatmapset. """
     # Get the longest difficulty name
@@ -1475,7 +1485,7 @@ async def osu(message: discord.Message, *options):
     mode = None
 
     for value in options:
-        member = utils.find_member(guild=message.guild, name=value)
+        member = get_user(message, value)
         if member:
             continue
 
@@ -1806,8 +1816,12 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
     return embed
 
 
-async def recent(message: discord.Message, member: discord.Member = Annotate.Self):
+async def recent(message: discord.Message, user: str):
     """ Display your or another member's most recent score. """
+    logging.info(user)
+    member = get_user(message, user)
+    if not member:
+        member = message.author
     assert str(member.id) in osu_config.data["profiles"], get_missing_user_string(member)
 
     user_id = osu_config.data["profiles"][str(member.id)]
@@ -1851,7 +1865,7 @@ async def score(message: discord.Message, *options):
         elif value.startswith("+"):
             mods = value.replace("+", "")
         else:
-            member = utils.find_member(guild=message.guild, name=value)
+            member = get_user(message, value)
 
     if not member:
         member = message.author
@@ -1971,7 +1985,7 @@ async def top(message: discord.Message, *options):
         elif value == "nochoke":
             nochoke = True
         else:
-            member = utils.find_member(guild=message.guild, name=value)
+            member = get_user(message, value)
 
     if not member:
         member = message.author
