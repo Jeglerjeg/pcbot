@@ -1062,7 +1062,7 @@ def get_user(message: discord.Message, username: str):
     if not member:
         for data in osu_tracking.values():
             if data["new"]["username"].lower() == username.lower():
-                member = data["member"]
+                member = utils.find_member(guild=message.guild, name=data["member"].name)
     return member
 
 
@@ -1818,7 +1818,6 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
 
 async def recent(message: discord.Message, user: str):
     """ Display your or another member's most recent score. """
-    logging.info(user)
     member = get_user(message, user)
     if not member:
         member = message.author
