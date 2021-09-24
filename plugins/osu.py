@@ -275,7 +275,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
                            member: discord.Member = None):
     """ Format any score. There should be a member name/mention in front of this string. """
     acc = calculate_acc(mode, osu_score)
-    if mode is api.GameMode.osu or mode is api.GameMode.fruits:
+    if mode is api.GameMode.osu:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
             "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
@@ -391,6 +391,47 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             # Escaping asterisk doesn't work in italics
             version=beatmap["version"],
             stars=float(beatmap["difficulty_rating"]),
+            scoreboard_rank="#{} ".format(rank) if rank else "",
+            failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
+            live=await format_stream(member, osu_score, beatmap) if member else "",
+        )
+
+    elif mode is api.GameMode.fruits:
+        return (
+            "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
+            "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
+            "```diff\n"
+            "  acc     fruits ticks drpmiss miss combo\n"
+            "{sign} {acc:<8.2%}{count300:<7}{count100:<6}{countdrpmiss:<8}{countmiss:<5}{maxcombo}{max_combo}```"
+            "{live}"
+        ).format(
+            host=host,
+            beatmap_id=osu_score["beatmap"]["id"],
+            beatmapset_id=beatmap["beatmapset_id"],
+            mode=osu_score["mode"],
+            sign="!" if acc == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
+            modslist=Mods.format_mods(osu_score["mods"]),
+            acc=acc,
+            pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
+            rank=osu_score["rank"],
+            score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
+            count300=osu_score["statistics"]["count_300"],
+            count100=osu_score["statistics"]["count_100"],
+            countdrpmiss=osu_score["statistics"]["count_katu"],
+            countmiss=osu_score["statistics"]["count_miss"],
+            artist=osu_score["beatmapset"]["artist"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
+            beatmap["beatmapset"]["artist"].replace("_", r"\_"),
+            title=osu_score["beatmapset"]["title"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
+            beatmap["beatmapset"]["title"].replace("_", r"\_"),
+            i=("*" if "*" not in osu_score["beatmapset"]["artist"] + osu_score["beatmapset"]["title"] else "") if
+            bool("beatmapset" in osu_score) else
+            ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
+            # Escaping asterisk doesn't work in italics
+            version=beatmap["version"],
+            stars=float(beatmap["difficulty_rating"]),
+            maxcombo=osu_score["max_combo"],
+            max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap and beatmap["max_combo"] is not None
+            else "",
             scoreboard_rank="#{} ".format(rank) if rank else "",
             failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
             live=await format_stream(member, osu_score, beatmap) if member else "",
