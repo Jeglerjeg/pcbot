@@ -1821,9 +1821,12 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
     return embed
 
 
-async def recent(message: discord.Message, user: str):
+async def recent(message: discord.Message, user: str = None):
     """ Display your or another member's most recent score. """
-    member = get_user(message, user)
+    if not user:
+        member = message.author
+    else:
+        member = get_user(message, user)
     if not member:
         member = message.author
     assert str(member.id) in osu_config.data["profiles"], get_missing_user_string(member)
