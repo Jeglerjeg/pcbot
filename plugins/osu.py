@@ -375,7 +375,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
             score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
-            countmax= osu_score["statistics"]["count_geki"],
+            countmax=osu_score["statistics"]["count_geki"],
             count300=osu_score["statistics"]["count_300"],
             count200=osu_score["statistics"]["count_katu"],
             count100=osu_score["statistics"]["count_100"],
