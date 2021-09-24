@@ -275,7 +275,6 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
 async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, rank: int = None,
                            member: discord.Member = None):
     """ Format any score. There should be a member name/mention in front of this string. """
-    acc = calculate_acc(mode, osu_score)
     if mode is api.GameMode.osu:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
@@ -289,9 +288,9 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             beatmap_id=osu_score["beatmap"]["id"],
             beatmapset_id=beatmap["beatmapset_id"],
             mode=osu_score["mode"],
-            sign="!" if acc == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
+            sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc=acc,
+            acc=osu_score["accuracy"],
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
             score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
@@ -330,9 +329,9 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             beatmap_id=osu_score["beatmap"]["id"],
             beatmapset_id=beatmap["beatmapset_id"],
             mode=osu_score["mode"],
-            sign="!" if acc == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
+            sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc=acc,
+            acc=osu_score["accuracy"],
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
             score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
@@ -370,9 +369,9 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             beatmap_id=osu_score["beatmap"]["id"],
             beatmapset_id=beatmap["beatmapset_id"],
             mode=osu_score["mode"],
-            sign="!" if acc == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
+            sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc=acc,
+            acc=osu_score["accuracy"],
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
             score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
@@ -410,9 +409,9 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             beatmap_id=osu_score["beatmap"]["id"],
             beatmapset_id=beatmap["beatmapset_id"],
             mode=osu_score["mode"],
-            sign="!" if acc == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
+            sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc=acc,
+            acc=osu_score["accuracy"],
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
             score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
