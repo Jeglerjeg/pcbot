@@ -315,7 +315,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             live=await format_stream(member, osu_score, beatmap) if member else "",
         )
 
-    elif mode is api.GameMode.taiko:
+    if mode is api.GameMode.taiko:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
             "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
@@ -355,7 +355,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             live=await format_stream(member, osu_score, beatmap) if member else "",
         )
 
-    elif mode is api.GameMode.mania:
+    if mode is api.GameMode.mania:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
             "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
@@ -395,7 +395,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             live=await format_stream(member, osu_score, beatmap) if member else "",
         )
 
-    elif mode is api.GameMode.fruits:
+    if mode is api.GameMode.fruits:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
             "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
@@ -749,6 +749,8 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
         score_pp = await get_score_pp(osu_score, mode, beatmap)
         if score_pp is not None:
             beatmap["difficulty_rating"] = get_beatmap_sr(score_pp, beatmap, mods, mode)
+        if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
+            beatmap["max_combo"] = score_pp.max_combo
 
         # Add time since play to the score
         score_datetime = datetime.fromisoformat(osu_score["created_at"])
@@ -990,6 +992,8 @@ async def notify_pp(member_id: str, data: dict):
         potential_pp = await get_score_pp(osu_score, mode, beatmap)
         mods = Mods.format_mods(osu_score["mods"])
         beatmap["difficulty_rating"] = get_beatmap_sr(potential_pp, beatmap, mods, mode)
+        if ("max_combo" not in beatmap or not beatmap["max_combo"]) and potential_pp.max_combo:
+            beatmap["max_combo"] = potential_pp.max_combo
         if update_mode is UpdateModes.Minimal:
             m.append("".join([await format_minimal_score(mode, osu_score, beatmap, scoreboard_rank, member), "\n"]))
         else:
@@ -1779,6 +1783,8 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
         osu_score["pp"] = 0
     if score_pp is not None:
         beatmap["difficulty_rating"] = get_beatmap_sr(score_pp, beatmap, mods, mode)
+    if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
+        beatmap["max_combo"] = score_pp.max_combo
 
     # There might not be any events
     if scoreboard_rank is False and str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)] \
