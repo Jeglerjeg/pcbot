@@ -552,9 +552,9 @@ def is_playing(member: discord.Member):
 
 def get_no_choke_scorerank(mods: list, acc: float):
     """ Get the scorerank of an unchoked play. """
-    if "HD" in mods and acc == 1:
+    if ("HD" in mods or "FL" in mods) and acc == 1:
         scorerank = "XH"
-    elif "HD" in mods:
+    elif "HD" in mods or "FL" in mods:
         scorerank = "SH"
     elif acc == 1:
         scorerank = "X"
