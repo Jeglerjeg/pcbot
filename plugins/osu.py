@@ -799,6 +799,8 @@ async def get_score_pp(osu_score: dict, mode: api.GameMode, beatmap: dict = None
     """ Return PP for a given score. """
     mods = Mods.format_mods(osu_score["mods"])
     score_pp = None
+    if beatmap and beatmap["convert"]:
+        return score_pp
     if mode is api.GameMode.osu:
         try:
             score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
@@ -1758,6 +1760,8 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
         }
         beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id,
                                             mode=beatmap_info.gamemode.name))
+
+        assert not beatmap["convert"], "Converts are not supported by the PP calculator."
 
         pp_stats = await calculate_pp(beatmap_url, *options, mode=beatmap_info.gamemode,
                                       ignore_osu_cache=not bool(beatmap["status"] == "ranked" or
