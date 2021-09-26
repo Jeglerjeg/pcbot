@@ -271,20 +271,8 @@ async def beatmap_lookup(params, map_id, mode):
     if valid_result and filename not in beatmap_memory_cache:
         beatmap_memory_cache[filename] = result
     elif not valid_result:
-        response = await beatmapset_lookup(params=params)
-        beatmapset = response.copy()
-        del beatmapset["beatmaps"]
-        del beatmapset["converts"]
-
-        for diff in response["beatmaps"]:
-            if str(diff["id"]) == str(map_id) and diff["mode"] == mode:
-                diff["beatmapset"] = beatmapset
-                result = diff
-        if not result:
-            for convert in response["converts"]:
-                if str(convert["id"]) == str(map_id) and convert["mode"] == mode:
-                    convert["beatmapset"] = beatmapset
-                    result = convert
+        await beatmapset_lookup(params=params)
+        result = retrieve_cache(map_id, "map", mode)
         beatmap_memory_cache[filename] = result
     return result
 
