@@ -104,7 +104,7 @@ class MapEvent:
         self.messages = []
 
     def __repr__(self):
-        return "MapEvent(text={}, time_created={}, count={})".format(self.text, self.time_created.ctime(), self.count)
+        return f"MapEvent(text={self.text}, time_created={self.time_created.ctime()}, count={self.count})"
 
     def __str__(self):
         return repr(self)
@@ -192,14 +192,13 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
 
     # Find the performance page number of the respective ranks
 
-    formatted = ["\u2139`{} {:.2f}pp {:+.2f}pp`".format(mode.name.replace("Standard", "osu!"),
-                                                        float(data_new["statistics"]["pp"]), pp),
-                 " [\U0001f30d]({}?page={})`#{:,}{}`".format(rankings_url, pp_rank // 50 + 1, pp_rank,
-                                                             "" if int(rank) == 0 else " {:+}".format(int(rank))),
-                 " [{}]({}?country={}&page={})`#{:,}{}`".format(utils.text_to_emoji(iso), rankings_url, iso,
-                                                                pp_country_rank // 50 + 1, pp_country_rank,
-                                                                "" if int(country_rank) == 0 else " {:+}".format(
-                                                                    int(country_rank)))]
+    formatted = [f"\u2139`{mode.name.replace('Standard', 'osu!')} {float(data_new['statistics']['pp']):.2f}pp "
+                 f"{pp:+.2f}pp`",
+                 f" [\U0001f30d]({rankings_url}?page="
+                 f"{pp_rank // 50 + 1})`#{pp_rank:,}{'' if int(rank) == 0 else f' {int(rank):+}'}`",
+                 f" [{utils.text_to_emoji(iso)}]({rankings_url}?country={iso}&page="
+                 f"{pp_country_rank // 50 + 1})`"
+                 f"#{pp_country_rank:,}{'' if int(country_rank) == 0 else f' {int(country_rank):+}'}`"]
     rounded_acc = round(accuracy, 3)
     if rounded_acc > 0:
         formatted.append("\n\U0001f4c8")  # Graph with upwards trend
@@ -208,9 +207,9 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
     else:
         formatted.append("\n\U0001f3af")  # Dart
 
-    formatted.append("`{:.3f}%".format(float(data_new["statistics"]["hit_accuracy"])))
+    formatted.append(f"`{float(data_new['statistics']['hit_accuracy']):.3f}%")
     if not rounded_acc == 0:
-        formatted.append(" {:+}%`".format(rounded_acc))
+        formatted.append(f" {rounded_acc:+}%`")
     else:
         formatted.append("`")
 
@@ -228,7 +227,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         return ""
 
     # Add the stream url and return immediately if twitch is not setup
-    text = ["**[Watch live here]({})**".format(stream_url)]
+    text = [f"**[Watch live here]({stream_url})**"]
     if not twitch.client_id:
         text.append("\n")
         return "".join(text)
@@ -236,7 +235,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     # Try getting the vod information of the current stream
     try:
         twitch_id = await twitch.get_id(member)
-        vod_request = await twitch.request("channels/{}/videos".format(twitch_id), limit=1, broadcast_type="archive",
+        vod_request = await twitch.request(f"channels/{twitch_id}/videos", limit=1, broadcast_type="archive",
                                            sort="time")
         assert vod_request["_total"] >= 1
     except Exception:
@@ -268,7 +267,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     timestamp_play_started = timestamp_score_created - beatmap_length
 
     # Add the vod url with timestamp to the formatted text
-    text.append(" | **[`Video of this play`]({0}?t={1}s)**\n".format(vod["url"], int(timestamp_play_started)))
+    text.append(f" | **[`Video of this play`]({vod['url']}?t={int(timestamp_play_started)}s)**\n")
     return "".join(text)
 
 
@@ -293,7 +292,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             acc=osu_score["accuracy"],
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
-            score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
+            score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
             count300=osu_score["statistics"]["count_300"],
             count100=osu_score["statistics"]["count_100"],
             count50=osu_score["statistics"]["count_50"],
@@ -309,9 +308,9 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             version=beatmap["version"],
             stars=float(beatmap["difficulty_rating"]),
             maxcombo=osu_score["max_combo"],
-            max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap and beatmap["max_combo"] is not None
+            max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
             else "",
-            scoreboard_rank="#{} ".format(rank) if rank else "",
+            scoreboard_rank=f"#{rank} " if rank else "",
             failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
             live=await format_stream(member, osu_score, beatmap) if member else "",
         )
@@ -334,7 +333,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             acc=osu_score["accuracy"],
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
-            score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
+            score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
             count300=osu_score["statistics"]["count_300"],
             count100=osu_score["statistics"]["count_100"],
             countmiss=osu_score["statistics"]["count_miss"],
@@ -349,9 +348,9 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             version=beatmap["version"],
             stars=float(beatmap["difficulty_rating"]),
             maxcombo=osu_score["max_combo"],
-            max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap and beatmap["max_combo"] is not None
+            max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
             else "",
-            scoreboard_rank="#{} ".format(rank) if rank else "",
+            scoreboard_rank=f"#{rank} " if rank else "",
             failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
             live=await format_stream(member, osu_score, beatmap) if member else "",
         )
@@ -374,7 +373,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             acc=osu_score["accuracy"],
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
-            score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
+            score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
             countmax=osu_score["statistics"]["count_geki"],
             count300=osu_score["statistics"]["count_300"],
             count200=osu_score["statistics"]["count_katu"],
@@ -391,7 +390,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             # Escaping asterisk doesn't work in italics
             version=beatmap["version"],
             stars=float(beatmap["difficulty_rating"]),
-            scoreboard_rank="#{} ".format(rank) if rank else "",
+            scoreboard_rank=f"#{rank} " if rank else "",
             failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
             live=await format_stream(member, osu_score, beatmap) if member else "",
         )
@@ -414,7 +413,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             acc=osu_score["accuracy"],
             pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
-            score='{:,}'.format(osu_score["score"]) if osu_score["score"] else "",
+            score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
             count300=osu_score["statistics"]["count_300"],
             count100=osu_score["statistics"]["count_100"],
             countdrpmiss=osu_score["statistics"]["count_katu"],
@@ -430,9 +429,9 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             version=beatmap["version"],
             stars=float(beatmap["difficulty_rating"]),
             maxcombo=osu_score["max_combo"],
-            max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap and beatmap["max_combo"] is not None
+            max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
             else "",
-            scoreboard_rank="#{} ".format(rank) if rank else "",
+            scoreboard_rank=f"#{rank} " if rank else "",
             failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
             live=await format_stream(member, osu_score, beatmap) if member else "",
         )
@@ -457,11 +456,11 @@ async def format_minimal_score(mode: api.GameMode, osu_score: dict, beatmap: dic
         title=beatmap["beatmapset"]["title"].replace("*", r"\*").replace("_", r"\_"),
         version=beatmap["version"],
         maxcombo=osu_score["max_combo"],
-        max_combo="/{}".format(beatmap["max_combo"]) if "max_combo" in beatmap and beatmap["max_combo"] is not None
+        max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
         else "",
         rank=osu_score["rank"],
         stars=float(beatmap["difficulty_rating"]),
-        scoreboard_rank="#{} ".format(rank) if rank else "",
+        scoreboard_rank=f"#{rank} " if rank else "",
         live=await format_stream(member, osu_score, beatmap),
         pp=round(osu_score["pp"], 2)
     )
@@ -509,23 +508,23 @@ def get_formatted_score_time(osu_score: dict):
     if pendulum:
         score_time = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
         if score_time.in_seconds() < 60:
-            time_string = "{} ago".format("".join([str(score_time.in_seconds()),
-                                                   (" seconds" if score_time.in_seconds() > 1 else " second")]))
+            time_string = f"""{"".join([str(score_time.in_seconds()),
+                                                   (" seconds" if score_time.in_seconds() > 1 else " second")])} ago"""
         elif score_time.in_minutes() < 60:
-            time_string = "{} ago".format("".join([str(score_time.in_minutes()),
-                                                   (" minutes" if score_time.in_minutes() > 1 else " minute")]))
+            time_string = f"""{"".join([str(score_time.in_minutes()),
+                                                   (" minutes" if score_time.in_minutes() > 1 else " minute")])} ago"""
         elif score_time.in_hours() < 24:
-            time_string = "{} ago".format("".join([str(score_time.in_hours()),
-                                                   (" hours" if score_time.in_hours() > 1 else " hour")]))
+            time_string = f"""{"".join([str(score_time.in_hours()),
+                                                   (" hours" if score_time.in_hours() > 1 else " hour")])} ago"""
         elif score_time.in_days() <= 31:
-            time_string = "{} ago".format("".join([str(score_time.in_days()),
-                                                   (" days" if score_time.in_days() > 1 else " day")]))
+            time_string = f"""{"".join([str(score_time.in_days()),
+                                                   (" days" if score_time.in_days() > 1 else " day")])} ago"""
         elif score_time.in_months() < 12:
-            time_string = "{} ago".format("".join([str(score_time.in_months()),
-                                                   (" months" if score_time.in_months() > 1 else " month")]))
+            time_string = f"""{"".join([str(score_time.in_months()),
+                                                   (" months" if score_time.in_months() > 1 else " month")])} ago"""
         else:
-            time_string = "{} ago".format("".join([str(score_time.in_years()),
-                                                   (" years" if score_time.in_years() > 1 else " year")]))
+            time_string = f"""{"".join([str(score_time.in_years()),
+                                                   (" years" if score_time.in_years() > 1 else " year")])} ago"""
 
     return time_string
 
@@ -671,7 +670,7 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
             full_combo_acc = calculate_acc(mode, osu_score, exclude_misses=True)
             score_pp = await get_score_pp(osu_score, mode)
             if (score_pp.max_pp - osu_score["pp"]) > 10:
-                osu_score["new_pp"] = "{} => {}".format(round(osu_score["pp"], 2), round(score_pp.max_pp, 2))
+                osu_score["new_pp"] = f"""{round(osu_score["pp"], 2)} => {round(score_pp.max_pp, 2)}"""
                 osu_score["pp"] = score_pp.max_pp
                 osu_score["perfect"] = True
                 osu_score["accuracy"] = full_combo_acc
@@ -755,19 +754,20 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
 
         # Add time since play to the score
         score_datetime = datetime.fromisoformat(osu_score["created_at"])
-        time_since_string = "<t:{}:R>".format(int(score_datetime.timestamp()))
-        position_string = "{}.".format(osu_score["pos"]) if "diff" not in osu_score else "{}. (+{diff:.2f}pp)".format(
-            osu_score["pos"], diff=osu_score["diff"])
+        time_since_string = f"<t:{int(score_datetime.timestamp())}:R>"
+
+        # Add score position to the score
+        pos = osu_score["pos"] if "diff" not in osu_score else f"""{osu_score["pos"]}. (+{osu_score["diff"]:.2f}pp)"""
+        position_string = f"{pos}."
 
         potential_string = None
         # Add potential pp to the score
         if score_pp is not None and not isinstance(osu_score["pp"], str) and \
                 score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 and not osu_score["perfect"]:
-            potential_string = "Potential: {0:,.2f}pp, {1:+.2f}pp".format(score_pp.max_pp,
-                                                                          score_pp.max_pp - float(osu_score["pp"]))
+            potential_string = f"""Potential: {score_pp.max_pp:,.2f}pp, {score_pp.max_pp -
+                                                                         float(osu_score["pp"]):+.2f}pp"""
 
-        m.append("".join(["{}\n".format(position_string),
-                          await format_new_score(mode, osu_score, beatmap),
+        m.append("".join([f"{position_string}\n", await format_new_score(mode, osu_score, beatmap),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
                           "".join([time_since_string, "\n"]) if not no_time else "",
                           "\n" if not i == limit - 1 else ""]))
@@ -907,8 +907,7 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
 
     # Add potential pp in the footer
     if potential_pp:
-        footer.append("Potential: {0:,.2f}pp, {1:+.2f}pp".format(pp_stats.max_pp,
-                                                                 pp_stats.max_pp - float(osu_score["pp"])))
+        footer.append(f"""Potential: {pp_stats.max_pp:,.2f}pp, {pp_stats.max_pp - float(osu_score["pp"]):+.2f}pp""")
 
     objects = None
     beatmap_objects = None
@@ -932,8 +931,8 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
 
     # Add completion rate to footer if score is failed
     if osu_score and pp_stats and osu_score["passed"] is False and objects:
-        footer.append("\nCompletion rate: {completion_rate:.2f}% ({partial_sr}\u2605)".format(
-            completion_rate=(objects / beatmap_objects) * 100, partial_sr=round(pp_stats.partial_stars, 2)))
+        footer.append(f"\nCompletion rate: {(objects / beatmap_objects) * 100:.2f}% "
+                      f"({round(pp_stats.partial_stars, 2)}\u2605)")
 
     embed.set_footer(text="".join(footer))
     return embed
@@ -984,8 +983,8 @@ async def notify_pp(member_id: str, data: dict):
         }
         beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
         thumbnail_url = beatmap["beatmapset"]["covers"]["list@2x"]
-        author_text = "{0} set a new best (#{pos}/{1} +{diff:.2f}pp)".format(data["new"]["username"],
-                                                                             score_request_limit, **osu_score)
+        author_text = f"{data['new']['username']} set a new best (#{osu_score['pos']}/{score_request_limit} " \
+                      f"+{osu_score['diff']:.2f}pp)"
 
         # There might not be any events
         scoreboard_rank = None
@@ -1011,7 +1010,7 @@ async def notify_pp(member_id: str, data: dict):
         m.append(await get_formatted_score_list(member, osu_scores,
                                                 limit=len(osu_scores) if len(osu_scores) <= 5 else 5, no_time=True))
         thumbnail_url = data["new"]["avatar_url"]
-        author_text = "{0} set new best scores".format(data["new"]["username"])
+        author_text = f"""{data["new"]["username"]} set new best scores"""
     else:
         author_text = data["new"]["username"]
 
@@ -1055,8 +1054,8 @@ async def notify_pp(member_id: str, data: dict):
 
 def get_missing_user_string(member: discord.Member):
     """ Format missing user text for all commands needing it. """
-    return "No osu! profile assigned to **{}**! Please assign a profile using **{}osu link <username>**".format(
-            member.name, botconfig.guild_command_prefix(member.guild))
+    return f"No osu! profile assigned to **{member.name}**! Please assign a profile using " \
+           f"**{botconfig.guild_command_prefix(member.guild)}osu link <username>**"
 
 
 def get_user(message: discord.Message, username: str):
@@ -1087,8 +1086,8 @@ async def format_beatmapset_diffs(beatmapset: dict):
             gamemode=format_mode_name(api.GameMode(int(diff["mode_int"])), short_name=True),
             name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
             diff_len=diff_length,
-            stars="{:.2f}\u2605".format(float(diff["difficulty_rating"])),
-            pp="{}pp".format(int(diff.get("pp", "0"))),
+            stars=f"""{float(diff["difficulty_rating"]):.2f}\u2605""",
+            pp=f"""{int(diff.get("pp", "0"))}pp""",
             drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)))
         )
     m.append("```")
@@ -1110,7 +1109,7 @@ async def format_beatmap_info(beatmapset: dict):
         diff_name = diff["version"]
         pass_rate = "Not passed"
         if not diff["passcount"] == 0 and not diff["playcount"] == 0:
-            pass_rate = "{:.2f}%".format((diff["passcount"] / diff["playcount"]) * 100)
+            pass_rate = f"{(diff['passcount'] / diff['playcount']) * 100:.2f}%"
 
         m.append("\n{name: <{diff_len}}  {drain: <7}{bpm: <5}{passrate}\n\n"
                  "OD   CS   AR   HP   Max Combo\n"
@@ -1119,8 +1118,8 @@ async def format_beatmap_info(beatmapset: dict):
                  "{pp: <12}{stars}".format(
                   name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 2] + "...",
                   diff_len=diff_length,
-                  stars="{:.2f}\u2605".format(float(diff["difficulty_rating"])),
-                  pp="{}pp".format(int(diff.get("pp", "0"))),
+                  stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
+                  pp=f"{int(diff.get('pp', '0'))}pp",
                   drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)),
                   passrate=pass_rate,
                   od=diff["accuracy"],
@@ -1128,7 +1127,7 @@ async def format_beatmap_info(beatmapset: dict):
                   hp=diff["drain"],
                   cs=diff["cs"],
                   bpm=int(diff["bpm"]) if diff["bpm"] else "None",
-                  maxcombo="{}x".format(diff["max_combo"]) if diff["max_combo"] else "None"
+                  maxcombo=f"{diff['max_combo']}x" if diff["max_combo"] else "None"
                  ))
     m.append("```")
     return "".join(m)
@@ -1315,7 +1314,7 @@ async def notify_recent_events(member_id: str, data: dict):
                                                     update_mode is not UpdateModes.Full)
 
                     if new_event.count > 1:
-                        embed.set_footer(text="updated {} times since".format(new_event.count))
+                        embed.set_footer(text=f"updated {new_event.count} times since")
                         embed.timestamp = new_event.time_created.replace(tzinfo=timezone.utc)
 
                     # Delete the previous message if there is one
@@ -1371,7 +1370,7 @@ async def notify_recent_events(member_id: str, data: dict):
                 member = guild.get_member(int(member_id))
 
                 embed = await create_score_embed_with_pp(member, osu_score, beatmap, mode, position, twitch_link=True)
-                embed.set_author(name="{0} set a new leaderboard score".format(data["new"]["username"]),
+                embed.set_author(name=f"{data['new']['username']} set a new leaderboard score",
                                  icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
 
                 for channel in channels:
@@ -1463,7 +1462,7 @@ def get_timestamps_with_url(content: str):
     """
     for match in timestamp_pattern.finditer(content):
         editor_url = match.group(1).strip(" ").replace(" ", "%20").replace(")", r")")
-        yield match.group(0), "<osu://edit/{}>".format(editor_url)
+        yield match.group(0), f"<osu://edit/{editor_url}>"
 
 
 @plugins.event()
@@ -1473,7 +1472,7 @@ async def on_message(message: discord.Message):
     if message.content.startswith("!"):
         return
 
-    timestamps = ["{} {}".format(stamp, editor_url) for stamp, editor_url in get_timestamps_with_url(message.content)]
+    timestamps = [f"{stamp} {editor_url}" for stamp, editor_url in get_timestamps_with_url(message.content)]
     if timestamps:
         await client.send_message(message.channel,
                                   embed=discord.Embed(color=message.author.color,
@@ -1550,7 +1549,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     osu_user = await api.get_user(name, params=params)
 
     # Check if the osu! user exists
-    assert "id" in osu_user, "osu! user `{}` does not exist.".format(name)
+    assert "id" in osu_user, f"osu! user `{name}` does not exist."
     user_id = osu_user["id"]
     mode = api.GameMode.get_mode(osu_user["playmode"])
 
@@ -1558,9 +1557,8 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     if float(osu_user["statistics"]["pp"]) < minimum_pp_required:
         # Perhaps the user wants to display another gamemode
         await client.say(message,
-                         "**You have less than the required {}pp.\nIf you have enough in a different mode, please "
-                         "enter your gamemode below. Valid gamemodes are `{}`.**".format(minimum_pp_required,
-                                                                                         gamemodes))
+                         f"**You have less than the required {minimum_pp_required}pp.\nIf you have enough in "
+                         f"a different mode, please enter your gamemode below. Valid gamemodes are `{gamemodes}`.**")
 
         def check(m):
             return m.author == message.author and m.channel == message.channel
@@ -1573,7 +1571,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
         mode = api.GameMode.get_mode(reply.content)
         assert mode is not None, "**The given gamemode is invalid.**"
         assert await has_enough_pp(user=user_id, mode=mode.name), \
-            "**Your pp in {} is less than the required {}pp.**".format(mode.name, minimum_pp_required)
+            f"**Your pp in {mode.name} is less than the required {minimum_pp_required}pp.**"
 
     # Clear the scores when changing user
     if str(message.author.id) in osu_tracking:
@@ -1586,7 +1584,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     osu_config.data["mode"][str(message.author.id)] = mode.value
     osu_config.data["primary_guild"][str(message.author.id)] = str(message.guild.id)
     await osu_config.asyncsave()
-    await client.say(message, "Set your osu! profile to `{}`.".format(osu_user["username"]))
+    await client.say(message, f"Set your osu! profile to `{osu_user['username']}`.")
 
 
 @osu.command(hidden=True, owner=True)
@@ -1595,14 +1593,14 @@ async def wipe_tracking(message: discord.Message, member: discord.Member = None)
     if member:
         if str(member.id) in osu_tracking:
             del osu_tracking[str(member.id)]
-            await client.say(message, "Deleted {} from tracking.".format(member.name))
+            await client.say(message, f"Deleted {member.name} from tracking.")
         else:
             await client.say(message, "User not in tracking.")
     else:
         previous_length = len(osu_tracking)
         for entry in list(osu_tracking):
             del osu_tracking[entry]
-        await client.say(message, "Deleted {} entries.".format(previous_length))
+        await client.say(message, f"Deleted {previous_length} entries.")
 
 
 @osu.command(aliases="unset")
@@ -1623,27 +1621,25 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
     # Unlink the given member (usually the message author)
     del osu_config.data["profiles"][str(member.id)]
     await osu_config.asyncsave()
-    await client.say(message, "Unlinked **{}'s** osu! profile.".format(member.name))
+    await client.say(message, f"Unlinked **{member.name}'s** osu! profile.")
 
 
 gamemodes = ", ".join(format_mode_name(gm) for gm in api.GameMode)
 
 
-@osu.command(aliases="mode m track", error="Valid gamemodes: `{}`".format(gamemodes), doc_args=dict(modes=gamemodes))
+@osu.command(aliases="mode m track", error=f"Valid gamemodes: `{gamemodes}`", doc_args=dict(modes=gamemodes))
 async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
     """ Sets the command executor's gamemode.
 
     Gamemodes are: `{modes}`. """
-    assert str(message.author.id) in osu_config.data["profiles"], \
-        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
-        message.author.name, botconfig.guild_command_prefix(message.author.guild))
+    assert str(message.author.id) in osu_config.data["profiles"], get_missing_user_string(message.author)
 
     user_id = osu_config.data["profiles"][str(message.author.id)]
 
     mode_name = format_mode_name(mode)
 
     assert await has_enough_pp(user=user_id, mode=mode.name), \
-        "**Your pp in {} is less than the required {}pp.**".format(mode_name, minimum_pp_required)
+        f"**Your pp in {mode_name} is less than the required {minimum_pp_required}pp.**"
 
     osu_config.data["mode"][str(message.author.id)] = mode.value
     await osu_config.asyncsave()
@@ -1652,7 +1648,7 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
     if str(message.author.id) in osu_tracking:
         del osu_tracking[str(message.author.id)]
 
-    await client.say(message, "Set your gamemode to **{}**.".format(mode_name))
+    await client.say(message, f"Set your gamemode to **{mode_name}**.")
 
 
 @osu.command(usage="<on/off>")
@@ -1706,15 +1702,13 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
 doc_modes = ", ".join(m.name.lower() for m in UpdateModes)
 
 
-@osu.command(aliases="n updatemode", error="Valid modes: `{}`".format(doc_modes), doc_args=dict(modes=doc_modes))
+@osu.command(aliases="n updatemode", error=f"Valid modes: `{doc_modes}`", doc_args=dict(modes=doc_modes))
 async def notify(message: discord.Message, mode: UpdateModes.get_mode):
     """ Sets the command executor's update notification mode. This changes
     how much text is in each update, or if you want to disable them completely.
 
     Update modes are: `{modes}`. """
-    assert str(message.author.id) in osu_config.data["profiles"], \
-        "No osu! profile assigned to **{}**! Please assign a profile using {}osu link".format(
-        message.author.name, botconfig.guild_command_prefix(message.author.guild))
+    assert str(message.author.id) in osu_config.data["profiles"], get_missing_user_string(message.author)
 
     osu_config.data["update_mode"][str(message.author.id)] = mode.name
     await osu_config.asyncsave()
@@ -1723,7 +1717,7 @@ async def notify(message: discord.Message, mode: UpdateModes.get_mode):
     if str(message.author.id) in osu_tracking and mode == UpdateModes.Disabled:
         del osu_tracking[str(message.author.id)]
 
-    await client.say(message, "Set your update notification mode to **{}**.".format(mode.name.lower()))
+    await client.say(message, f"Set your update notification mode to **{mode.name.lower()}**.")
 
 
 @osu.command()
@@ -1734,8 +1728,8 @@ async def url(message: discord.Message, member: discord.Member = Annotate.Self,
     assert str(member.id) in osu_config.data["profiles"], get_missing_user_string(member)
 
     # Send the URL since the member is registered
-    await client.say(message, "**{0.display_name}'s profile:** <{1}{2}>".format(
-        member, get_user_url(str(member.id)), "#_{}".format(section) if section else ""))
+    await client.say(message, f"**{member.display_name}'s profile:** "
+                              f"<{get_user_url(str(member.id))}{f'#_{section}' if section else ''}>")
 
 
 async def pp_(message: discord.Message, beatmap_url: str, *options):
@@ -1778,7 +1772,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
                     "x50"):
                 options.remove(opt)
 
-        options.insert(0, "{}%".format(pp_stats.acc))
+        options.insert(0, f"{pp_stats.acc}%")
 
     await client.say(message,
                      "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`."
@@ -1955,7 +1949,7 @@ async def score(message: discord.Message, *options):
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
     osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
-    assert osu_scores, "Found no scores by **{}**.".format(member.name)
+    assert osu_scores, f"Found no scores by **{member.name}**."
 
     osu_score = osu_scores["score"]
     if mods:
@@ -2105,8 +2099,7 @@ async def scores(message: discord.Message, *channels: discord.TextChannel):
     init_guild_config(message.guild)
     osu_config.data["guild"][str(message.guild.id)]["score-channels"] = list(str(c.id) for c in channels)
     await osu_config.asyncsave()
-    await client.say(message, "**Notifying scores in**: {}".format(
-        utils.format_objects(*channels, sep=" ") or "no channels"))
+    await client.say(message, f"**Notifying scores in**: {utils.format_objects(*channels, sep=' ') or 'no channels'}")
 
 
 @config.command(alias="map", permissions="manage_guild")
@@ -2115,16 +2108,15 @@ async def maps(message: discord.Message, *channels: discord.TextChannel):
     init_guild_config(message.guild)
     osu_config.data["guild"][str(message.guild.id)]["map-channels"] = list(c.id for c in channels)
     await osu_config.asyncsave()
-    await client.say(message, "**Notifying map updates in**: {}".format(
-        utils.format_objects(*channels, sep=" ") or "no channels"))
+    await client.say(message, f"**Notifying map updates in**: "
+                              f"{utils.format_objects(*channels, sep=' ') or 'no channels'}")
 
 
 @osu.command(owner=True)
 async def debug(message: discord.Message):
     """ Display some debug info. """
-    client_time = "<t:{}:F>".format(
-        int(client.time_started.replace(tzinfo=timezone.utc).timestamp()))
-    member_list = ["`{}`".format(d["member"].name) for d in osu_tracking.values() if is_playing(d["member"])]
+    client_time = f"<t:{int(client.time_started.replace(tzinfo=timezone.utc).timestamp())}:F>"
+    member_list = [f"`{d['member'].name}`" for d in osu_tracking.values() if is_playing(d["member"])]
     await client.say(message, "Sent `{}` requests since the bot started ({}).\n"
                               "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
@@ -2136,7 +2128,7 @@ async def debug(message: discord.Message):
                                                            client.time_started).total_seconds() / 60.0), 2)
                                if api.requests_sent > 0 else 0,
                                time_elapsed,
-                               "<t:{}:F>".format(int(previous_update.timestamp()))
+                               f"<t:{int(previous_update.timestamp())}:F>"
                                if previous_update is not None else "Not updated yet.",
                                ", ".join(member_list) if member_list else "None", len(osu_tracking)
                                )
