@@ -1096,7 +1096,7 @@ async def format_beatmapset_diffs(beatmapset: dict):
         diff_length = len("difficulty")
 
     m = ["```elm\n"
-         "M {version: <{diff_len}}  Stars  Drain  PP".format(version="Difficulty", diff_len=diff_length)]
+         f"M {'Difficulty': <{diff_length}}  Stars  Drain  PP"]
 
     for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
@@ -1104,49 +1104,50 @@ async def format_beatmapset_diffs(beatmapset: dict):
             gamemode=format_mode_name(api.GameMode(int(diff["mode_int"])), short_name=True),
             name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
             diff_len=diff_length,
-            stars=f"""{float(diff["difficulty_rating"]):.2f}\u2605""",
-            pp=f"""{int(diff.get("pp", "0"))}pp""",
+            stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
+            pp=f"{int(diff.get('pp', '0'))}pp",
             drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)))
         )
     m.append("```")
     return "".join(m)
 
 
-async def format_beatmap_info(beatmapset: dict):
+async def format_beatmap_info(diff: dict):
     """ Format some difficulty info on a beatmapset. """
     # Get the longest difficulty name
-    diff_length = len(max((diff["version"] for diff in beatmapset["beatmaps"]), key=len))
+    diff_length = len(diff["version"])
     if diff_length > max_diff_length + 1:
         diff_length = max_diff_length + 1
     elif diff_length < len("difficulty"):
         diff_length = len("difficulty")
 
-    m = ["```elm\n{version: <{diff_len}}  Drain  BPM  Passrate".format(version="Difficulty", diff_len=diff_length)]
+    m = [f"```elm\n{'Difficulty': <{diff_length}}  Drain  BPM  Passrate"]
 
-    for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
-        diff_name = diff["version"]
-        pass_rate = "Not passed"
-        if not diff["passcount"] == 0 and not diff["playcount"] == 0:
-            pass_rate = f"{(diff['passcount'] / diff['playcount']) * 100:.2f}%"
+    diff_name = diff["version"]
+    pass_rate = "Not passed"
+    if not diff["passcount"] == 0 and not diff["playcount"] == 0:
+        pass_rate = f"{(diff['passcount'] / diff['playcount']) * 100:.2f}%"
 
-        m.append("\n{name: <{diff_len}}  {drain: <7}{bpm: <5}{passrate}\n\n"
-                 "OD   CS   AR   HP   Max Combo\n"
-                 "{od: <5}{cs: <5}{ar: <5}{hp: <5}{maxcombo}\n\n"
-                 "Total PP   Total Stars\n"
-                 "{pp: <12}{stars}".format(
-                  name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 2] + "...",
-                  diff_len=diff_length,
-                  stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
-                  pp=f"{int(diff.get('pp', '0'))}pp",
-                  drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)),
-                  passrate=pass_rate,
-                  od=diff["accuracy"],
-                  ar=diff["ar"],
-                  hp=diff["drain"],
-                  cs=diff["cs"],
-                  bpm=int(diff["bpm"]) if diff["bpm"] else "None",
-                  maxcombo=f"{diff['max_combo']}x" if diff["max_combo"] else "None"
-                 ))
+    m.append("\n{name: <{diff_len}}  {drain: <7}{bpm: <5}{passrate}\n\n"
+             "OD   CS   AR   HP   Max Combo  Mode\n"
+             "{od: <5}{cs: <5}{ar: <5}{hp: <5}{maxcombo: <11}{mode_name}\n\n"
+             "Total PP   Total Stars\n"
+             "{pp: <12}{stars}".format(
+              name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 2] + "...",
+              diff_len=diff_length,
+              stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
+              pp=f"{int(diff.get('pp', '0'))}pp",
+              drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)),
+              passrate=pass_rate,
+              od=diff["accuracy"],
+              ar=diff["ar"],
+              hp=diff["drain"],
+              cs=diff["cs"],
+              bpm=int(diff["bpm"]) if diff["bpm"] else "None",
+              maxcombo=f"{diff['max_combo']}x" if diff["max_combo"] else "None",
+              mode_name=format_mode_name(api.GameMode.get_mode(diff["mode"]))
+             ))
+
     m.append("```")
     return "".join(m)
 
@@ -1163,12 +1164,11 @@ async def format_map_status(member: discord.Member, status_format: str, beatmaps
     status = [status_format.format(name=name, user_id=user_id, host=host, artist=beatmapset["artist"],
                                    title=beatmapset["title"], id=beatmapset["id"])]
     if not minimal:
-        beatmap = bool(len(beatmapset["beatmaps"]) == 1
-                       and beatmapset["beatmaps"][0]["mode"] == "osu")
+        beatmap = bool(len(beatmapset["beatmaps"]) == 1)
         if not beatmap:
             status.append(await format_beatmapset_diffs(beatmapset))
         else:
-            status.append(await format_beatmap_info(beatmapset))
+            status.append(await format_beatmap_info(beatmapset["beatmaps"][0]))
 
     embed = discord.Embed(color=member.color, description="".join(status))
     embed.set_image(url=beatmapset["covers"]["cover@2x"])
