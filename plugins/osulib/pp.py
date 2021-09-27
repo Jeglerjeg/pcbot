@@ -144,23 +144,23 @@ async def find_closest_pp(beatmap_path, mods_bitmask, args):
     """ Find the accuracy required to get the given amount of pp from this map. """
     # Define a partial command for easily setting the pp value by 100s count
     def calc(accuracy: float):
-        # Set accuracy
         pp_info = pp_bindings.std_pp(beatmap_path, mods_bitmask, args.combo, accuracy, args.potential_acc, args.c300,
                                      args.c100, args.c50, args.misses, args.objects)
 
         return pp_info
 
-    # Find the smallest possible value oppai is willing to give
-    min_pp = calc(accuracy=0.0)
+    # Find the smallest possible value rosu-pp is willing to give
+    min_pp = calc(accuracy=33.35)
+
     if args.pp <= min_pp["pp"]:
-        raise ValueError("The given pp value is too low (oppai gives **{:.02f}pp** at **0% acc**).".format(
-            min_pp["pp"]))
+        raise ValueError(f"The given pp value is too low (calculator gives **{min_pp['pp']:.02f}pp** as the "
+                         "lowest possible).")
 
     # Calculate the max pp value by using 100% acc
     previous_pp = calc(accuracy=100.0)
 
     if args.pp >= previous_pp["pp"]:
-        raise ValueError("PP value should be below **{:.02f}pp** for this map.".format(previous_pp["pp"]))
+        raise ValueError(f"PP value should be below **{previous_pp['pp']:.02f}pp** for this map.")
 
     dec = .05
     acc = 100.0 - dec
