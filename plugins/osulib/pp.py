@@ -150,7 +150,7 @@ async def find_closest_pp(beatmap_path, mods_bitmask, args):
         return pp_info
 
     # Find the smallest possible value rosu-pp is willing to give
-    min_pp = calc(accuracy=33.35)
+    min_pp = calc(accuracy=0.0)
 
     if args.pp <= min_pp["pp"]:
         raise ValueError(f"The given pp value is too low (calculator gives **{min_pp['pp']:.02f}pp** as the "
