@@ -48,7 +48,7 @@ class RegexArgumentParser:
                     _namespace[name] = arg.type(match.group("value"))
                     break
             else:
-                raise ValueError("{} is an invalid argument.".format(user_arg))
+                raise ValueError(f"{user_arg} is an invalid argument.")
 
         # Return the complete Namespace namedtuple
         return Namespace(**_namespace)

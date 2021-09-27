@@ -72,7 +72,7 @@ update_interval = osu_config.data.get("update_interval", 30)
 not_playing_skip = osu_config.data.get("not_playing_skip", 10)
 time_elapsed = 0  # The registered time it takes to process all information between updates (changes each update)
 previous_update = None  # The time osu user data was last updated. None until first update has run
-logging_interval = 30  # The time it takes before posting logging information to the console. TODO: setup logging
+logging_interval = 30  # The time it takes before posting logging information to the console.
 no_choke_cache = {}
 rank_regex = re.compile(r"#\d+")
 
