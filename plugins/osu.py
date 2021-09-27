@@ -169,26 +169,26 @@ def format_mode_name(mode: api.GameMode, short_name: bool = False, abbreviation:
     """ Return formatted mode name for user facing modes. """
     name = ""
     if mode is api.GameMode.osu:
-        if not short_name or abbreviation:
+        if not short_name:
             name = "osu!"
         elif short_name:
             name = "S"
     elif mode is api.GameMode.mania:
-        if not short_name or not abbreviation:
+        if not short_name and not abbreviation:
             name = "osu!mania"
         elif short_name:
             name = "M"
         elif abbreviation:
             name = "o!m"
     elif mode is api.GameMode.taiko:
-        if not short_name or not abbreviation:
+        if not short_name and not abbreviation:
             name = "osu!taiko"
         elif short_name:
             name = "T"
         elif abbreviation:
             name = "o!t"
     elif mode is api.GameMode.fruits:
-        if not short_name or abbreviation:
+        if not short_name and not abbreviation:
             name = "osu!catch"
         elif short_name:
             name = "C"
