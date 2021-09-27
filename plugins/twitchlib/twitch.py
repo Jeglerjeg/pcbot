@@ -62,12 +62,19 @@ async def get_id(member: discord.Member, name: str = None):
 
     # Try getting the name from the activity url if name is not specified
     if not name:
-        # Raise NameResolveError if the name is unknown
-        if not member.activity or not member.activity.url:
+        url_found = False
+        streaming_activity = None
+        for activity in member.activities:
+            # Raise NameResolveError if the name is unknown
+            if activity and activity.type == discord.ActivityType.streaming and activity.url:
+                url_found = True
+                streaming_activity = activity
+
+        if not url_found:
             raise UserNotResolved("Could not resolve twitch name of {}: they are not streaming.".format(member))
 
         # Attempt finding the twitch name using the Member.activity object url
-        match = url_pattern.match(member.activity.url)
+        match = url_pattern.match(streaming_activity.url)
         if match is None:
             raise UserNotResolved("Could not resolve twitch name of {}: their url is broken.".format(member))
         name = match.group("name")

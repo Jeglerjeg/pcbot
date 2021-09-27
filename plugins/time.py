@@ -5,9 +5,6 @@
         countdown
 """
 
-# TODO: Support for pendulum 1.1.0 and above
-# Please use pendulum==1.0.2 for now as timezones are broken in higher versions
-
 import asyncio
 from operator import itemgetter
 
@@ -49,7 +46,7 @@ async def init_dt(message: discord.Message, time: str, timezone: str):
     timezone = reverse_gmt(timezone)
 
     try:
-        dt = pendulum.parse(time, tz=timezone)
+        dt = pendulum.parse(time, tz=timezone, strict=False)
     except ValueError:
         await client.say(message, "Time format not recognized.")
         return None, None
@@ -57,16 +54,16 @@ async def init_dt(message: discord.Message, time: str, timezone: str):
     return dt, timezone
 
 
-def format_when(dt: pendulum.Pendulum, timezone: str = "UTC"):
+def format_when(dt: pendulum.datetime, timezone: str = "UTC"):
     """ Format when something will happen"""
-    now = pendulum.utcnow()
+    now = pendulum.now("UTC")
 
-    diff = dt - now
+    diff = dt.diff(now)
     major_diff = dt.diff_for_humans(absolute=True)
     detailed_diff = diff.in_words().replace("-", "")
 
     return "`{time} {tz}` {pronoun} **{major}{diff}{pronoun2}**.".format(
-        time=dt.format(dt_format),
+        time=dt.strftime(dt_format),
         tz=timezone,
         pronoun="is in" if dt > now else "was",
         major="~" + major_diff + "** / **" if major_diff not in detailed_diff else "",
@@ -89,10 +86,10 @@ async def when(message: discord.Message, *time, timezone: tz_arg = "UTC"):
         await client.say(message, format_when(dt, timezone_name))
     else:
         timezone = reverse_gmt(timezone)
-        dt = pendulum.now(tz=timezone)
+        dt = pendulum.now(timezone)
 
         await client.say(message, "`{} {}` is **UTC{}{}**.".format(
-            dt.format(dt_format), timezone_name,
+            dt.strftime(dt_format), timezone_name,
             "-" if dt.offset_hours < 0 else ("+" if dt.offset_hours > 0 else ""),
             abs(dt.offset_hours) if dt.offset_hours else "",
         ))
@@ -124,7 +121,7 @@ async def created(message: discord.Message, member: discord.Member = Annotate.Se
     channel = message.channel
     embed = discord.Embed(description=f'**Created {member_created.diff_for_humans()}**', timestamp=member.created_at,
                           color=member.color)
-    embed.set_author(name=member.display_name, icon_url=member.avatar_url)
+    embed.set_author(name=member.display_name, icon_url=member.display_avatar.url)
     await client.send_message(channel, embed=embed)
 
 
@@ -135,7 +132,7 @@ async def joined(message: discord.Message, member: discord.Member = Annotate.Sel
     channel = message.channel
     embed = discord.Embed(description=f'**Joined {member_joined.diff_for_humans()}**', timestamp=member.joined_at,
                           color=member.color)
-    embed.set_author(name=member.display_name, icon_url=member.avatar_url)
+    embed.set_author(name=member.display_name, icon_url=member.display_avatar.url)
     await client.send_message(channel, embed=embed)
 
 
@@ -146,9 +143,11 @@ async def create(message: discord.Message, tag: tag_arg, *time, timezone: tz_arg
 
     timezone_name = timezone
     dt, timezone = await init_dt(message, " ".join(time), timezone)
+    if dt is None or timezone is None:
+        return
 
-    seconds = int((dt - pendulum.now(tz=timezone)).total_seconds())
-    assert seconds > 0, "A countdown has to be set in the future."
+    seconds = (dt.diff(pendulum.now(timezone)).in_seconds())
+    assert dt > pendulum.now(timezone), "A countdown has to be set in the future."
 
     cd = dict(time=dt.to_datetime_string(), tz=timezone, tz_name=timezone_name, tag=tag,
               author=str(message.author.id), channel=str(message.channel.id))
@@ -193,8 +192,8 @@ async def wait_for_reminder(cd, seconds):
     """ Wait for and send the reminder. This is a separate function so that . """
     try:
         await asyncio.sleep(seconds)
-    except asyncio.futures.CancelledError:
-        pass
+    except asyncio.CancelledError:
+        return
 
     channel = client.get_channel(int(cd["channel"]))
     author = channel.guild.get_member(int(cd["author"]))
@@ -225,7 +224,7 @@ async def handle_countdown_reminders():
     # Go through the reminders starting at the newest one
     for cd in sorted(reminders, key=itemgetter("dt")):
         # Find in how many seconds the countdown will finish
-        seconds = int((cd["dt"] - pendulum.now(tz=cd["tz"])).total_seconds())
+        seconds = (cd["dt"].diff(pendulum.now(cd["tz"])).in_seconds())
 
         # If the next reminder is in longer than a month, don't bother waiting,
         if seconds > 60 * 60 * 24 * 30:
@@ -237,8 +236,7 @@ async def handle_countdown_reminders():
             del time_cfg.data["countdown"][cd["tag"]]
             await time_cfg.asyncsave()
             continue
-        elif seconds < 0:
-            seconds = 0
+        seconds = max(seconds, 0)
 
         await wait_for_reminder(cd, seconds)
 

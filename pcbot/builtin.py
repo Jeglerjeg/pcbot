@@ -41,7 +41,9 @@ async def help_(message: discord.Message, command: str.lower = None, *args):
 
         # Get the specific command with arguments and send the help
         cmd = plugins.get_sub_command(cmd, *args)
-        await client.say(message, plugins.format_help(cmd, message.guild))
+        embed = discord.Embed(color=message.author.color)
+        embed.description = plugins.format_help(cmd, message.guild, message)
+        await client.send_message(message.channel, embed=embed)
 
     # Display every command
     else:
@@ -61,26 +63,9 @@ async def help_(message: discord.Message, command: str.lower = None, *args):
 
         m = "**Commands**: ```{0}```Use `{1}help <command>`, `{1}<command> {2}` or " \
             "`{1}<command> {3}` for command specific help.".format(commands, command_prefix, *config.help_arg)
-        await client.say(message, m)
-
-
-@plugins.command()
-async def rate(message: discord.Message, to_rate: str = None):
-    """ Rate the member or word from 1 to 10 """
-    if not to_rate:
-        member = message.author
-    else:
-        member = utils.find_member(guild=message.guild, name=to_rate)
-    if member:
-        random.seed(str(member.id))
-        num = random.randint(0, 10)
-        random.seed()
-        await client.say(message, "I rate **{0}** a **{1}/10**".format(member.display_name, num))
-    else:
-        random.seed(to_rate)
-        num = random.randint(0, 10)
-        random.seed()
-        await client.say(message, "I rate **{0}** a **{1}/10**".format(to_rate, num))
+        embed = discord.Embed(color=message.author.color)
+        embed.description = m
+        await client.send_message(message.channel, embed=embed)
 
 
 @plugins.command(hidden=True)
@@ -100,7 +85,7 @@ async def setowner(message: discord.Message):
         return m.content == owner_code and m.channel == message.channel
 
     try:
-        user_code = await client.wait_for("message", timeout=60, check=check)
+        user_code = await client.wait_for_message(timeout=60, check=check)
     except asyncio.TimeoutError:
         await client.say(message, "You failed to send the desired code.")
         return

@@ -4,7 +4,7 @@
 
 WIP discord bot using [discord.py](https://github.com/Rapptz/discord.py).
 
-**PCBOT is only supported by python version 3.6.0 and newer.**
+**PCBOT is only supported by python version 3.8.0 and newer.**
 
 ## BotéMon
 **For those who have arrived from BotéMon and wish to contribute/have 
@@ -17,17 +17,23 @@ Currently, BotéMon is the only version of PCBOT I host for public use.
 
 ## Installing
 Before installing the bot, you must make sure you're running python 
-3.6.0+
+3.8.0+
 
 ```
 $ python -V
-Python 3.6.0
+Python 3.8.0
 ```
 
-The next step is installing [discord.py](https://github.com/Rapptz/discord.py) with voice support:
+The next step is installing [discord.py](https://github.com/Rapptz/discord.py):
 
 ```
-python -m pip install "discord.py[voice]"
+pip install -U git+https://github.com/Rapptz/discord.py  
+```
+
+To get voice support, you can optionally install PyNaCl:
+
+```
+pip install -U PyNaCl
 ```
 
 To install the bot, one can clone the repo:
@@ -51,10 +57,9 @@ errors when modules are missing, although modules as of now are:
 | Module    | Notes                                                     |
 | --------- | --------------------------------------------------------- |
 | Pillow    | `pip install Pillow`                                      |
-| pendulum  | `pip install pendulum==1.0.2`, might also need `pytz`     |
+| pendulum  | `pip install pendulum`, might also need `pytz`     |
 | cairosvg  | `pip install cairosvg`, only supported for Linux          |
 | aiofiles  | `pip install aiofiles`, support async file operations in [`config.py`](pcbot/config.py)          |
-| oppai-ng  | `pip install oppai`, used for pp calculation in [`pp.py`](plugins/osulib/pp.py) |
 | ffmpeg    | Not a python module; see doc in [`music.py`](plugins/music.py)      |
 | imageio   | `pip install imageio`, support gif in [`image.py`](plugins/image.py)|
 

@@ -173,10 +173,11 @@ async def image(message: discord.Message, url_or_emoji: str):
         match = mention_regex.match(url_or_emoji)
         if match:
             member = message.guild.get_member(int(match.group("id")))
-            avatar_headers = await utils.retrieve_headers(str(member.avatar_url_as(static_format="png")))
+            avatar_headers = await utils.retrieve_headers(str(member.display_avatar.replace(static_format="png").url))
             assert not avatar_headers["CONTENT-TYPE"].endswith("gif"), "**GIF avatars are currently unsupported.**"
 
-            image_bytes = await utils.download_file(str(member.avatar_url_as(static_format="png")), bytesio=True)
+            image_bytes = await utils.download_file(str(member.display_avatar.replace(static_format="png").url),
+                                                    bytesio=True)
             image_object = Image.open(image_bytes)
             return ImageArg(image_object, format="PNG")
 
@@ -301,13 +302,6 @@ async def rotate(message: discord.Message, image_arg: image, degrees: int, *opti
     # Rotate and upload the image
     image_arg.modify(Image.Image.rotate, -degrees, Image.NEAREST if "-nearest" in options else Image.BICUBIC,
                      expand=True, convert="RGBA")
-    await send_image(message, image_arg)
-
-
-@plugins.command(name="convertimage")
-async def convert(message: discord.Message, image_arg: image, extension: str.lower):
-    """ Convert an image to a specified extension. """
-    image_arg.set_extension(extension)
     await send_image(message, image_arg)
 
 

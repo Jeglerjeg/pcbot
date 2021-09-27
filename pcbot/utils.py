@@ -123,7 +123,7 @@ def permission(*perms: str):
     def decorator(func):
         @wraps(func)
         async def wrapped(message: discord.Message, *args, **kwargs):
-            member_perms = message.author.permissions_in(message.channel)
+            member_perms = message.channel.permissions_for(message.author)
 
             if all(getattr(member_perms, perm, False) for perm in perms):
                 await func(message, *args, **kwargs)
@@ -193,7 +193,32 @@ async def retrieve_page(url: str, head=False, call=None, headers=None, **params)
     async with aiohttp.ClientSession(loop=client.loop) as session:
         coro = session.head if head else session.get
 
-        async with coro(url, params=params, headers=headers or {}) as response:
+        async with coro(url=url, params=params, headers=headers or {}) as response:
+            if call is not None:
+                if type(call) is str:
+                    attr = getattr(response, call)
+                    return await attr()
+                else:
+                    return await call(response)
+            else:
+                return response
+
+
+async def post_request(url: str, call=None, headers=None, data=None, **params):
+    """ Send a POST request with aiohttp.
+
+    :param url: POST destination URL.
+    :param call: Any attribute coroutine to call before returning. Eg: "text" would return await response.text().
+                 This may also be a coroutine with the response as parameter.
+    :param headers: A dict of any additional headers.
+    :param params: Any additional url parameters.
+    :param data: Data to be sent in the request body
+    :return: The byte-like file OR whatever return value of the attribute set in call.
+    """
+    async with aiohttp.ClientSession(loop=client.loop) as session:
+        coro = session.post
+
+        async with coro(url, data=data, params=params, headers=headers) as response:
             if call is not None:
                 if type(call) is str:
                     attr = getattr(response, call)
@@ -240,7 +265,7 @@ async def download_file(url: str, bytesio=False, headers=None, **params):
     return BytesIO(file_bytes) if bytesio else file_bytes
 
 
-async def _convert_json(response):
+async def convert_to_json(response):
     """ Converts the aiohttp ClientResponse object to JSON.
 
     :param response: The ClientResponse object.
@@ -262,7 +287,7 @@ async def download_json(url: str, headers=None, **params):
     :raises: ValueError if the returned data was not of type application/json
     :return: A JSON representation of the downloaded file.
     """
-    return await retrieve_page(url, call=_convert_json, headers=headers, **params)
+    return await retrieve_page(url, call=convert_to_json, headers=headers, **params)
 
 
 def convert_image_object(image, format: str = "PNG", **params):
@@ -488,7 +513,7 @@ async def convert_to_embed(text: str, *, author: discord.Member = None, **kwargs
 
     # Set the author if given
     if author:
-        embed.set_author(name=author.display_name, icon_url=author.avatar_url, url=url)
+        embed.set_author(name=author.display_name, icon_url=author.display_avatar.url, url=url)
 
     return embed
 

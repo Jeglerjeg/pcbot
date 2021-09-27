@@ -15,7 +15,6 @@ Commands:
 """
 
 import asyncio
-import logging
 from collections import defaultdict
 
 import discord
@@ -47,7 +46,6 @@ def setup_default_config(guild: discord.Guild):
 @plugins.command(name="moderate", permissions="manage_messages")
 async def moderate_(message, _: utils.placeholder):
     """ Change moderation settings. """
-    pass
 
 
 def add_setting(setting: str, default=True, name=None, permissions=None):
@@ -89,13 +87,14 @@ add_setting("NSFW filter", permissions=["manage_guild"])
 add_setting("Changelog", permissions=["manage_guild"], default=False)
 
 
-async def manage_mute(message: discord.Message, *members: discord.Member, mute=None):
+async def manage_mute(message: discord.Message, *members: discord.Member, member_mute=None):
     """ Add or remove Muted role for given members.
 
-    :param mute: either member.add_roles or member.remove_roles
+    :param message: the message object to check bot perms with
+    :param member_mute: either member.add_roles or member.remove_roles
     :return: list of muted/unmuted members or None """
     # Manage Roles is required to add or remove the Muted role
-    assert message.guild.me.permissions_in(message.channel).manage_roles, \
+    assert message.channel.permissions_for(message.guild.me).manage_roles, \
         "I need `Manage Roles` permission to use this command."
 
     muted_role = discord.utils.get(message.guild.roles, name="Muted")
@@ -113,9 +112,9 @@ async def manage_mute(message: discord.Message, *members: discord.Member, mute=N
 
         while True:
             try:
-                if mute:
+                if member_mute:
                     await member.add_roles(muted_role)
-                if not mute:
+                if not member_mute:
                     await member.remove_roles(muted_role)
             except discord.errors.Forbidden:
                 await client.say(message, "I do not have permission to give members the `Muted` role.")
@@ -132,7 +131,7 @@ async def manage_mute(message: discord.Message, *members: discord.Member, mute=N
 @plugins.command(pos_check=True, permissions="manage_messages")
 async def mute(message: discord.Message, *members: discord.Member):
     """ Mute the specified members. """
-    muted_members = await manage_mute(message, *members, mute=True)
+    muted_members = await manage_mute(message, *members, member_mute=True)
 
     # Some members were muted, success!
     if muted_members:
@@ -142,7 +141,7 @@ async def mute(message: discord.Message, *members: discord.Member):
 @plugins.command(pos_check=True, permissions="manage_messages")
 async def unmute(message: discord.Message, *members: discord.Member):
     """ Unmute the specified members. """
-    muted_members = await manage_mute(message, *members, mute=False)
+    muted_members = await manage_mute(message, *members, member_mute=False)
 
     # Some members were unmuted, success!
     if muted_members:
@@ -155,7 +154,7 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
     the reason for being timed out and post the reason in the guild's
     changelog if it has one. """
     client.loop.create_task(client.delete_message(message))
-    muted_members = await manage_mute(message, member, mute=True)
+    muted_members = await manage_mute(message, member, member_mute=True)
 
     # Do not progress if the members were not successfully muted
     # At this point, manage_mute will have reported any errors
@@ -175,14 +174,14 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
 
     # Sleep for the given hours and unmute the member
     await asyncio.sleep(minutes * 60)  # Since asyncio.sleep takes seconds, multiply by 60^2
-    await manage_mute(message, *muted_members, mute=False)
+    await manage_mute(message, *muted_members, member_mute=False)
 
 
 @plugins.command(aliases="muteall mute* unmuteall unmute*", permissions="manage_messages")
 async def suspend(message: discord.Message, channel: discord.TextChannel = Annotate.Self):
     """ Suspends a channel by removing send permission for the guild's default role.
     This function acts like a toggle. """
-    assert message.guild.me.permissions_in(message.channel).manage_roles, \
+    assert message.channel.permissions_for(message.guild.me).manage_roles, \
         "I need `Manage Roles` permission to use this command."
     send = channel.overwrites_for(message.guild.default_role).send_messages
     overwrite = discord.PermissionOverwrite(send_messages=False if send is None else not send)
@@ -209,7 +208,7 @@ def members_and_channels(message: discord.Message, arg: str):
     return utils.find_member(message.guild, arg)
 
 
-@plugins.command(permissions="manage_messages")
+@plugins.command(permissions="manage_messages", aliases="prune delete")
 async def purge(message: discord.Message, *instances: members_and_channels, num: utils.int_range(1, 100)):
     """ Purge the given amount of messages from the specified members or all.
     You may also specify a channel to delete from.
@@ -219,15 +218,15 @@ async def purge(message: discord.Message, *instances: members_and_channels, num:
 
     channel = message.channel
     for instance in instances:
-        if type(instance) is discord.TextChannel:
+        if isinstance(instance, discord.TextChannel):
             channel = instance
             instances.remove(instance)
             break
 
-    assert not any(i for i in instances if type(i) is discord.TextChannel), "**I can only purge in one channel.**"
+    assert not any(i for i in instances if isinstance(i, discord.TextChannel)), "**I can only purge in one channel.**"
     to_delete = []
 
-    async for m in channel.history(limit=100, before=message):
+    async for m in channel.history(before=message):
         if len(to_delete) >= num:
             break
 
@@ -260,7 +259,7 @@ async def check_nsfw(message: discord.Message):
     # Check if message includes keyword nsfw and a link
     msg = message.content.lower()
     if "nsfw" in msg and ("http://" in msg or "https://" in msg):
-        if message.guild.me.permissions_in(message.channel).manage_messages:
+        if message.channel.permissions_for(message.guild.me).manage_messages:
             await client.delete_message(message)
 
         nsfw_channel = discord.utils.find(lambda c: "nsfw" in c.name, message.guild.channels)
@@ -290,55 +289,66 @@ def get_changelog_channel(guild: discord.Guild):
     """ Return the changelog channel for a guild. """
     setup_default_config(guild)
     if not moderate.data[str(guild.id)]["changelog"]:
-        return
+        return None
 
     channel = discord.utils.get(guild.channels, name="changelog")
-    if not channel:
-        return
+    if channel is None:
+        return None
 
     permissions = channel.permissions_for(guild.me)
     if not permissions.send_messages or not permissions.read_messages:
-        return
+        return None
 
     return channel
 
 
 async def log_change(channel: discord.TextChannel, message: str):
+    """ Log change to changelog channel. """
     embed = discord.Embed(description=message)
     await client.send_message(channel, embed=embed)
 
 
 @plugins.event()
-async def on_message_delete(message: discord.Message):
+async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
     """ Update the changelog with deleted messages. """
-    changelog_channel = get_changelog_channel(message.guild)
+    changelog_channel = get_changelog_channel(client.get_guild(raw_message.guild_id))
+    if raw_message.cached_message:
+        message = raw_message.cached_message
+        # Don't log any message the bot deleted
+        for m in client.last_deleted_messages:
+            if m.id == message.id:
+                return
 
-    # Don't log any message the bot deleted
-    for m in client.last_deleted_messages:
-        if m.id == message.id:
+        if changelog_channel is None:
             return
 
-    if not changelog_channel:
-        return
+        if message.channel == changelog_channel:
+            return
 
-    if message.channel == changelog_channel:
-        return
+        if message.author == client.user:
+            return
 
-    if message.author == client.user:
-        return
-    if not message.attachments == []:
-        attachments = ""
-        for i in range(len(message.attachments)):
-            attachments += message.attachments[i].filename + "\n"
-        await log_change(
-            changelog_channel,
-            "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}\nAttachments:\n``{"
-            "1}``".format(message, attachments)
-        )
+        if message.attachments:
+            attachments = ""
+            for attachment in message.attachments:
+                attachments += attachment.filename + "\n"
+            await log_change(
+                changelog_channel,
+                "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}\nAttachments:\n"
+                "``{1}``".format(message, attachments)
+            )
+        else:
+            await log_change(
+                changelog_channel,
+                "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}".format(message)
+            )
     else:
+        if changelog_channel is None:
+            return
+
         await log_change(
             changelog_channel,
-            "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}".format(message)
+            "An uncached message was deleted in {0.mention}".format(client.get_channel(raw_message.channel_id))
         )
 
 

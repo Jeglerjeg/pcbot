@@ -120,15 +120,14 @@ class Client(discord.Client):
         self.last_deleted_messages = list(messages)
         await channel.delete_messages(messages=messages)
 
-    async def wait_for_message(self, timeout=None, *, author=None, channel=None, content=None, check=None, bot=False):
+    async def wait_for_message(self, timeout=None, *, check=None, bot=False):
         """ Override the check with the bot keyword: if bot=False, the function
         won't accept messages from bot accounts, where if bot=True it doesn't care. """
 
         def new_check(m):
             return (
-                       m.author == author and m.channel == channel and m.content == content
-                       if check is not None else True) \
-                   and (True if bot else not m.author.bot)
+                       check(m) and (True if bot else not m.author.bot)
+            )
 
         return await super().wait_for("message", check=new_check, timeout=timeout)
 
@@ -207,7 +206,7 @@ async def execute_command(command: plugins.Command, message: discord.Message, *a
     try:
         await command.function(message, *args, **kwargs)
     except AssertionError as e:
-        await client.say(message, str(e) or command.error or plugins.format_help(command, message.guild))
+        await client.say(message, str(e) or command.error or plugins.format_help(command, message.guild, message))
     except:
         logging.error(traceback.format_exc())
         if plugins.is_owner(message.author) and config.owner_error:
@@ -444,8 +443,10 @@ async def parse_command(command: plugins.Command, cmd_args: list, message: disco
             else:
                 if len(cmd_args) == 1:
                     send_help = True
-                await client.say(message, plugins.format_help(command, message.guild,
-                                                              no_subcommand=not send_help))
+                embed = discord.Embed(color=message.author.color)
+                embed.description = plugins.format_help(command, message.guild, message,
+                                                        no_subcommand=not send_help)
+                await client.send_message(message.channel, embed=embed)
 
         command = None
 
@@ -473,7 +474,7 @@ async def on_message(message: discord.Message):
     message = copy(message)
 
     # We don't care about channels we can't write in as the bot usually sends feedback
-    if message.guild and message.guild.owner and not message.guild.me.permissions_in(message.channel).send_messages:
+    if message.guild and message.guild.owner and not message.channel.permissions_for(message.guild.me).send_messages:
         return
 
     # Don't accept commands from bot accounts
@@ -507,13 +508,14 @@ async def on_message(message: discord.Message):
 
         # Check that the author is allowed to use the command
         if not plugins.can_use_command(command, message.author, message.channel):
+            await client.send_message(message.channel, "You don't have permission to use this command.")
             return
 
         # Parse the command with the user's arguments
         parsed_command, args, kwargs = await parse_command(command, cmd_args, message)
     except AssertionError as e:  # Return any feedback given from the command via AssertionError, or the command help
         await client.send_message(message.channel,
-                                  str(e) or plugins.format_help(command, message.guild, no_subcommand=True))
+                                  str(e) or plugins.format_help(command, message.guild, message, no_subcommand=True))
         log_message(message)
         return
 
