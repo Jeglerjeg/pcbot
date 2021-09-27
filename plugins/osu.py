@@ -165,17 +165,35 @@ def get_leaderboard_update_status(member_id: str):
     return not bool(osu_config.data["opt_in_leaderboard"])
 
 
-def format_mode_name(mode: api.GameMode, short_name: bool = False):
+def format_mode_name(mode: api.GameMode, short_name: bool = False, abbreviation: bool = False):
     """ Return formatted mode name for user facing modes. """
     name = ""
     if mode is api.GameMode.osu:
-        name = "osu!" if not short_name else "S"
+        if not short_name or abbreviation:
+            name = "osu!"
+        elif short_name:
+            name = "S"
     elif mode is api.GameMode.mania:
-        name = "osu!mania" if not short_name else "M"
+        if not short_name or not abbreviation:
+            name = "osu!mania"
+        elif short_name:
+            name = "M"
+        elif abbreviation:
+            name = "o!m"
     elif mode is api.GameMode.taiko:
-        name = "osu!taiko" if not short_name else "T"
+        if not short_name or not abbreviation:
+            name = "osu!taiko"
+        elif short_name:
+            name = "T"
+        elif abbreviation:
+            name = "o!t"
     elif mode is api.GameMode.fruits:
-        name = "osu!catch" if not short_name else "C"
+        if not short_name or abbreviation:
+            name = "osu!catch"
+        elif short_name:
+            name = "C"
+        elif abbreviation:
+            name = "o!c"
     return name
 
 
@@ -192,7 +210,7 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
 
     # Find the performance page number of the respective ranks
 
-    formatted = [f"\u2139`{mode.name.replace('Standard', 'osu!')} {float(data_new['statistics']['pp']):.2f}pp "
+    formatted = [f"\u2139`{format_mode_name(mode, abbreviation=True)} {float(data_new['statistics']['pp']):.2f}pp "
                  f"{pp:+.2f}pp`",
                  f" [\U0001f30d]({rankings_url}?page="
                  f"{pp_rank // 50 + 1})`#{pp_rank:,}{'' if int(rank) == 0 else f' {int(rank):+}'}`",
