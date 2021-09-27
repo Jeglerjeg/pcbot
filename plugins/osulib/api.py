@@ -196,7 +196,7 @@ def cache_beatmapset(beatmap: dict, map_id: int):
 
     beatmapset = beatmap.copy()
     beatmap["time_cached"] = datetime.utcnow().isoformat()
-    with open(beatmapset_path, "w") as file:
+    with open(beatmapset_path, "w", encoding="utf-8") as file:
         json.dump(beatmap, file)
     del beatmapset["beatmaps"]
     del beatmapset["converts"]
@@ -204,14 +204,14 @@ def cache_beatmapset(beatmap: dict, map_id: int):
         beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
         diff["time_cached"] = datetime.utcnow().isoformat()
         diff["beatmapset"] = beatmapset
-        with open(beatmap_path, "w") as f:
+        with open(beatmap_path, "w", encoding="utf-8") as f:
             json.dump(diff, f)
     if beatmap["converts"]:
         for convert in beatmap["converts"]:
             convert_path = os.path.join(mapcache_path, str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
             convert["time_cached"] = datetime.utcnow().isoformat()
             convert["beatmapset"] = beatmapset
-            with open(convert_path, "w") as fp:
+            with open(convert_path, "w", encoding="utf-8") as fp:
                 json.dump(convert, fp)
 
 
@@ -285,9 +285,9 @@ async def beatmapset_lookup(params):
 async def get_user(user, mode=None, params=None):
     """ Return a user from the API"""
     if mode:
-        request = def_section("users/{}/{}".format(user, mode))
+        request = def_section(f"users/{user}/{mode}")
     else:
-        request = def_section("users/{}".format(user))
+        request = def_section(f"users/{user}")
     if params:
         return await request(**params)
 
@@ -296,7 +296,7 @@ async def get_user(user, mode=None, params=None):
 
 async def get_user_scores(user_id, score_type, params=None):
     """ Returns a user's best, recent or #1 scores. """
-    request = def_section("users/{}/scores/{}".format(user_id, score_type))
+    request = def_section(f"users/{user_id}/scores/{score_type}")
     if params:
         return await request(**params)
 
@@ -305,7 +305,7 @@ async def get_user_scores(user_id, score_type, params=None):
 
 async def get_user_beatmap_score(beatmap_id, user_id, params=None):
     """ Returns a user's score on a beatmap. """
-    request = def_section("beatmaps/{}/scores/users/{}".format(beatmap_id, user_id))
+    request = def_section(f"beatmaps/{beatmap_id}/scores/users/{user_id}")
     if params:
         result = await request(**params)
     else:
@@ -320,7 +320,7 @@ async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     result = retrieve_cache(beatmapset_id, "set")
     valid_result = validate_cache(result)
     if not valid_result or force_redownload:
-        request = def_section("beatmapsets/{}".format(beatmapset_id))
+        request = def_section(f"beatmapsets/{beatmapset_id}")
         result = await request()
         cache_beatmapset(result, result["id"])
     else:
@@ -332,7 +332,7 @@ async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
 
 async def get_user_recent_activity(user, params=None):
     """ Return a user's recent activity. """
-    request = def_section("users/{}/recent_activity".format(user))
+    request = def_section(f"users/{user}/recent_activity")
     if params:
         return await request(**params)
     return await request()
@@ -401,7 +401,7 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
         if return_type == "id":
             return beatmap_info.beatmap_id
             # Only download the beatmap of the id, so that only this beatmap will be returned
-        elif return_type == "info":
+        if return_type == "info":
             return beatmap_info
         params = {
             "beatmap_id": beatmap_info.beatmap_id,
@@ -429,8 +429,8 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
 
     if return_type == "id":
         return beatmap["id"]
-    elif return_type == "info":
-        beatmap_url = "https://osu.ppy.sh/beatmaps/{}".format(beatmap["id"])
+    if return_type == "info":
+        beatmap_url = f"https://osu.ppy.sh/beatmaps/{beatmap['id']}"
         return parse_beatmap_url(beatmap_url)
     return beatmap
 
@@ -477,7 +477,7 @@ def lookup_beatmap(beatmaps: list, **lookup):
         match = True
         for key, value in lookup.items():
             if key.lower() not in beatmap:
-                raise KeyError("The list of beatmaps does not have key: {}".format(key))
+                raise KeyError(f"The list of beatmaps does not have key: {key}")
 
             if not beatmap[key].lower() == value.lower():
                 match = False
