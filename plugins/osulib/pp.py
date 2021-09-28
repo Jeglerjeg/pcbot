@@ -35,7 +35,6 @@ async def download_beatmap(beatmap_url_or_id, beatmap_path: str, ignore_cache: b
     :param ignore_cache: whether or not to ignore the in-memory cache
     """
 
-    beatmap_id = None
     # Parse the url and find the link to the .osu file
     try:
         if isinstance(beatmap_url_or_id, str):
