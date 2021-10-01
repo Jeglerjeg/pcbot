@@ -232,7 +232,7 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
     else:
         formatted.append("`")
 
-    formatted.append(f' \U0001f522`{data_new["statistics"]["ranked_score"]:,} {int(ranked_score):,}`')
+    formatted.append(f' \U0001f522`{data_new["statistics"]["ranked_score"]:,} {int(ranked_score):+,}`')
 
     return "".join(formatted)
 
