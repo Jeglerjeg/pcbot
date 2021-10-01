@@ -930,25 +930,24 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
     objects = None
     beatmap_objects = None
 
-    if osu_score["mode"] == "osu":
-        objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] +
-                   osu_score["statistics"]["count_50"] + osu_score["statistics"]["count_miss"])
-        beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
-                           osu_score["beatmap"]["count_spinners"])
-    elif osu_score["mode"] == "taiko":
-        objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] +
-                   osu_score["statistics"]["count_miss"])
-        beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
-                           osu_score["beatmap"]["count_spinners"])
-    elif osu_score["mode"] == "mania":
-        objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_geki"] +
-                   osu_score["statistics"]["count_katu"] + osu_score["statistics"]["count_100"] +
-                   osu_score["statistics"]["count_miss"])
-        beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
-                           osu_score["beatmap"]["count_spinners"])
-
     # Add completion rate to footer if score is failed
     if osu_score and pp_stats and osu_score["passed"] is False and objects:
+        if osu_score["mode"] == "osu":
+            objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] +
+                       osu_score["statistics"]["count_50"] + osu_score["statistics"]["count_miss"])
+            beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
+                               osu_score["beatmap"]["count_spinners"])
+        elif osu_score["mode"] == "taiko":
+            objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] +
+                       osu_score["statistics"]["count_miss"])
+            beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
+                               osu_score["beatmap"]["count_spinners"])
+        elif osu_score["mode"] == "mania":
+            objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_geki"] +
+                       osu_score["statistics"]["count_katu"] + osu_score["statistics"]["count_100"] +
+                       osu_score["statistics"]["count_miss"])
+            beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
+                               osu_score["beatmap"]["count_spinners"])
         footer.append(f"\nCompletion rate: {(objects / beatmap_objects) * 100:.2f}% "
                       f"({round(pp_stats.partial_stars, 2)}\u2605)")
 
@@ -963,7 +962,7 @@ async def notify_pp(member_id: str, data: dict):
         return
 
     # Get the difference in pp since the old data
-    old, new = data["old"], data["new"]
+    old, new = osu_tracking["693039932591046736"]["new"], data["new"]
     pp_diff = get_diff(old, new, "pp", statistics=True)
 
     # If the difference is too small or nothing, move on
@@ -1044,7 +1043,7 @@ async def notify_pp(member_id: str, data: dict):
 
         primary_guild = get_primary_guild(str(member.id))
         is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
-        if not osu_scores or len(osu_scores) == 1:
+        if len(osu_scores) <= 1:
             embed = get_formatted_score_embed(member, osu_score, "".join(m), potential_pp if potential_pp is not None
                                               and not bool(osu_score["perfect"] and osu_score["passed"]) else None,
                                               bool(potential_pp and potential_pp.max_pp
