@@ -1046,8 +1046,9 @@ async def notify_pp(member_id: str, data: dict):
         if not osu_scores or len(osu_scores) == 1:
             embed = get_formatted_score_embed(member, osu_score, "".join(m), potential_pp if potential_pp is not None
                                               and not bool(osu_score["perfect"] and osu_score["passed"]) else None,
-                                              bool(potential_pp and potential_pp is not None and potential_pp.max_pp -
-                                                   osu_score["pp"] > 1 and mode is api.GameMode.osu))
+                                              bool(potential_pp and potential_pp.max_pp
+                                                   and potential_pp.max_pp - osu_score["pp"] > 1
+                                                   and mode is api.GameMode.osu))
         else:
             embed = discord.Embed(color=member.color)
             embed.description = "".join(m)
