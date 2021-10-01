@@ -927,11 +927,8 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
     if potential_pp:
         footer.append(f"""Potential: {pp_stats.max_pp:,.2f}pp, {pp_stats.max_pp - float(osu_score["pp"]):+.2f}pp""")
 
-    objects = None
-    beatmap_objects = None
-
     # Add completion rate to footer if score is failed
-    if osu_score and pp_stats and osu_score["passed"] is False and objects:
+    if osu_score and pp_stats and osu_score["passed"] is False and osu_score["mode"] != "fruits":
         if osu_score["mode"] == "osu":
             objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] +
                        osu_score["statistics"]["count_50"] + osu_score["statistics"]["count_miss"])
@@ -942,7 +939,7 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
                        osu_score["statistics"]["count_miss"])
             beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
                                osu_score["beatmap"]["count_spinners"])
-        elif osu_score["mode"] == "mania":
+        else:
             objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_geki"] +
                        osu_score["statistics"]["count_katu"] + osu_score["statistics"]["count_100"] +
                        osu_score["statistics"]["count_miss"])
@@ -962,7 +959,7 @@ async def notify_pp(member_id: str, data: dict):
         return
 
     # Get the difference in pp since the old data
-    old, new = osu_tracking["693039932591046736"]["new"], data["new"]
+    old, new = data["old"], data["new"]
     pp_diff = get_diff(old, new, "pp", statistics=True)
 
     # If the difference is too small or nothing, move on
