@@ -986,7 +986,7 @@ async def notify_pp(member_id: str, data: dict):
             logging.info("%s gained PP, but no new score was found.", member_id)
     for osu_score in list(osu_scores):
         if osu_score["best_id"] in previous_score_updates:
-            osu_scores.pop(osu_score)
+            osu_scores.remove(osu_score)
             continue
         previous_score_updates.append(osu_score["best_id"])
     # If a new score was found, format the score(s)
