@@ -207,6 +207,7 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
     country_rank = -int(get_diff(data_old, data_new, "country_rank", statistics=True))
     accuracy = get_diff(data_old, data_new, "hit_accuracy", statistics=True)
     pp = get_diff(data_old, data_new, "pp", statistics=True)
+    ranked_score = get_diff(data_old, data_new, "ranked_score", statistics=True)
 
     # Find the performance page number of the respective ranks
 
@@ -230,6 +231,8 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
         formatted.append(f" {rounded_acc:+}%`")
     else:
         formatted.append("`")
+
+    formatted.append(f' \U0001f522`{data_new["statistics"]["ranked_score"]:,} {int(ranked_score):,}`')
 
     return "".join(formatted)
 
