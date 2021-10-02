@@ -80,7 +80,7 @@ pp_threshold = osu_config.data.get("pp_threshold", 0.13)
 score_request_limit = osu_config.data.get("score_request_limit", 100)
 minimum_pp_required = osu_config.data.get("minimum_pp_required", 0)
 use_mentions_in_scores = osu_config.data.get("use_mentions_in_scores", True)
-max_diff_length = 22  # The maximum amount of characters in a beatmap difficulty
+max_diff_length = 23  # The maximum amount of characters in a beatmap difficulty
 
 asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
                                                       osu_config.data.get("client_secret")), client.loop)
@@ -1115,8 +1115,8 @@ async def format_beatmap_info(diff: dict):
     """ Format some difficulty info on a beatmapset. """
     # Get the longest difficulty name
     diff_length = len(diff["version"])
-    if diff_length > max_diff_length + 1:
-        diff_length = max_diff_length + 1
+    if diff_length > max_diff_length:
+        diff_length = max_diff_length
     elif diff_length < len("difficulty"):
         diff_length = len("difficulty")
 
@@ -1132,7 +1132,7 @@ async def format_beatmap_info(diff: dict):
              "{od: <5}{cs: <5}{ar: <5}{hp: <5}{maxcombo: <11}{mode_name}\n\n"
              "Total PP   Total Stars\n"
              "{pp: <12}{stars}".format(
-              name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 2] + "...",
+              name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
               diff_len=diff_length,
               stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
               pp=f"{int(diff.get('pp', '0'))}pp",
