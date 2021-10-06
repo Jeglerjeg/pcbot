@@ -617,8 +617,9 @@ async def update_user_data(member_id: str, profile: str):
 
     # Add the member to tracking
     if member_id not in osu_tracking:
-        osu_tracking[member_id] = dict(member=member, ticks=-1)
+        osu_tracking[member_id] = dict(ticks=-1)
 
+    osu_tracking[str(member_id)]["member"] = member
     osu_tracking[str(member_id)]["ticks"] += 1
 
     # Only update members not tracked ingame every nth update
@@ -667,8 +668,6 @@ async def update_user_data(member_id: str, profile: str):
     if "new" in osu_tracking[str(member_id)]:
         # Move the "new" data into the "old" data of this user
         osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
-    if not osu_tracking[str(member_id)]["member"] == member:
-        osu_tracking[str(member_id)]["member"] = member
 
     osu_tracking[str(member_id)]["new"] = user_data
     osu_tracking[str(member_id)]["new"]["time_updated"] = current_time
