@@ -226,13 +226,11 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
     else:
         formatted.append("\n\U0001f3af")  # Dart
 
-    formatted.append(f"`{float(data_new['statistics']['hit_accuracy']):.3f}%")
-    if not rounded_acc == 0:
-        formatted.append(f" {rounded_acc:+}%`")
-    else:
-        formatted.append("`")
+    formatted.append(f"`{float(data_new['statistics']['hit_accuracy']):.3f}%"
+                     f"f'{'' if rounded_acc == 0 else f' {rounded_acc:+}%'}'`")
 
-    formatted.append(f' \U0001f522`{data_new["statistics"]["ranked_score"]:,} {int(ranked_score):+,}`')
+    formatted.append(f' \U0001f522`{data_new["statistics"]["ranked_score"]:,}'
+                     f'{"" if ranked_score == 0 else f" {int(ranked_score):+,}"}`')
 
     return "".join(formatted)
 
