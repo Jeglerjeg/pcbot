@@ -176,7 +176,6 @@ async def disconnect():
 
 @ordr_client.event()
 async def connect_error(data):
-    logging.error(data)
     logging.info("Connection to ordr websocket failed.")
 
 
