@@ -4,6 +4,7 @@ import asyncio
 import logging
 import random
 import re
+import string
 from collections import defaultdict, deque
 from functools import partial
 
@@ -223,7 +224,12 @@ def generate_message(message: discord.Message, message_content: list, phrase: st
             bigram_model = defaultdict(lambda: defaultdict(lambda: 0.0))
             # Count the frequency of a bigram
             for sentence in message_content:
-                split_sentence = sentence.split()
+                split_sentence = nltk.tokenize.word_tokenize(sentence)
+                # Remove punctuation
+                for word in split_sentence:
+                    if word is not None and word in string.punctuation:
+                        split_sentence.remove(word)
+                # Count occurences of a word after another word
                 for first_word, second_word in nltk.bigrams(split_sentence, pad_right=True, pad_left=True):
                     bigram_count[first_word][second_word] += 1
             # Calculate the probability of a bigram occuring
