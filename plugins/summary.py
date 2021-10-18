@@ -19,6 +19,16 @@ try:
     import markovify
 except ImportError:
     logging.warning("Markovify could not be imported and as such !summary +strict will not work.")
+try:
+    import nltk
+except ImportError:
+    nltk = None
+    logging.warning("NLTK could not be imported and as such !summary +bigram will not work.")
+try:
+    import numpy
+except ImportError:
+    logging.warning("Numpy could not be imported and as such !summary +bigram will not work.")
+    numpy = None
 
 NEW_LINE_IDENTIFIER = " {{newline}} "
 
@@ -36,7 +46,7 @@ valid_member = utils.member_mention_pattern
 valid_member_silent = re.compile(r"@\((?P<name>.+)\)")
 valid_role = re.compile(r"<@&(?P<id>\d+)>")
 valid_channel = utils.channel_mention_pattern
-valid_options = ("+re", "+regex", "+case", "+tts", "+nobot", "+bot", "+coherent", "+loose")
+valid_options = ("+re", "+regex", "+case", "+tts", "+nobot", "+bot", "+coherent", "+loose", "+bigram")
 
 on_no_messages = "**There were no messages to generate a summary from, {0.author.name}.**"
 on_fail = "**I was unable to construct a summary, {0.author.name}.**"
@@ -189,6 +199,74 @@ def filter_messages(message_content: list, phrase: str, regex: bool = False, cas
             yield content
 
 
+def generate_message(message: discord.Message, message_content: list, phrase: str, strict: bool, coherent: bool,
+                     bigram: bool, num: int):
+    """ Generate a message from stored message content and user arguments. """
+    sentences = []
+    markovify_model = None
+    if strict:
+        try:
+            markovify_model = markovify.Text(message_content)
+        except NameError:
+            logging.warning("+strict was used but markovify is not imported")
+            strict = False
+        except KeyError:
+            markovify_model = None
+    if bigram and (not nltk or not numpy):
+        logging.warning("+bigram was used but nltk is not imported")
+        bigram = False
+
+    # Generate the summary, or num summaries
+    for i in range(num):
+        if bigram:
+            bigram_count = defaultdict(lambda: defaultdict(lambda: 0))
+            bigram_model = defaultdict(lambda: defaultdict(lambda: 0.0))
+            # Count the frequency of a bigram
+            for sentence in message_content:
+                split_sentence = sentence.split()
+                for first_word, second_word in nltk.bigrams(split_sentence, pad_right=True, pad_left=True):
+                    bigram_count[first_word][second_word] += 1
+            # Calculate the probability of a bigram occuring
+            for first_word in bigram_count:
+                total_bigram_count = sum(bigram_count[first_word].values())
+                for second_word in bigram_count[first_word]:
+                    bigram_model[first_word][second_word] = bigram_count[first_word][second_word] / total_bigram_count
+            # Generate a sentence using the bigram model
+            text = [phrase if phrase else None]
+            sentence_complete = False
+            while not sentence_complete:
+                key = text[-1]
+                bigram_word = list(bigram_model[key].keys())
+                probabilities = list(bigram_model[key].values())
+                random_word = numpy.random.choice(bigram_word, p=probabilities)
+                text.append(random_word)
+
+                if text[-1] is None:
+                    sentence_complete = True
+            sentence = " ".join([t for t in text if t])
+        elif strict and markovify_model:
+            if phrase and is_endswith(phrase):
+                try:
+                    sentence = markovify_model.make_sentence_with_start(phrase[:-3])
+                except KeyError:
+                    sentence = markovify_model.make_sentence(tries=1000)
+
+            else:
+                sentence = markovify_model.make_sentence(tries=1000)
+        else:
+            sentence = markov_messages(message_content, coherent)
+
+        if not sentence:
+            sentence = markov_messages(message_content, coherent)
+
+        assert sentence, on_fail.format(message)
+
+        # Convert new line identifiers back to characters
+        sentence = sentence.replace(NEW_LINE_IDENTIFIER.strip(" "), "\n")
+        sentences.append(sentence)
+    return sentences
+
+
 def is_valid_option(arg: str):
     if valid_num.match(arg) or valid_member.match(arg) or valid_member_silent.match(arg) \
             or valid_channel.match(arg) or valid_role.match(arg):
@@ -219,8 +297,8 @@ def is_endswith(phrase):
 
 
 @plugins.command(
-    usage="([*<num>] [@<user/role> ...] [#<channel>] [+re(gex)] [+case] [+tts] [+(no)bot] [+coherent] [+loose]) "
-          "[phrase ...]",
+    usage="([*<num>] [@<user/role> ...] [#<channel>] [+re(gex)] [+case] [+tts] [+(no)bot] [+coherent] [+loose] "
+          "[+bigram]) [phrase ...]",
     pos_check=is_valid_option, aliases="markov")
 async def summary(message: discord.Message, *options, phrase: Annotate.Content = None):
     """ Run a markov chain through the past 5000 messages + up to another 5000
@@ -228,9 +306,8 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
     as it downloads the past 5000 messages in the given channel. """
     # This dict stores all parsed options as keywords
     member, channel, num = [], None, None
-    regex, case, tts, coherent, strict = False, False, False, False, True
+    regex, case, tts, coherent, strict, bigram = False, False, False, False, True, False
     bots = not summary_options.data["no_bot"]
-    sentences = []
 
     async with message.channel.typing():
         for value in options:
@@ -273,8 +350,14 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
                     coherent = True
                 if value == "+loose":
                     strict = False
+                if value == "+bigram":
+                    bigram = True
 
                 bots = False if value == "+nobot" else True if value == "+bot" else bots
+
+        if phrase and len(phrase.split()) > 1 and bigram:
+            await client.say(message, "Only 1 word phrases can be used with bigrams")
+            return
 
         # Assign defaults and number of summaries limit
         is_privileged = message.channel.permissions_for(message.author).manage_messages
@@ -317,39 +400,7 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
 
         # Check if we even have any messages
         assert message_content, on_no_messages.format(message)
-
-        markovify_model = None
-        if strict:
-            try:
-                markovify_model = markovify.Text(message_content)
-            except NameError:
-                logging.warning("+strict was used but markovify is not imported")
-                strict = False
-            except KeyError:
-                markovify_model = None
-
-        # Generate the summary, or num summaries
-        for i in range(num):
-            if strict and markovify_model:
-                if phrase and is_endswith(phrase):
-                    try:
-                        sentence = markovify_model.make_sentence_with_start(phrase[:-3])
-                    except KeyError:
-                        sentence = markovify_model.make_sentence(tries=1000)
-
-                else:
-                    sentence = markovify_model.make_sentence(tries=1000)
-            else:
-                sentence = markov_messages(message_content, coherent)
-
-            if not sentence:
-                sentence = markov_messages(message_content, coherent)
-
-            assert sentence, on_fail.format(message)
-
-            # Convert new line identifiers back to characters
-            sentence = sentence.replace(NEW_LINE_IDENTIFIER.strip(" "), "\n")
-            sentences.append(sentence)
+        sentences = generate_message(message, message_content, phrase, strict, coherent, bigram, num)
 
     await client.send_message(message.channel, "\n".join(sentences), tts=tts)
 
@@ -391,4 +442,4 @@ async def enable_persistent_messages(message: discord.Message):
 
     await summary_data.asyncsave()
     await client.say(message,
-                     "Downloaded {} messages!".format(len(summary_data.data["channels"][str(message.channel.id)])))
+                     f"Downloaded {len(summary_data.data['channels'][str(message.channel.id)])} messages!")
