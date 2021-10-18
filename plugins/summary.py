@@ -23,6 +23,7 @@ except ImportError:
 try:
     import nltk
     nltk.download("punkt", download_dir="plugins/nltk_data", quiet=True)
+    nltk.data.path.append("plugins/nltk_data")
 except ImportError:
     nltk = None
     logging.warning("NLTK could not be imported and as such !summary +bigram will not work.")
