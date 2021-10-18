@@ -22,7 +22,7 @@ except ImportError:
     logging.warning("Markovify could not be imported and as such !summary +strict will not work.")
 try:
     import nltk
-    nltk.download("punkt")
+    nltk.download("punkt", download_dir="plugins/nltk_data", quiet=True)
 except ImportError:
     nltk = None
     logging.warning("NLTK could not be imported and as such !summary +bigram will not work.")
