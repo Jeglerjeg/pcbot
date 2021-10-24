@@ -254,19 +254,18 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     # Try getting the vod information of the current stream
     try:
         twitch_id = await twitch.get_id(member)
-        vod_request = await twitch.request(f"channels/{twitch_id}/videos", limit=1, broadcast_type="archive",
-                                           sort="time")
-        assert vod_request["_total"] >= 1
+        vod_request = await twitch.get_videos(twitch_id)
+        assert len(vod_request) >= 1
     except Exception:
         logging.error(traceback.format_exc())
         text.append("\n")
         return "".join(text)
 
-    vod = vod_request["videos"][0]
+    vod = vod_request[0]
 
     # Find the timestamp of where the play would have started without pausing the game
     score_created = datetime.fromisoformat(osu_score["created_at"])
-    vod_created = datetime.strptime(vod["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    vod_created = datetime.strptime(vod.created_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
     beatmap_length = int(beatmap["total_length"])
 
     # Return if the stream was started after the score was set
@@ -286,7 +285,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     timestamp_play_started = timestamp_score_created - beatmap_length
 
     # Add the vod url with timestamp to the formatted text
-    text.append(f" | **[`Video of this play`]({vod['url']}?t={int(timestamp_play_started)}s)**\n")
+    text.append(f" | **[`Video of this play`]({vod.url}?t={int(timestamp_play_started)}s)**\n")
     return "".join(text)
 
 
