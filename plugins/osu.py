@@ -247,7 +247,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
 
     # Add the stream url and return immediately if twitch is not setup
     text = [f"**[Watch live]({stream_url})**"]
-    if not twitch.client_id:
+    if not twitch.twitch_client:
         text.append("\n")
         return "".join(text)
 
