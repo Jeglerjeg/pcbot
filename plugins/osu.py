@@ -547,11 +547,10 @@ def get_formatted_score_time(osu_score: dict):
     return time_string
 
 
-def get_beatmap_sr(score_pp: PPStats, beatmap: dict, mods: str, mode: api.GameMode):
+def get_beatmap_sr(score_pp: PPStats, beatmap: dict, mods: str):
     """ Change beatmap SR if using SR adjusting mods. """
-    difficulty_rating = score_pp.stars \
-        if mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF", "RX") or mode is api.GameMode.osu \
-        else beatmap["difficulty_rating"]
+    difficulty_rating = score_pp.stars if (mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF", "RX")
+                                           or not beatmap["convert"]) and score_pp else beatmap["difficulty_rating"]
     return difficulty_rating
 
 
@@ -765,7 +764,7 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
         beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
         score_pp = await get_score_pp(osu_score, mode, beatmap)
         if score_pp is not None:
-            beatmap["difficulty_rating"] = get_beatmap_sr(score_pp, beatmap, mods, mode)
+            beatmap["difficulty_rating"] = get_beatmap_sr(score_pp, beatmap, mods)
         if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
             beatmap["max_combo"] = score_pp.max_combo
 
@@ -1006,7 +1005,7 @@ async def notify_pp(member_id: str, data: dict):
         # Calculate PP and change beatmap SR if using a difficult adjusting mod
         potential_pp = await get_score_pp(osu_score, mode, beatmap)
         mods = Mods.format_mods(osu_score["mods"])
-        beatmap["difficulty_rating"] = get_beatmap_sr(potential_pp, beatmap, mods, mode)
+        beatmap["difficulty_rating"] = get_beatmap_sr(potential_pp, beatmap, mods)
         if ("max_combo" not in beatmap or not beatmap["max_combo"]) and potential_pp.max_combo:
             beatmap["max_combo"] = potential_pp.max_combo
         if update_mode is UpdateModes.Minimal:
@@ -1805,7 +1804,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
     elif osu_score["pp"] is None:
         osu_score["pp"] = 0
     if score_pp is not None:
-        beatmap["difficulty_rating"] = get_beatmap_sr(score_pp, beatmap, mods, mode)
+        beatmap["difficulty_rating"] = get_beatmap_sr(score_pp, beatmap, mods)
     if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
         beatmap["max_combo"] = score_pp.max_combo
 
