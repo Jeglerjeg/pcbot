@@ -609,7 +609,9 @@ async def update_user_data(member_id: str, profile: str):
     # Check if bot can see member and that profile exists on file (might have been unlinked or changed during iteration)
     member = discord.utils.get(client.get_all_members(), id=int(member_id))
     if member is None or member_id not in osu_config.data["profiles"] \
-            or profile not in osu_config.data["profiles"][member_id]:
+            or profile not in osu_config.data["profiles"][member_id] or (member_id in osu_tracking and
+                                                                         str(osu_tracking[member_id]["new"]["id"])
+                                                                         not in osu_config.data["profiles"][member_id]):
         if member_id in osu_tracking:
             del osu_tracking[member_id]
         return
