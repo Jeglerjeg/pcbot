@@ -668,6 +668,7 @@ async def update_user_data(member_id: str, profile: str):
     # Update the "new" data
     if "scores" not in osu_tracking[member_id] and fetched_scores is not None:
         osu_tracking[member_id]["scores"] = fetched_scores
+        osu_profile_cache.data[member_id]["scores"] = fetched_scores
     if "new" in osu_tracking[member_id]:
         # Move the "new" data into the "old" data of this user
         osu_tracking[member_id]["old"] = osu_tracking[member_id]["new"]
@@ -676,7 +677,6 @@ async def update_user_data(member_id: str, profile: str):
     osu_tracking[member_id]["new"]["time_updated"] = current_time
     osu_tracking[member_id]["new"]["events"] = user_recent
     osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
-    osu_profile_cache.data[member_id]["scores"] = osu_tracking[member_id]["scores"]
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
@@ -756,6 +756,7 @@ async def get_new_score(member_id: str):
             new_scores.append(dict(osu_score, diff=diff))
     if new_scores:
         osu_tracking[member_id]["scores"] = user_scores
+        osu_profile_cache.data[member_id]["scores"] = user_scores
     return new_scores
 
 
