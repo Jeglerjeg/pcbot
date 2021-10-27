@@ -66,7 +66,8 @@ osu_config = Config("osu", pretty=True, data=dict(
     opt_in_leaderboard=True,  # Whether or not leaderboard notifications should be opt-in
 ))
 
-osu_tracking = {}  # Saves the requested data or deletes whenever the user stops playing (for comparisons)
+osu_profile_cache = Config("osu_profile_cache", data=dict())
+osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Saves the requested data or deletes whenever the user stops playing (for comparisons)
 last_rendered = {}  # Saves when the member last rendered a replay
 previous_score_updates = []  # Saves the score IDs of recent map notifications so they don't get posted several times
 update_interval = osu_config.data.get("update_interval", 30)
@@ -527,22 +528,22 @@ def get_formatted_score_time(osu_score: dict):
         score_time = pendulum.now("UTC").diff(pendulum.parse(osu_score["created_at"]))
         if score_time.in_seconds() < 60:
             time_string = f"""{"".join([str(score_time.in_seconds()),
-                                                   (" seconds" if score_time.in_seconds() > 1 else " second")])} ago"""
+                                        (" seconds" if score_time.in_seconds() > 1 else " second")])} ago"""
         elif score_time.in_minutes() < 60:
             time_string = f"""{"".join([str(score_time.in_minutes()),
-                                                   (" minutes" if score_time.in_minutes() > 1 else " minute")])} ago"""
+                                        (" minutes" if score_time.in_minutes() > 1 else " minute")])} ago"""
         elif score_time.in_hours() < 24:
             time_string = f"""{"".join([str(score_time.in_hours()),
-                                                   (" hours" if score_time.in_hours() > 1 else " hour")])} ago"""
+                                        (" hours" if score_time.in_hours() > 1 else " hour")])} ago"""
         elif score_time.in_days() <= 31:
             time_string = f"""{"".join([str(score_time.in_days()),
-                                                   (" days" if score_time.in_days() > 1 else " day")])} ago"""
+                                        (" days" if score_time.in_days() > 1 else " day")])} ago"""
         elif score_time.in_months() < 12:
             time_string = f"""{"".join([str(score_time.in_months()),
-                                                   (" months" if score_time.in_months() > 1 else " month")])} ago"""
+                                        (" months" if score_time.in_months() > 1 else " month")])} ago"""
         else:
             time_string = f"""{"".join([str(score_time.in_years()),
-                                                   (" years" if score_time.in_years() > 1 else " year")])} ago"""
+                                        (" years" if score_time.in_years() > 1 else " year")])} ago"""
 
     return time_string
 
@@ -580,7 +581,7 @@ def get_no_choke_scorerank(mods: list, acc: float):
     return scorerank
 
 
-async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: datetime):
+async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: str):
     """ Retrieves"""
     params = {
         "mode": mode.name,
@@ -589,7 +590,7 @@ async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: datet
     fetched_scores = await api.get_user_scores(profile, "best", params=params)
     if fetched_scores is not None:
         for i, osu_score in enumerate(fetched_scores):
-            osu_score["pos"] = i+1
+            osu_score["pos"] = i + 1
         user_scores = (dict(score_list=fetched_scores, time_updated=timestamp))
     else:
         user_scores = None
@@ -602,7 +603,7 @@ async def update_user_data(member_id: str, profile: str):
     # for their previous and latest user data
     # Skip members who disabled tracking
 
-    if get_update_mode(str(member_id)) is UpdateModes.Disabled:
+    if get_update_mode(member_id) is UpdateModes.Disabled:
         return
 
     # Check if bot can see member and that profile exists on file (might have been unlinked or changed during iteration)
@@ -613,24 +614,29 @@ async def update_user_data(member_id: str, profile: str):
             del osu_tracking[member_id]
         return
 
-    # Add the member to tracking
+    # Check if the member is tracked, add to cache and tracking if not
     if member_id not in osu_tracking:
-        osu_tracking[member_id] = dict(ticks=-1)
+        osu_tracking[member_id] = {}
+        osu_profile_cache.data[member_id] = {}
 
-    osu_tracking[str(member_id)]["member"] = member
-    osu_tracking[str(member_id)]["ticks"] += 1
+    # Add the member to tracking
+    if "ticks" not in osu_tracking:
+        osu_tracking[member_id]["ticks"] = -1
+
+    osu_tracking[member_id]["member"] = member
+    osu_tracking[member_id]["ticks"] += 1
 
     # Only update members not tracked ingame every nth update
-    if not is_playing(member) and osu_tracking[str(member_id)]["ticks"] % not_playing_skip > 0:
+    if not is_playing(member) and osu_tracking[member_id]["ticks"] % not_playing_skip > 0:
         # Update their old data to match their new one in order to avoid duplicate posts
-        if "new" in osu_tracking[str(member_id)]:
-            osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
+        if "new" in osu_tracking[member_id]:
+            osu_tracking[member_id]["old"] = osu_tracking[str(member_id)]["new"]
         return
 
     # Get the user data for the player
     fetched_scores = None
-    current_time = datetime.now(tz=timezone.utc)
-    mode = get_mode(str(member_id))
+    current_time = datetime.now(tz=timezone.utc).isoformat()
+    mode = get_mode(member_id)
     try:
         params = {
             "key": "id"
@@ -643,7 +649,7 @@ async def update_user_data(member_id: str, profile: str):
         user_recent = await api.get_user_recent_activity(profile, params=params)
 
         # User is already tracked
-        if "scores" not in osu_tracking[str(member_id)]:
+        if "scores" not in osu_tracking[member_id]:
             fetched_scores = await retrieve_osu_scores(profile, mode, current_time)
     except aiohttp.ServerDisconnectedError:
         return
@@ -659,17 +665,18 @@ async def update_user_data(member_id: str, profile: str):
     if user_recent is None or user_data is None:
         logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
-
     # Update the "new" data
-    if "scores" not in osu_tracking[str(member_id)] and fetched_scores is not None:
-        osu_tracking[str(member_id)]["scores"] = fetched_scores
-    if "new" in osu_tracking[str(member_id)]:
+    if "scores" not in osu_tracking[member_id] and fetched_scores is not None:
+        osu_tracking[member_id]["scores"] = fetched_scores
+    if "new" in osu_tracking[member_id]:
         # Move the "new" data into the "old" data of this user
-        osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
+        osu_tracking[member_id]["old"] = osu_tracking[member_id]["new"]
 
-    osu_tracking[str(member_id)]["new"] = user_data
-    osu_tracking[str(member_id)]["new"]["time_updated"] = current_time
-    osu_tracking[str(member_id)]["new"]["events"] = user_recent
+    osu_tracking[member_id]["new"] = user_data
+    osu_tracking[member_id]["new"]["time_updated"] = current_time
+    osu_tracking[member_id]["new"]["events"] = user_recent
+    osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
+    osu_profile_cache.data[member_id]["scores"] = osu_tracking[member_id]["scores"]
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
@@ -679,7 +686,8 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
     no_choke_list = []
     profile_id = osu_scores["score_list"][0]["user"]["id"]
     if profile_id not in no_choke_cache or (profile_id in no_choke_cache and
-                                            no_choke_cache[profile_id]["time_updated"] < osu_scores["time_updated"]):
+                                            datetime.fromisoformat(no_choke_cache[profile_id]["time_updated"]) <
+                                            datetime.fromisoformat(osu_scores["time_updated"])):
         for osu_score in osu_scores["score_list"]:
             if osu_score["perfect"]:
                 continue
@@ -697,7 +705,7 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
                 no_choke_list.append(osu_score)
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
         for i, osu_score in enumerate(no_choke_list):
-            osu_score["pos"] = i+1
+            osu_score["pos"] = i + 1
         no_choke_cache[profile_id] = dict(score_list=no_choke_list, time_updated=datetime.now(tz=timezone.utc))
         no_chokes = no_choke_cache[profile_id]
     else:
@@ -713,7 +721,7 @@ async def get_new_score(member_id: str):
     profile = osu_config.data["profiles"][member_id]
     mode = get_mode(member_id)
     try:
-        user_scores = await retrieve_osu_scores(profile, mode, datetime.now(tz=timezone.utc))
+        user_scores = await retrieve_osu_scores(profile, mode, datetime.now(tz=timezone.utc).isoformat())
     except aiohttp.ServerDisconnectedError:
         return None
     except asyncio.TimeoutError:
@@ -730,7 +738,8 @@ async def get_new_score(member_id: str):
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(user_scores["score_list"]):
-        if osu_tracking[member_id]["scores"]["time_updated"] < datetime.fromisoformat(osu_score["created_at"]):
+        if datetime.fromisoformat(osu_tracking[member_id]["scores"]["time_updated"]) <\
+                datetime.fromisoformat(osu_score["created_at"]):
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=user_scores,
@@ -1075,9 +1084,9 @@ def get_user(message: discord.Message, username: str):
     """ Get member by discord username or osu username. """
     member = utils.find_member(guild=message.guild, name=username)
     if not member:
-        for data in osu_tracking.values():
-            if data["new"]["username"].lower() == username.lower():
-                member = utils.find_member(guild=message.guild, name=data["member"].name)
+        for key, value in osu_tracking.items():
+            if value["new"]["username"].lower() == username.lower():
+                member = discord.utils.get(message.guild.members, id=int(key))
     return member
 
 
@@ -1427,6 +1436,7 @@ async def on_ready():
                     # Check for any differences in the users' events and post about map updates
                     # NOTE: the same applies to this now. These can't be concurrent as they also calculate pp.
                     await notify_recent_events(str(member_id), data)
+            await osu_profile_cache.asyncsave()
         except aiohttp.ClientOSError:
             logging.error(traceback.format_exc())
         except asyncio.CancelledError:
@@ -1694,7 +1704,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     mode = get_mode(str(member.id))
     update_mode = get_update_mode(str(member.id))
     if str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)]:
-        timestamp = osu_tracking[str(member.id)]["new"]["time_updated"]
+        timestamp = datetime.fromisoformat(osu_tracking[str(member.id)]["new"]["time_updated"])
     else:
         timestamp = None
     if timestamp:
@@ -1792,6 +1802,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
                      .format(" ".join(options), artist=beatmap["beatmapset"]["artist"],
                              title=beatmap["beatmapset"]["title"], version=beatmap["version"], stars=pp_stats.stars,
                              pp=pp_stats.pp))
+
 
 plugins.command(name="pp", aliases="oppai")(pp_)
 osu.command(name="pp", aliases="oppai")(pp_)
@@ -2129,7 +2140,7 @@ async def maps(message: discord.Message, *channels: discord.TextChannel):
 async def debug(message: discord.Message):
     """ Display some debug info. """
     client_time = f"<t:{int(client.time_started.replace(tzinfo=timezone.utc).timestamp())}:F>"
-    member_list = [f"`{d['member'].name}`" for d in osu_tracking.values() if is_playing(d["member"])]
+    member_list = [f"`{d['member'].name}`" for d in osu_tracking.values() if "member" in d and is_playing(d["member"])]
     await client.say(message, "Sent `{}` requests since the bot started ({}).\n"
                               "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
@@ -2142,7 +2153,7 @@ async def debug(message: discord.Message):
                                if api.requests_sent > 0 else 0,
                                time_elapsed,
                                f"<t:{int(previous_update.timestamp())}:F>"
-                               if previous_update is not None else "Not updated yet.",
+                               if previous_update else "Not updated yet.",
                                ", ".join(member_list) if member_list else "None", len(osu_tracking)
                                )
                      )
