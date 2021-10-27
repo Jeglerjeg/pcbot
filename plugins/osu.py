@@ -619,8 +619,8 @@ async def update_user_data(member_id: str, profile: str):
         osu_tracking[member_id] = {}
         osu_profile_cache.data[member_id] = {}
 
-    # Add the member to tracking
-    if "ticks" not in osu_tracking:
+    # Add update ticks to member tracking
+    if "ticks" not in osu_tracking[member_id]:
         osu_tracking[member_id]["ticks"] = -1
 
     osu_tracking[member_id]["member"] = member
