@@ -67,7 +67,7 @@ osu_config = Config("osu", pretty=True, data=dict(
 ))
 
 osu_profile_cache = Config("osu_profile_cache", data=dict())
-osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Saves the requested data or deletes whenever the user stops playing (for comparisons)
+osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Stores tracked osu! users
 last_rendered = {}  # Saves when the member last rendered a replay
 previous_score_updates = []  # Saves the score IDs of recent map notifications so they don't get posted several times
 update_interval = osu_config.data.get("update_interval", 30)
@@ -1451,9 +1451,8 @@ async def on_ready():
 
 async def on_reload(name: str):
     """ Preserve the tracking cache. """
-    global osu_tracking, recent_map_events, time_elapsed, previous_update, previous_score_updates, no_choke_cache, \
+    global recent_map_events, time_elapsed, previous_update, previous_score_updates, no_choke_cache, \
         last_rendered
-    local_tracking = osu_tracking
     local_events = recent_map_events
     local_renders = last_rendered
     local_requests = api.requests_sent
@@ -1468,7 +1467,6 @@ async def on_reload(name: str):
     await plugins.reload(name)
 
     api.requests_sent = local_requests
-    osu_tracking = local_tracking
     last_rendered = local_renders
     recent_map_events = local_events
     time_elapsed = local_update_time_elapsed
