@@ -77,8 +77,12 @@ async def render_done(render_id: int):
 @ordr_client.event()
 async def render_failed(data: str):
     data = data.split(" ")
-    render_id = int(data[0])
-    error_code = int(data[1])
+    try:
+        render_id = int(data[0])
+        error_code = int(data[1])
+    except ValueError:
+        logging.info("Error occured while processing render_failed event: {}".format(data))
+        return
     if render_id in requested_renders:
         if error_code == 1:
             await requested_renders[render_id]["message"].edit("Render stopped due to an emergency.")
