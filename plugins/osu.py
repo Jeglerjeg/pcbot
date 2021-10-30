@@ -1638,6 +1638,8 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
     # Clear the tracking data when unlinking user
     if str(member.id) in osu_tracking:
         del osu_tracking[str(member.id)]
+    if str(member.id) in osu_profile_cache.data:
+        del osu_profile_cache.data[str(member.id)]
 
     # Unlink the given member (usually the message author)
     del osu_config.data["profiles"][str(member.id)]
@@ -1668,6 +1670,8 @@ async def gamemode(message: discord.Message, mode: api.GameMode.get_mode):
     # Clear the scores when changing mode
     if str(message.author.id) in osu_tracking:
         del osu_tracking[str(message.author.id)]
+    if str(message.author.id) in osu_profile_cache.data:
+        del osu_profile_cache.data[str(message.author.id)]
 
     await client.say(message, f"Set your gamemode to **{mode_name}**.")
 
