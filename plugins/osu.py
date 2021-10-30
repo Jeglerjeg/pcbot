@@ -591,6 +591,7 @@ async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: str):
     if fetched_scores is not None:
         for i, osu_score in enumerate(fetched_scores):
             osu_score["pos"] = i + 1
+            del osu_score["beatmapset"]
         user_scores = (dict(score_list=fetched_scores, time_updated=timestamp))
     else:
         user_scores = None
