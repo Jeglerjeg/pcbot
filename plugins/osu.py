@@ -1619,12 +1619,16 @@ async def wipe_tracking(message: discord.Message, member: discord.Member = None)
         if str(member.id) in osu_tracking:
             del osu_tracking[str(member.id)]
             await client.say(message, f"Deleted {member.name} from tracking.")
+        elif str(member.id) in osu_profile_cache.data:
+            del osu_profile_cache.data[str(member.id)]
         else:
             await client.say(message, "User not in tracking.")
     else:
         previous_length = len(osu_tracking)
         for entry in list(osu_tracking):
             del osu_tracking[entry]
+        osu_profile_cache.data = {}
+        await osu_profile_cache.asyncsave()
         await client.say(message, f"Deleted {previous_length} entries.")
 
 
