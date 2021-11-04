@@ -62,7 +62,9 @@ ordr_config = Config("ordr", pretty=True, data=dict(
     sliderSnakingIn="true",  # Whether or not sliders should snake in
     sliderSnakingOut="false",  # Whether or not sliders should snake out
     showHitCounter="true",  # Whether or not the hit counter (100s, 50s, misses) should be shown
-    showKeyOverlay="true"  # Whether or not the key overlay should be shown
+    showKeyOverlay="true",  # Whether or not the key overlay should be shown
+    showAvatarsOnScoreboard="false",  # Whether or not to show avatars on the scoreboard. May break some skins
+    showAimErrorMeter="false",  # Whether or not to show an aim error meter
 ))
 
 
@@ -253,7 +255,9 @@ async def send_render_job(option):
         "sliderSnakingIn": ordr_config.data["sliderSnakingIn"],
         "sliderSnakingOut": ordr_config.data["sliderSnakingOut"],
         "showHitCounter": ordr_config.data["showHitCounter"],
-        "showKeyOverlay": ordr_config.data["showKeyOverlay"]
+        "showKeyOverlay": ordr_config.data["showKeyOverlay"],
+        "showAvatarsOnScoreboard": ordr_config.data["showAvatarsOnScoreboard"],
+        "showAimErrorMeter": ordr_config.data["showAimErrorMeter"]
     }
 
     if replay:
