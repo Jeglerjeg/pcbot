@@ -2,6 +2,7 @@
 
     Can render replays and fetch replays by ID
 """
+import json
 import logging
 from datetime import datetime
 
@@ -69,113 +70,108 @@ ordr_config = Config("ordr", pretty=True, data=dict(
 
 
 @ordr_client.event()
-async def render_done(render_id: int):
+async def render_done_json(data: json):
+    render_id = data["renderID"]
+    video_url = data["videoUrl"]
     if render_id in requested_renders:
-        completed_render = await get_render(render_id)
-        await requested_renders[render_id]["message"].edit(completed_render["videoUrl"])
+        await requested_renders[render_id]["message"].edit(video_url)
         requested_renders.pop(render_id)
 
 
 @ordr_client.event()
-async def render_failed(data: str):
-    data = data.split(" ")
-    try:
-        render_id = int(data[0])
-        error_code = int(data[1])
-    except ValueError:
-        logging.info("Error occured while processing render_failed event: {}".format(data))
-        return
+async def render_failed_json(data: json):
+    render_id = data["renderID"]
+    error_code = data["errorCode"]
+    error_message = data["errorMessage"]
     if render_id in requested_renders:
         if error_code == 1:
-            await requested_renders[render_id]["message"].edit("Render stopped due to an emergency.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 2:
-            await requested_renders[render_id]["message"].edit("Error parsing replay.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 3:
-            await requested_renders[render_id]["message"].edit("Error parsing replay.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 4:
-            await requested_renders[render_id]["message"].edit("Beatmap mirrors unavailable.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 5:
-            await requested_renders[render_id]["message"].edit("Replay file corrupted.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 6:
-            await requested_renders[render_id]["message"].edit("Only osu!standard is supported for replay rendering.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 7:
-            await requested_renders[render_id]["message"].edit("Replay has no input data.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 8:
-            await requested_renders[render_id]["message"].edit(
-                "Custom difficulties or unsubmitted maps are unsupported.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 9:
-            await requested_renders[render_id]["message"].edit("Audio for this beatmap is unavailable.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 10:
-            await requested_renders[render_id]["message"].edit("Cannot connect to osu!api.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 11:
-            await requested_renders[render_id]["message"].edit("Auto is not supported.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 12:
-            await requested_renders[render_id]["message"].edit("Invalid characters in replay username.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 13:
-            await requested_renders[render_id]["message"].edit("The beatmap is longer than 15 minutes.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 14:
-            await requested_renders[render_id]["message"].edit("Beatmap not found on any mirrors.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 15:
-            await requested_renders[render_id]["message"].edit("This play is banned from ordr.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 16:
-            await requested_renders[render_id]["message"].edit("This IP is banned from ordr.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 17:
-            await requested_renders[render_id]["message"].edit("This username is banned from ordr.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 18:
-            await requested_renders[render_id]["message"].edit("An unknown error from the renderer occured.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 19:
-            await requested_renders[render_id]["message"].edit("The renderer cannot download the beatmap.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 20:
-            await requested_renders[render_id]["message"].edit(
-                "Beatmap version is not the same on mirrors as the replay.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 21:
-            await requested_renders[render_id]["message"].edit("Replay is corrupted (danser can't process it).")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 22:
-            await requested_renders[render_id]["message"].edit("Server-side error finalizing the video.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 23:
-            await requested_renders[render_id]["message"].edit("Server-side error preparing the replay.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 24:
-            await requested_renders[render_id]["message"].edit("The beatmap has no name.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 25:
-            await requested_renders[render_id]["message"].edit("The replay is missing input data.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
         elif error_code == 26:
-            await requested_renders[render_id]["message"].edit("The replay has incompatible mods.")
+            await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
 
 
 @ordr_client.event()
-async def render_progress(data: str):
-    data = data.split(" ", 1)
-    render_id = int(data[0])
-    progress = data[1]
+async def render_progress_json(data: json):
+    render_id = data["renderID"]
+    progress = data["progress"]
+    renderer = data["renderer"]
     if render_id in requested_renders:
         if (datetime.utcnow() - requested_renders[render_id]["edited"]).total_seconds() > 5:
-            await requested_renders[render_id]["message"].edit(progress)
+            await requested_renders[render_id]["message"].edit("{}, rendered by: {}".format(progress, renderer))
             requested_renders[render_id]["edited"] = datetime.utcnow()
 
 
