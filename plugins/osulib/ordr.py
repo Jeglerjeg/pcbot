@@ -157,6 +157,15 @@ async def render_failed(data: str):
         elif error_code == 23:
             await requested_renders[render_id]["message"].edit("Server-side error preparing the replay.")
             requested_renders.pop(render_id)
+        elif error_code == 24:
+            await requested_renders[render_id]["message"].edit("The beatmap has no name.")
+            requested_renders.pop(render_id)
+        elif error_code == 25:
+            await requested_renders[render_id]["message"].edit("The replay is missing input data.")
+            requested_renders.pop(render_id)
+        elif error_code == 26:
+            await requested_renders[render_id]["message"].edit("The replay has incompatible mods.")
+            requested_renders.pop(render_id)
 
 
 @ordr_client.event()
