@@ -171,7 +171,7 @@ async def render_progress_json(data: json):
     renderer = data["renderer"]
     if render_id in requested_renders:
         if (datetime.utcnow() - requested_renders[render_id]["edited"]).total_seconds() > 5:
-            await requested_renders[render_id]["message"].edit("{}, rendered by: {}".format(progress, renderer))
+            await requested_renders[render_id]["message"].edit("{}\nRendered by: {}".format(progress, renderer))
             requested_renders[render_id]["edited"] = datetime.utcnow()
 
 
