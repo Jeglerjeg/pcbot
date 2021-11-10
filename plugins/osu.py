@@ -200,8 +200,8 @@ def format_mode_name(mode: api.GameMode, short_name: bool = False, abbreviation:
 def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
     """ Get a bunch of differences and return a formatted string to send.
     iso is the country code. """
-    pp_rank = int(data_new["statistics"]["global_rank"])
-    pp_country_rank = int(data_new["statistics"]["country_rank"])
+    pp_rank = int(data_new["statistics"]["global_rank"]) if data_new["statistics"]["global_rank"] else 0
+    pp_country_rank = int(data_new["statistics"]["country_rank"]) if data_new["statistics"]["country_rank"] else 0
     iso = data_new["country"]["code"]
     rank = -int(get_diff(data_old, data_new, "global_rank", statistics=True))
     country_rank = -int(get_diff(data_old, data_new, "country_rank", statistics=True))
@@ -806,9 +806,13 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
 def get_diff(old: dict, new: dict, value: str, statistics=False):
     """ Get the difference between old and new osu! user data. """
     if statistics:
-        return float(new["statistics"][value]) - float(old["statistics"][value])
+        new_value = float(new["statistics"][value]) if new["statistics"][value] else 0.0
+        old_value = float(old["statistics"][value]) if old["statistics"][value] else 0.0
+    else:
+        new_value = float(new[value]) if new[value] else 0.0
+        old_value = float(old[value]) if old[value] else 0.0
 
-    return float(new[value]) - float(old[value])
+    return new_value - old_value
 
 
 def get_notify_channels(guild: discord.Guild, data_type: str):
