@@ -688,9 +688,8 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
     mode = api.GameMode.osu
     no_choke_list = []
     profile_id = osu_scores["score_list"][0]["user"]["id"]
-    if profile_id not in no_choke_cache or (profile_id in no_choke_cache and
-                                            datetime.fromisoformat(no_choke_cache[profile_id]["time_updated"]) <
-                                            datetime.fromisoformat(osu_scores["time_updated"])):
+    if profile_id not in no_choke_cache or (profile_id in no_choke_cache and no_choke_cache[profile_id]["time_updated"]
+                                            < datetime.fromisoformat(osu_scores["time_updated"])):
         for osu_score in osu_scores["score_list"]:
             if osu_score["perfect"]:
                 continue
