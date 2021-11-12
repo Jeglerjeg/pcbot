@@ -1157,7 +1157,7 @@ async def format_beatmap_info(diff: dict, mods: str):
               bpm=int(diff["bpm"]) if diff["bpm"] else "None",
               maxcombo=f"{diff['max_combo']}x" if diff["max_combo"] else "None",
               mode_name=format_mode_name(api.GameMode.get_mode(diff["mode"])),
-              mods=mods
+              mods=mods.upper()
              ))
 
     m.append("```")
@@ -1783,10 +1783,7 @@ async def url(message: discord.Message, member: discord.Member = Annotate.Self,
 
 
 async def pp_(message: discord.Message, beatmap_url: str, *options):
-    """ Calculate and return the would be pp using `oppai-ng`.
-
-    The beatmap url should either be a link to a beatmap /b/ or /s/, or an
-    uploaded .osu file.
+    """ Calculate and return the would be pp using `rosu-pp`.
 
     Options are a parsed set of command-line arguments:  /
     `([acc]% | [num_100s]x100 [num_50s]x50) +[mods] [combo]x [misses]m`
@@ -1823,7 +1820,10 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
                 options.remove(opt)
 
         options.insert(0, f"{pp_stats.acc}%")
-
+    for opt in options:
+        if opt.startswith("+"):
+            options.append(opt.upper())
+            options.remove(opt)
     await client.say(message,
                      "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`."
                      .format(" ".join(options), artist=beatmap["beatmapset"]["artist"],
@@ -1957,7 +1957,7 @@ async def score(message: discord.Message, *options):
         if utils.http_url_pattern.match(value):
             beatmap_url = value
         elif value.startswith("+"):
-            mods = value.replace("+", "")
+            mods = value.replace("+", "").upper()
         else:
             member = get_user(message, value)
 
