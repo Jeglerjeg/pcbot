@@ -1970,7 +1970,7 @@ async def score(message: discord.Message, *options):
     if not beatmap_url:
         beatmap_info = None
         match = False
-        async for m in message.channel.history(limit=10):
+        async for m in message.channel.history():
             to_search = [m.content]
             if m.embeds:
                 for embed in m.embeds:
