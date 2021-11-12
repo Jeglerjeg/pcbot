@@ -684,13 +684,12 @@ async def update_user_data(member_id: str, profile: str):
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
-async def calculate_no_choke_top_plays(osu_scores: dict):
+async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
     """ Calculates and returns a new list of unchoked plays. """
     mode = api.GameMode.osu
     no_choke_list = []
-    profile_id = osu_scores["score_list"][0]["user"]["id"]
-    if profile_id not in no_choke_cache or (profile_id in no_choke_cache and no_choke_cache[profile_id]["time_updated"]
-                                            < datetime.fromisoformat(osu_scores["time_updated"])):
+    if member_id not in no_choke_cache or (member_id in no_choke_cache and no_choke_cache[member_id]["time_updated"]
+                                           < datetime.fromisoformat(osu_scores["time_updated"])):
         for osu_score in osu_scores["score_list"]:
             if osu_score["perfect"]:
                 continue
@@ -709,10 +708,10 @@ async def calculate_no_choke_top_plays(osu_scores: dict):
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
         for i, osu_score in enumerate(no_choke_list):
             osu_score["pos"] = i + 1
-        no_choke_cache[profile_id] = dict(score_list=no_choke_list, time_updated=datetime.now(tz=timezone.utc))
-        no_chokes = no_choke_cache[profile_id]
+        no_choke_cache[member_id] = dict(score_list=no_choke_list, time_updated=datetime.now(tz=timezone.utc))
+        no_chokes = no_choke_cache[member_id]
     else:
-        no_chokes = no_choke_cache[profile_id]
+        no_chokes = no_choke_cache[member_id]
     return no_chokes
 
 
@@ -2093,7 +2092,8 @@ async def top(message: discord.Message, *options):
     assert not list_type == "score" if nochoke else True, "No-choke lists can't be sorted by score."
     if nochoke:
         async with message.channel.typing():
-            osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]))
+            osu_scores = await calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]),
+                                                            str(member.id))
             full_osu_score_list = generate_full_no_choke_score_list(
                 osu_scores["score_list"], copy.deepcopy(osu_tracking[str(member.id)]["scores"]["score_list"]))
             new_total_pp = calculate_total_user_pp(full_osu_score_list, str(member.id))
