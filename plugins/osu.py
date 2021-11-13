@@ -1122,7 +1122,7 @@ async def format_beatmapset_diffs(beatmapset: dict):
             diff_len=diff_length,
             stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
             pp=f"{int(diff.get('pp', '0'))}pp",
-            drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)))
+            drain="{}:{:02}".format(*divmod(int(diff["hit_length"] / diff["clock_rate"]), 60)))
         )
     m.append("```")
     return "".join(m)
@@ -1153,7 +1153,7 @@ async def format_beatmap_info(diff: dict, mods: str):
               diff_len=diff_length,
               stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
               pp=f"{int(diff.get('pp', '0'))}pp",
-              drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)),
+              drain="{}:{:02}".format(*divmod(int(diff["hit_length"] / diff["clock_rate"]), 60)),
               passrate=pass_rate,
               od=round(diff["accuracy"], 1) if not diff["accuracy"] % 1 == 0 else int(diff["accuracy"]),
               ar=round(diff["ar"], 1) if not diff["ar"] % 1 == 0 else int(diff["ar"]),
