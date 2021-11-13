@@ -998,6 +998,7 @@ async def notify_pp(member_id: str, data: dict):
             await asyncio.sleep(osu_config.data["score_update_delay"])
         else:
             logging.info("%s gained PP, but no new score was found.", member_id)
+            return
     for osu_score in list(osu_scores):
         if osu_score["best_id"] in previous_score_updates:
             osu_scores.remove(osu_score)
