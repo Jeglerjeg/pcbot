@@ -64,6 +64,8 @@ osu_config = Config("osu", pretty=True, data=dict(
     user_update_delay=2,  # Seconds to wait after updating user data (for ratelimiting purposes)
     leaderboard={},  # A list of users that have turned on/off leaderboard notifications
     opt_in_leaderboard=True,  # Whether or not leaderboard notifications should be opt-in
+    notify_empty_scores=False  # Whether or not to notify pp gain when a score isn't found
+                               # (not applicable when user has enabled PP-only notifications)
 ))
 
 osu_profile_cache = Config("osu_profile_cache", data=dict())
@@ -82,6 +84,7 @@ pp_threshold = osu_config.data.get("pp_threshold", 0.13)
 score_request_limit = osu_config.data.get("score_request_limit", 100)
 minimum_pp_required = osu_config.data.get("minimum_pp_required", 0)
 use_mentions_in_scores = osu_config.data.get("use_mentions_in_scores", True)
+notify_empty_scores = osu_config.data.get("notify_empty_scores", False)
 max_diff_length = 23  # The maximum amount of characters in a beatmap difficulty
 
 asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
@@ -998,7 +1001,8 @@ async def notify_pp(member_id: str, data: dict):
             await asyncio.sleep(osu_config.data["score_update_delay"])
         else:
             logging.info("%s gained PP, but no new score was found.", member_id)
-            return
+            if not notify_empty_scores:
+                return
     for osu_score in list(osu_scores):
         if osu_score["best_id"] in previous_score_updates:
             osu_scores.remove(osu_score)
