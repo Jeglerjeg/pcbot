@@ -1155,14 +1155,14 @@ async def format_beatmap_info(diff: dict, mods: str):
               pp=f"{int(diff.get('pp', '0'))}pp",
               drain="{}:{:02}".format(*divmod(int(diff["hit_length"]), 60)),
               passrate=pass_rate,
-              od=diff["accuracy"],
-              ar=diff["ar"],
-              hp=diff["drain"],
-              cs=diff["cs"],
-              bpm=int(diff["bpm"]) if diff["bpm"] else "None",
+              od=round(diff["accuracy"], 1) if not diff["accuracy"] % 1 == 0 else int(diff["accuracy"]),
+              ar=round(diff["ar"], 1) if not diff["ar"] % 1 == 0 else int(diff["ar"]),
+              hp=round(diff["drain"], 1) if not diff["drain"] % 1 == 0 else int(diff["drain"]),
+              cs=round(diff["cs"], 1) if not diff["cs"] % 1 == 0 else int(diff["cs"]),
+              bpm=int(diff["bpm"] * diff["clock_rate"]) if diff["bpm"] and diff["clock_rate"] else "None",
               maxcombo=f"{diff['max_combo']}x" if diff["max_combo"] else "None",
               mode_name=format_mode_name(api.GameMode.get_mode(diff["mode"])),
-              mods=mods.upper()
+              mods=mods.upper() if not mods == "+Nomod" else mods
              ))
 
     m.append("```")
@@ -1218,6 +1218,11 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
                 if diff["checksum"] == cached_mapset[map_id]["md5"]:
                     diff["pp"] = cached_mapset[map_id][mods]["pp"]
                     diff["difficulty_rating"] = cached_mapset[map_id][mods]["stars"]
+                    diff["ar"] = cached_mapset[map_id][mods]["ar"]
+                    diff["cs"] = cached_mapset[map_id][mods]["cs"]
+                    diff["accuracy"] = cached_mapset[map_id][mods]["od"]
+                    diff["drain"] = cached_mapset[map_id][mods]["hp"]
+                    diff["clock_rate"] = cached_mapset[map_id][mods]["clock_rate"]
                     continue
 
                 # If it was changed, add an asterisk to the beatmap name (this is a really stupid place to do this)
@@ -1233,6 +1238,11 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
 
         diff["pp"] = pp_stats.pp
         diff["difficulty_rating"] = pp_stats.stars
+        diff["ar"] = pp_stats.ar
+        diff["cs"] = pp_stats.cs
+        diff["accuracy"] = pp_stats.od
+        diff["drain"] = pp_stats.hp
+        diff["clock_rate"] = pp_stats.clock_rate
 
         if ignore_osu_cache:
             # Cache the difficulty
@@ -1249,6 +1259,11 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
                 osu_config.data["map_cache"][set_id][map_id][mods] = {}
             osu_config.data["map_cache"][set_id][map_id][mods]["pp"] = pp_stats.pp
             osu_config.data["map_cache"][set_id][map_id][mods]["stars"] = pp_stats.stars
+            osu_config.data["map_cache"][set_id][map_id][mods]["ar"] = pp_stats.ar
+            osu_config.data["map_cache"][set_id][map_id][mods]["cs"] = pp_stats.cs
+            osu_config.data["map_cache"][set_id][map_id][mods]["od"] = pp_stats.od
+            osu_config.data["map_cache"][set_id][map_id][mods]["hp"] = pp_stats.hp
+            osu_config.data["map_cache"][set_id][map_id][mods]["clock_rate"] = pp_stats.clock_rate
     if ignore_osu_cache:
         await osu_config.asyncsave()
 

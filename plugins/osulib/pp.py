@@ -15,7 +15,7 @@ from .args import parse as parse_options
 host = "https://osu.ppy.sh/"
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
-PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo")
+PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs od hp clock_rate")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars")
 
 cache_path = "plugins/osulib/mapcache"
@@ -136,7 +136,12 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     pp = pp_info["pp"]
     total_stars = pp_info["total_stars"]
     partial_stars = pp_info["partial_stars"]
-    return PPStats(pp, total_stars, partial_stars, max_pp, max_combo)
+    ar = pp_info["ar"]
+    cs = pp_info["cs"]
+    od = pp_info["od"]
+    hp = pp_info["hp"]
+    clock_rate = pp_info["clock_rate"]
+    return PPStats(pp, total_stars, partial_stars, max_pp, max_combo, ar, cs, od, hp, clock_rate)
 
 
 async def find_closest_pp(beatmap_path, mods_bitmask, args):
