@@ -1582,7 +1582,7 @@ async def osu(message: discord.Message, *options):
         "mode": mode.value,
         "date": datetime.now().ctime()
     }
-    signature = await utils.retrieve_page("https://lemmmy.pw/osusig/sig.php", head=True, **params, **dark)
+    signature = await utils.retrieve_page("https://osusig.lolicon.app/sig.php", head=True, **params, **dark)
     embed = discord.Embed(color=member.color)
     embed.set_author(name=member.display_name, icon_url=member.display_avatar.url, url=get_user_url(str(member.id)))
     embed.set_image(url=signature.url)
