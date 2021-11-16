@@ -11,7 +11,7 @@ from aiohttp import FormData
 
 from pcbot import utils, config, Config
 
-host = "https://ordr-api.issou.best/"
+host = "https://apis.issou.best/ordr/"
 ws_link = "https://ordr-ws.issou.best"
 requested_renders = {}
 
