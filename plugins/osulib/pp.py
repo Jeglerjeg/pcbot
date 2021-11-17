@@ -129,10 +129,14 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
                                        args.c100, args.misses, args.objects)
     elif mode is api.GameMode.mania:
         pp_info = pp_bindings.mania_pp(beatmap_path, mods_bitmask, args.score, args.objects)
-    else:
+    elif mode is api.GameMode.fruits:
         pp_info = pp_bindings.catch_pp(beatmap_path, mods_bitmask, args.combo, args.c300, args.c100,
                                        args.c50, args.dropmiss, args.misses, args.objects)
         max_combo = pp_info["max_combo"]
+    else:
+        logging.info("Unknown gamemode {} passed to pp calculator".format(mode))
+        return
+
     pp = pp_info["pp"]
     total_stars = pp_info["total_stars"]
     partial_stars = pp_info["partial_stars"]
