@@ -64,8 +64,8 @@ osu_config = Config("osu", pretty=True, data=dict(
     user_update_delay=2,  # Seconds to wait after updating user data (for ratelimiting purposes)
     leaderboard={},  # A list of users that have turned on/off leaderboard notifications
     opt_in_leaderboard=True,  # Whether or not leaderboard notifications should be opt-in
-    notify_empty_scores=False  # Whether or not to notify pp gain when a score isn't found
-                               # (not applicable when user has enabled PP-only notifications)
+    notify_empty_scores=False,  # Whether or not to notify pp gain when a score isn't found (only if pp mode is off)
+    cache_user_profiles=True,  # Whether or not to cache user profiles when the bot turns off
 ))
 
 osu_profile_cache = Config("osu_profile_cache", data=dict())
@@ -84,6 +84,8 @@ score_request_limit = osu_config.data.get("score_request_limit", 100)
 minimum_pp_required = osu_config.data.get("minimum_pp_required", 0)
 use_mentions_in_scores = osu_config.data.get("use_mentions_in_scores", True)
 notify_empty_scores = osu_config.data.get("notify_empty_scores", False)
+cache_user_profiles = osu_config.data.get("cache_user_profiles", True)
+
 max_diff_length = 23  # The maximum amount of characters in a beatmap difficulty
 
 asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
@@ -624,7 +626,8 @@ async def update_user_data(member_id: str, profile: str):
     # Check if the member is tracked, add to cache and tracking if not
     if member_id not in osu_tracking:
         osu_tracking[member_id] = {}
-        osu_profile_cache.data[member_id] = {}
+        if cache_user_profiles:
+            osu_profile_cache.data[member_id] = {}
 
     # Add update ticks to member tracking
     if "ticks" not in osu_tracking[member_id]:
@@ -675,7 +678,8 @@ async def update_user_data(member_id: str, profile: str):
     # Update the "new" data
     if "scores" not in osu_tracking[member_id] and fetched_scores is not None:
         osu_tracking[member_id]["scores"] = fetched_scores
-        osu_profile_cache.data[member_id]["scores"] = fetched_scores
+        if cache_user_profiles:
+            osu_profile_cache.data[member_id]["scores"] = fetched_scores
     if "new" in osu_tracking[member_id]:
         # Move the "new" data into the "old" data of this user
         osu_tracking[member_id]["old"] = osu_tracking[member_id]["new"]
@@ -683,7 +687,8 @@ async def update_user_data(member_id: str, profile: str):
     osu_tracking[member_id]["new"] = user_data
     osu_tracking[member_id]["new"]["time_updated"] = current_time
     osu_tracking[member_id]["new"]["events"] = user_recent
-    osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
+    if cache_user_profiles:
+        osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
     await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
@@ -761,7 +766,8 @@ async def get_new_score(member_id: str):
             new_scores.append(dict(osu_score, diff=diff))
     if new_scores:
         osu_tracking[member_id]["scores"] = user_scores
-        osu_profile_cache.data[member_id]["scores"] = user_scores
+        if cache_user_profiles:
+            osu_profile_cache.data[member_id]["scores"] = user_scores
     return new_scores
 
 
@@ -1474,7 +1480,8 @@ async def on_ready():
                     # Check for any differences in the users' events and post about map updates
                     # NOTE: the same applies to this now. These can't be concurrent as they also calculate pp.
                     await notify_recent_events(str(member_id), data)
-            await osu_profile_cache.asyncsave()
+            if cache_user_profiles:
+                await osu_profile_cache.asyncsave()
         except aiohttp.ClientOSError:
             logging.error(traceback.format_exc())
         except asyncio.CancelledError:
@@ -1650,7 +1657,7 @@ async def wipe_tracking(message: discord.Message, member: discord.Member = None)
         if str(member.id) in osu_tracking:
             del osu_tracking[str(member.id)]
             await client.say(message, f"Deleted {member.name} from tracking.")
-        elif str(member.id) in osu_profile_cache.data:
+        if str(member.id) in osu_profile_cache.data:
             del osu_profile_cache.data[str(member.id)]
         else:
             await client.say(message, "User not in tracking.")
