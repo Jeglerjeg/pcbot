@@ -223,7 +223,7 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
                  f" [{utils.text_to_emoji(iso)}]({rankings_url}?country={iso}&page="
                  f"{pp_country_rank // 50 + 1})`"
                  f"#{pp_country_rank:,}{'' if int(country_rank) == 0 else f' {int(country_rank):+}'}`"]
-    rounded_acc = round(accuracy, 3)
+    rounded_acc = float(utils.format_number(accuracy, 3))
     if rounded_acc > 0:
         formatted.append("\n\U0001f4c8")  # Graph with upwards trend
     elif rounded_acc < 0:
@@ -301,7 +301,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
     if mode is api.GameMode.osu:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-            "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
+            "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
             "```diff\n"
             "  acc     300s  100s  50s  miss  combo\n"
             "{sign} {acc:<8.2%}{count300:<6}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}```"
@@ -314,7 +314,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
             acc=osu_score["accuracy"],
-            pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
+            pp=utils.format_number(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
             count300=osu_score["statistics"]["count_300"],
@@ -330,7 +330,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
             # Escaping asterisk doesn't work in italics
             version=beatmap["version"],
-            stars=float(beatmap["difficulty_rating"]),
+            stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
             maxcombo=osu_score["max_combo"],
             max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
             else "",
@@ -342,7 +342,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
     if mode is api.GameMode.taiko:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-            "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
+            "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
             "```diff\n"
             "  acc     great  good  miss  combo\n"
             "{sign} {acc:<8.2%}{count300:<7}{count100:<6}{countmiss:<6}{maxcombo}{max_combo}```"
@@ -355,7 +355,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
             acc=osu_score["accuracy"],
-            pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
+            pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
             count300=osu_score["statistics"]["count_300"],
@@ -370,7 +370,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
             # Escaping asterisk doesn't work in italics
             version=beatmap["version"],
-            stars=float(beatmap["difficulty_rating"]),
+            stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
             maxcombo=osu_score["max_combo"],
             max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
             else "",
@@ -382,7 +382,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
     if mode is api.GameMode.mania:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-            "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
+            "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
             "```diff\n"
             "  acc     max   300s  200s  100s  50s  miss\n"
             "{sign} {acc:<8.2%}{countmax:<6}{count300:<6}{count200:<6}{count100:<6}{count50:<5}{countmiss:<6}```"
@@ -395,7 +395,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
             acc=osu_score["accuracy"],
-            pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
+            pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
             countmax=osu_score["statistics"]["count_geki"],
@@ -413,7 +413,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
             # Escaping asterisk doesn't work in italics
             version=beatmap["version"],
-            stars=float(beatmap["difficulty_rating"]),
+            stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
             scoreboard_rank=f"#{rank} " if rank else "",
             failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
             live=await format_stream(member, osu_score, beatmap) if member else "",
@@ -422,7 +422,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
     if mode is api.GameMode.fruits:
         return (
             "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-            "**{pp}pp {stars:.2f}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
+            "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
             "```diff\n"
             "  acc     fruits ticks drpmiss miss combo\n"
             "{sign} {acc:<8.2%}{count300:<7}{count100:<6}{countdrpmiss:<8}{countmiss:<5}{maxcombo}{max_combo}```"
@@ -435,7 +435,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
             acc=osu_score["accuracy"],
-            pp=round(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
+            pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
             count300=osu_score["statistics"]["count_300"],
@@ -451,7 +451,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
             # Escaping asterisk doesn't work in italics
             version=beatmap["version"],
-            stars=float(beatmap["difficulty_rating"]),
+            stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
             maxcombo=osu_score["max_combo"],
             max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
             else "",
@@ -467,7 +467,7 @@ async def format_minimal_score(mode: api.GameMode, osu_score: dict, beatmap: dic
     acc = calculate_acc(mode, osu_score)
     return (
         "[*{artist} - {title} [{version}]*]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-        "**{pp}pp {stars:.2f}\u2605, {maxcombo}{max_combo} {rank} {acc:.2%} {scoreboard_rank}+{mods}**"
+        "**{pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc:.2%} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
         host=host,
@@ -483,10 +483,10 @@ async def format_minimal_score(mode: api.GameMode, osu_score: dict, beatmap: dic
         max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
         else "",
         rank=osu_score["rank"],
-        stars=float(beatmap["difficulty_rating"]),
+        stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
         scoreboard_rank=f"#{rank} " if rank else "",
         live=await format_stream(member, osu_score, beatmap),
-        pp=round(osu_score["pp"], 2)
+        pp=utils.format_number(osu_score["pp"], 2)
     )
 
 
@@ -704,7 +704,8 @@ async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
             full_combo_acc = calculate_acc(mode, osu_score, exclude_misses=True)
             score_pp = await get_score_pp(osu_score, mode)
             if (score_pp.max_pp - osu_score["pp"]) > 10:
-                osu_score["new_pp"] = f"""{round(osu_score["pp"], 2)} => {round(score_pp.max_pp, 2)}"""
+                osu_score["new_pp"] = f"""{utils.format_number(osu_score["pp"], 2)} => {utils.format_number(
+                    score_pp.max_pp, 2)}"""
                 osu_score["pp"] = score_pp.max_pp
                 osu_score["perfect"] = True
                 osu_score["accuracy"] = full_combo_acc
@@ -969,7 +970,7 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
             beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
                                osu_score["beatmap"]["count_spinners"])
         footer.append(f"\nCompletion rate: {(objects / beatmap_objects) * 100:.2f}% "
-                      f"({round(pp_stats.partial_stars, 2)}\u2605)")
+                      f"({utils.format_number(pp_stats.partial_stars, 2)}\u2605)")
 
     embed.set_footer(text="".join(footer))
     return embed
@@ -1126,7 +1127,7 @@ async def format_beatmapset_diffs(beatmapset: dict):
             gamemode=format_mode_name(api.GameMode(int(diff["mode_int"])), short_name=True),
             name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
             diff_len=diff_length,
-            stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
+            stars=f"{utils.format_number(float(diff['difficulty_rating']), 2)}\u2605",
             pp=f"{int(diff.get('pp', '0'))}pp",
             drain="{}:{:02}".format(*divmod(int(diff["hit_length"] / diff["clock_rate"]), 60)))
         )
@@ -1157,14 +1158,14 @@ async def format_beatmap_info(diff: dict, mods: str):
              "{pp: <11}{stars: <14}{mods}".format(
               name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
               diff_len=diff_length,
-              stars=f"{float(diff['difficulty_rating']):.2f}\u2605",
+              stars=f"{utils.format_number(float(diff['difficulty_rating']), 2)}\u2605",
               pp=f"{int(diff.get('pp', '0'))}pp",
               drain="{}:{:02}".format(*divmod(int(diff["hit_length"] / diff["clock_rate"]), 60)),
               passrate=pass_rate,
-              od=round(diff["accuracy"], 1) if not diff["accuracy"] % 1 == 0 else int(diff["accuracy"]),
-              ar=round(diff["ar"], 1) if not diff["ar"] % 1 == 0 else int(diff["ar"]),
-              hp=round(diff["drain"], 1) if not diff["drain"] % 1 == 0 else int(diff["drain"]),
-              cs=round(diff["cs"], 1) if not diff["cs"] % 1 == 0 else int(diff["cs"]),
+              od=utils.format_number(float(diff["accuracy"]), 1),
+              ar=utils.format_number(float(diff["ar"]), 1),
+              hp=utils.format_number(float(diff["drain"]), 1),
+              cs=utils.format_number(float(diff["cs"]), 1),
               bpm=int(diff["bpm"] * diff["clock_rate"]) if diff["bpm"] and diff["clock_rate"] else "None",
               maxcombo=f"{diff['max_combo']}x" if diff["max_combo"] else "None",
               mode_name=format_mode_name(api.GameMode.get_mode(diff["mode"])),
@@ -1865,7 +1866,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
     mods = Mods.format_mods(osu_score["mods"])
 
     if score_pp is not None and osu_score["pp"] is None:
-        osu_score["pp"] = round(score_pp.pp, 2)
+        osu_score["pp"] = score_pp.pp
     elif osu_score["pp"] is None:
         osu_score["pp"] = 0
     if score_pp is not None:
@@ -2083,10 +2084,12 @@ async def top(message: discord.Message, *options):
                 osu_scores["score_list"], copy.deepcopy(osu_tracking[str(member.id)]["scores"]["score_list"]))
             new_total_pp = calculate_total_user_pp(full_osu_score_list, str(member.id))
             author_text = "{} ({} => {}, +{})".format(osu_tracking[str(member.id)]["new"]["username"],
-                                                      round(osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2),
-                                                      round(new_total_pp, 2),
-                                                      round(new_total_pp -
-                                                            osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
+                                                      utils.format_number(
+                                                          osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2),
+                                                      utils.format_number(new_total_pp, 2),
+                                                      utils.format_number(
+                                                          new_total_pp -
+                                                          osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
             sorted_scores = get_sorted_scores(osu_scores, list_type)
             m = await get_formatted_score_list(member, sorted_scores["score_list"], 5)
     else:
@@ -2161,8 +2164,9 @@ async def debug(message: discord.Message):
                               "Members registered as playing: {}\n"
                               "Total members tracked: `{}`".format(
                                api.requests_sent, client_time,
-                               round(api.requests_sent / ((datetime.utcnow() -
-                                                           client.time_started).total_seconds() / 60.0), 2)
+                               utils.format_number(api.requests_sent /
+                                                   ((datetime.utcnow() - client.time_started).total_seconds() / 60.0),
+                                                   2)
                                if api.requests_sent > 0 else 0,
                                time_elapsed,
                                f"<t:{int(previous_update.timestamp())}:F>"

@@ -98,7 +98,7 @@ def placeholder(_: str):
 async def confirm(message: discord.Message, text: str, timeout: int = 10):
     """ Have the message author confirm their action. """
     await client.send_message(message.channel,
-                                  text + " [{}{}]".format(str(timeout) + "s " if timeout else "", "yes/no"))
+                              text + " [{}{}]".format(str(timeout) + "s " if timeout else "", "yes/no"))
     author = message.author
     channel = message.channel
 
@@ -560,3 +560,8 @@ def split(text: str, maxsplit: int = -1):
     # Add any following text without splitting
     maxsplit_object.append(split_object.instream.read())
     return maxsplit_object
+
+
+def format_number(number: float, precision: int):
+    """ Removes trailing zeroes from floating point numbers. """
+    return ('%f' % round(number, precision)).rstrip('0').rstrip('.')
