@@ -217,8 +217,9 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
 
     # Find the performance page number of the respective ranks
 
-    formatted = [f"\u2139`{format_mode_name(mode, abbreviation=True)} {float(data_new['statistics']['pp']):.2f}pp "
-                 f"{pp:+.2f}pp`",
+    formatted = [f"\u2139`{format_mode_name(mode, abbreviation=True)} "
+                 f"{utils.format_number(data_new['statistics']['pp'], 2)}pp "
+                 f"{float(utils.format_number(pp, 2)):+}pp`",
                  f" [\U0001f30d]({rankings_url}?page="
                  f"{pp_rank // 50 + 1})`#{pp_rank:,}{'' if int(rank) == 0 else f' {int(rank):+}'}`",
                  f" [{utils.text_to_emoji(iso)}]({rankings_url}?country={iso}&page="
@@ -795,15 +796,16 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
         time_since_string = f"<t:{int(score_datetime.timestamp())}:R>"
 
         # Add score position to the score
-        pos = osu_score["pos"] if "diff" not in osu_score else f"""{osu_score["pos"]}. (+{osu_score["diff"]:.2f}pp)"""
+        pos = osu_score["pos"] if "diff" not in osu_score else f"{osu_score['pos']}. " \
+                                                               f"({utils.format_number(osu_score['diff'], 2):+}pp)"
         position_string = f"{pos}."
 
         potential_string = None
         # Add potential pp to the score
         if score_pp is not None and not isinstance(osu_score["pp"], str) and \
                 score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 and not osu_score["perfect"]:
-            potential_string = f"""Potential: {score_pp.max_pp:,.2f}pp, {score_pp.max_pp -
-                                                                         float(osu_score["pp"]):+.2f}pp"""
+            potential_string = f"Potential: {score_pp.max_pp:,.2f}pp, " \
+                               f"{float(utils.format_number(score_pp.max_pp - osu_score['pp'], 2)):+}pp"
 
         m.append("".join([f"{position_string}\n", await format_new_score(mode, osu_score, beatmap),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
