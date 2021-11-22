@@ -1205,8 +1205,7 @@ async def format_map_status(member: discord.Member, status_format: str, beatmaps
     return embed
 
 
-async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool = False,
-                                      ignore_memory_cache: bool = False, mods: str = "+Nomod"):
+async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool = False, mods: str = "+Nomod"):
     """ Calculates the pp for every difficulty in the given mapset, added
     to a "pp" key in the difficulty's dict. """
     # Init the cache of this mapset if it has not been created
@@ -1216,9 +1215,6 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, ignore_osu_cache: bool =
 
     if not ignore_osu_cache:
         ignore_osu_cache = not bool(beatmapset["status"] == "ranked" or beatmapset["status"] == "approved")
-    if not ignore_memory_cache:
-        ignore_osu_cache = not bool(beatmapset["status"] == "ranked" or beatmapset["status"] == "approved" or
-                                    beatmapset["status"] == "loved")
 
     cached_mapset = osu_config.data["map_cache"][set_id]
 
@@ -1348,7 +1344,7 @@ async def notify_recent_events(member_id: str, data: dict):
 
             # Calculate (or retrieve cached info) the pp for every difficulty of this mapset
             try:
-                await calculate_pp_for_beatmapset(beatmapset, ignore_osu_cache=True, ignore_memory_cache=True)
+                await calculate_pp_for_beatmapset(beatmapset, ignore_osu_cache=True)
             except ValueError:
                 logging.error(traceback.format_exc())
 
