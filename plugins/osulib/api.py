@@ -21,8 +21,6 @@ requests_sent = 0
 mapcache_path = "plugins/osulib/mapdatacache"
 setcache_path = "plugins/osulib/setdatacache"
 
-beatmap_memory_cache = {}
-
 mode_names = {
     "osu": ["standard", "osu", "std", "osu!"],
     "taiko": ["taiko", "osu!taiko"],
@@ -161,6 +159,7 @@ def def_section(api_name: str, first_element: bool = False):
         for i in range(request_tries):
             try:
                 response = await utils.download_json(url + api_name, headers=headers, **params)
+
             except ValueError as e:
                 logging.warning("ValueError Calling %s: %s", url + api_name, e)
             else:
@@ -219,7 +218,6 @@ def retrieve_cache(map_id: int, map_type: str, mode: str = None):
     """ Retrieves beatmap or beatmapset cache from memory or file if it exists """
     # Check if cache should be validated for beatmap or beatmapset
     result = None
-    filename = None
     if map_type == "set":
         if not os.path.exists(setcache_path):
             os.makedirs(setcache_path)
@@ -228,10 +226,7 @@ def retrieve_cache(map_id: int, map_type: str, mode: str = None):
         if not os.path.exists(mapcache_path):
             os.makedirs(mapcache_path)
         beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
-        filename = str(map_id) + "-" + mode + ".json"
-    if filename is not None and filename in beatmap_memory_cache:
-        result = beatmap_memory_cache[filename]
-    elif os.path.isfile(beatmap_path):
+    if os.path.isfile(beatmap_path):
         with open(beatmap_path, encoding="utf-8") as fp:
             result = json.load(fp)
     return result
@@ -264,13 +259,9 @@ async def beatmap_lookup(params, map_id, mode):
     """ Looks up a beatmap unless cache exists"""
     result = retrieve_cache(map_id, "map", mode)
     valid_result = validate_cache(result)
-    filename = str(map_id) + "-" + mode + ".json"
-    if valid_result and filename not in beatmap_memory_cache:
-        beatmap_memory_cache[filename] = result
-    elif not valid_result:
+    if not valid_result:
         await beatmapset_lookup(params=params)
         result = retrieve_cache(map_id, "map", mode)
-        beatmap_memory_cache[filename] = result
     return result
 
 
