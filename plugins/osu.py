@@ -219,13 +219,13 @@ def format_user_diff(mode: api.GameMode, data_old: dict, data_new: dict):
 
     formatted = [f"\u2139`{format_mode_name(mode, abbreviation=True)} "
                  f"{utils.format_number(data_new['statistics']['pp'], 2)}pp "
-                 f"{float(utils.format_number(pp, 2)):+}pp`",
+                 f"{utils.format_number(pp, 2):+}pp`",
                  f" [\U0001f30d]({rankings_url}?page="
                  f"{pp_rank // 50 + 1})`#{pp_rank:,}{'' if int(rank) == 0 else f' {int(rank):+}'}`",
                  f" [{utils.text_to_emoji(iso)}]({rankings_url}?country={iso}&page="
                  f"{pp_country_rank // 50 + 1})`"
                  f"#{pp_country_rank:,}{'' if int(country_rank) == 0 else f' {int(country_rank):+}'}`"]
-    rounded_acc = float(utils.format_number(accuracy, 3))
+    rounded_acc = utils.format_number(accuracy, 3)
     if rounded_acc > 0:
         formatted.append("\n\U0001f4c8")  # Graph with upwards trend
     elif rounded_acc < 0:
@@ -805,7 +805,7 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
         if score_pp is not None and not isinstance(osu_score["pp"], str) and \
                 score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1 and not osu_score["perfect"]:
             potential_string = f"Potential: {score_pp.max_pp:,.2f}pp, " \
-                               f"{float(utils.format_number(score_pp.max_pp - osu_score['pp'], 2)):+}pp"
+                               f"{utils.format_number(score_pp.max_pp - osu_score['pp'], 2):+}pp"
 
         m.append("".join([f"{position_string}\n", await format_new_score(mode, osu_score, beatmap),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
@@ -2127,11 +2127,11 @@ async def top(message: discord.Message, *options):
             full_osu_score_list = generate_full_no_choke_score_list(
                 osu_scores["score_list"], copy.deepcopy(osu_tracking[str(member.id)]["scores"]["score_list"]))
             new_total_pp = calculate_total_user_pp(full_osu_score_list, str(member.id))
-            author_text = "{} ({} => {}, +{})".format(osu_tracking[str(member.id)]["new"]["username"],
-                                                      utils.format_number(
+            author_text = "{} ({} => {}, {:+})".format(osu_tracking[str(member.id)]["new"]["username"],
+                                                       utils.format_number(
                                                           osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2),
-                                                      utils.format_number(new_total_pp, 2),
-                                                      utils.format_number(
+                                                       utils.format_number(new_total_pp, 2),
+                                                       utils.format_number(
                                                           new_total_pp -
                                                           osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
             sorted_scores = get_sorted_scores(osu_scores, list_type)
