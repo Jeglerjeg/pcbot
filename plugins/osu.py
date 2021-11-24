@@ -1928,8 +1928,8 @@ async def recent(message: discord.Message, user: str = None):
     await client.send_message(message.channel, embed=embed)
 
 
-plugins.command()(recent)
-osu.command(aliases="last new")(recent)
+plugins.command(aliases="last new r rs")(recent)
+osu.command(aliases="last new r rs")(recent)
 
 
 async def score(message: discord.Message, *options):
