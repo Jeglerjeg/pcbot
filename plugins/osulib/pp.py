@@ -127,6 +127,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     elif mode is api.GameMode.taiko:
         pp_info = pp_bindings.taiko_pp(beatmap_path, mods_bitmask, args.combo, args.acc, args.c300,
                                        args.c100, args.misses, args.objects)
+        max_combo = pp_info["max_combo"]
     elif mode is api.GameMode.mania:
         pp_info = pp_bindings.mania_pp(beatmap_path, mods_bitmask, args.score, args.objects)
     elif mode is api.GameMode.fruits:
