@@ -563,7 +563,7 @@ def get_beatmap_sr(score_pp: PPStats, beatmap: dict, mods: str):
 
 def format_potential_pp(score_pp: PPStats, osu_score: dict):
     """ Formats potential PP for scores. """
-    if score_pp is not None and score_pp.max_pp is not None and score_pp.max_pp - osu_score["pp"] > 1\
+    if score_pp is not None and score_pp.max_pp is not None and (osu_score["pp"] / score_pp.max_pp) * 100 < 99\
             and not osu_score["perfect"]:
         potential_string = f"Potential: {utils.format_number(score_pp.max_pp, 2):,}pp, " \
                            f"{utils.format_number(score_pp.max_pp - osu_score['pp'], 2):+}pp"
