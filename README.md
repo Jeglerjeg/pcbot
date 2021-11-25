@@ -6,15 +6,6 @@ WIP discord bot using [discord.py](https://github.com/Rapptz/discord.py).
 
 **PCBOT is only supported by python version 3.8.0 and newer.**
 
-## BotéMon
-**For those who have arrived from BotéMon and wish to contribute/have 
-a look/access the resources**, the libraries used are found in 
-[`plugins/pokedex.py`](plugins/pokedex.py) and [`plugins/pokedexlib/`](plugins/pokedexlib)!
-
-Currently, BotéMon is the only version of PCBOT I host for public use. 
-**If you wish to add the bot to your server, check 
-[its bots.discord.pw entry!](https://bots.discord.pw/bots/203868728884985857)**
-
 ## Installing
 Before installing the bot, you must make sure you're running python 
 3.8.0+
@@ -46,9 +37,6 @@ This is the best way to install as the bot is actively in development.
 If you want to update the bot using git, run `git pull` and either 
 restart the bot or reload the updated plugins.
 
-If you do not care about updates, you can 
-[download the repo as ZIP](https://github.com/pckv/pcbot/archive/master.zip).
-
 Several plugins require additional modules. These modules are not 
 required unless you want a specific plugin to work. Some features and 
 modules are only supported if you're using Linux. The bot will prompt 
@@ -62,6 +50,7 @@ errors when modules are missing, although modules as of now are:
 | aiofiles  | `pip install aiofiles`, support async file operations in [`config.py`](pcbot/config.py)          |
 | ffmpeg    | Not a python module; see doc in [`music.py`](plugins/music.py)      |
 | imageio   | `pip install imageio`, support gif in [`image.py`](plugins/image.py)|
+| nltk      | `pip install nltk`, support bigrams in [`summary.py`](plugins/summary.py)|
 
 ## Running
 Running the bot is simple. Go to the root directory 
@@ -83,9 +72,8 @@ For more command-line arguments, execute `python bot.py -h`.
 
 ## Configuration
 ### Changing the command prefix
-The command prefix is **bot specific**, which means that servers can't
-set a custom command prefix. To change the bot prefix, head over to 
-[`config/bot-meta.json`](config/bot_meta.json). The prefix can be any number of characters.
+To change the bot prefix, head over to [`config/bot-meta.json`](config/bot_meta.json). 
+The prefix can be any number of characters.
 
 ### The info command
 PCBOT has a dedicated info command, by default `!pcbot`, which 
