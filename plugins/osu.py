@@ -823,6 +823,8 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
 
 def get_diff(old: dict, new: dict, value: str, statistics=False):
     """ Get the difference between old and new osu! user data. """
+    if not new or not old:
+        return 0
     if statistics:
         new_value = float(new["statistics"][value]) if new["statistics"][value] else 0.0
         old_value = float(old["statistics"][value]) if old["statistics"][value] else 0.0
