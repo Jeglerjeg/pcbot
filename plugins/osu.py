@@ -305,7 +305,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
             "```diff\n"
             "  acc     300s  100s  50s  miss  combo\n"
-            "{sign} {acc:<8.2%}{count300:<6}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}```"
+            "{sign} {acc:<8}{count300:<6}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}```"
             "{live}"
         ).format(
             host=host,
@@ -314,7 +314,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             mode=osu_score["mode"],
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc=osu_score["accuracy"],
+            acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
             pp=utils.format_number(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
@@ -346,7 +346,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
             "```diff\n"
             "  acc     great  good  miss  combo\n"
-            "{sign} {acc:<8.2%}{count300:<7}{count100:<6}{countmiss:<6}{maxcombo}{max_combo}```"
+            "{sign} {acc:<8}{count300:<7}{count100:<6}{countmiss:<6}{maxcombo}{max_combo}```"
             "{live}"
         ).format(
             host=host,
@@ -355,7 +355,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             mode=osu_score["mode"],
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc=osu_score["accuracy"],
+            acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
             pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
@@ -386,7 +386,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
             "```diff\n"
             "  acc     max   300s  200s  100s  50s  miss\n"
-            "{sign} {acc:<8.2%}{countmax:<6}{count300:<6}{count200:<6}{count100:<6}{count50:<5}{countmiss:<6}```"
+            "{sign} {acc:<8}{countmax:<6}{count300:<6}{count200:<6}{count100:<6}{count50:<5}{countmiss:<6}```"
             "{live}"
         ).format(
             host=host,
@@ -395,7 +395,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             mode=osu_score["mode"],
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc=osu_score["accuracy"],
+            acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
             pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
@@ -426,7 +426,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
             "```diff\n"
             "  acc     fruits ticks drpmiss miss combo\n"
-            "{sign} {acc:<8.2%}{count300:<7}{count100:<6}{countdrpmiss:<8}{countmiss:<5}{maxcombo}{max_combo}```"
+            "{sign} {acc:<8}{count300:<7}{count100:<6}{countdrpmiss:<8}{countmiss:<5}{maxcombo}{max_combo}```"
             "{live}"
         ).format(
             host=host,
@@ -435,7 +435,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             mode=osu_score["mode"],
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc=osu_score["accuracy"],
+            acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
             pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
@@ -465,17 +465,16 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
 async def format_minimal_score(mode: api.GameMode, osu_score: dict, beatmap: dict, rank: int, member: discord.Member):
     """ Format any osu! score with minimal content.
     There should be a member name/mention in front of this string. """
-    acc = calculate_acc(mode, osu_score)
     return (
         "[*{artist} - {title} [{version}]*]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-        "**{pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc:.2%} {scoreboard_rank}+{mods}**"
+        "**{pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
         host=host,
         beatmapset_id=beatmap["beatmapset_id"],
         mode=osu_score["mode"],
         mods=Mods.format_mods(osu_score["mods"]),
-        acc=acc,
+        acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
         beatmap_id=osu_score["beatmap"]["id"],
         artist=beatmap["beatmapset"]["artist"].replace("*", r"\*").replace("_", r"\_"),
         title=beatmap["beatmapset"]["title"].replace("*", r"\*").replace("_", r"\_"),
