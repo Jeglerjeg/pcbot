@@ -462,7 +462,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
         )
 
 
-async def format_minimal_score(mode: api.GameMode, osu_score: dict, beatmap: dict, rank: int, member: discord.Member):
+async def format_minimal_score(osu_score: dict, beatmap: dict, rank: int, member: discord.Member):
     """ Format any osu! score with minimal content.
     There should be a member name/mention in front of this string. """
     return (
@@ -807,9 +807,9 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
         time_since_string = f"<t:{int(score_datetime.timestamp())}:R>"
 
         # Add score position to the score
-        pos = osu_score["pos"] if "diff" not in osu_score else f"{osu_score['pos']}. " \
+        pos = "{}.".format(osu_score["pos"]) if "diff" not in osu_score else f"{osu_score['pos']}. " \
                                                                f"({utils.format_number(osu_score['diff'], 2):+}pp)"
-        position_string = f"{pos}."
+        position_string = f"{pos}"
 
         # Add potential pp to the score
         potential_string = format_potential_pp(score_pp, osu_score)
@@ -1018,7 +1018,7 @@ async def notify_pp(member_id: str, data: dict):
                 break
             await asyncio.sleep(osu_config.data["score_update_delay"])
         else:
-            logging.info("%s gained PP, but no new score was found.", member_id)
+            logging.info("%s (%s) gained PP, but no new score was found.", member.name, member_id)
             if not notify_empty_scores:
                 return
     for osu_score in list(osu_scores):
@@ -1048,7 +1048,7 @@ async def notify_pp(member_id: str, data: dict):
         if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp.max_combo:
             beatmap["max_combo"] = score_pp.max_combo
         if update_mode is UpdateModes.Minimal:
-            m.append("".join([await format_minimal_score(mode, osu_score, beatmap, scoreboard_rank, member), "\n"]))
+            m.append("".join([await format_minimal_score(osu_score, beatmap, scoreboard_rank, member), "\n"]))
         else:
             m.append(await format_new_score(mode, osu_score, beatmap, scoreboard_rank, member))
     elif len(osu_scores) > 1:
