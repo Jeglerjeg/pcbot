@@ -807,14 +807,13 @@ async def get_formatted_score_list(member: discord.Member, osu_scores: list, lim
         time_since_string = f"<t:{int(score_datetime.timestamp())}:R>"
 
         # Add score position to the score
-        pos = "{}.".format(osu_score["pos"]) if "diff" not in osu_score else f"{osu_score['pos']}. " \
-                                                               f"({utils.format_number(osu_score['diff'], 2):+}pp)"
-        position_string = f"{pos}"
+        pos = "{}.".format(osu_score["pos"]) if "diff" not in osu_score else \
+            f"{osu_score['pos']}. ({utils.format_number(osu_score['diff'], 2):+}pp)"
 
         # Add potential pp to the score
         potential_string = format_potential_pp(score_pp, osu_score)
 
-        m.append("".join([f"{position_string}\n", await format_new_score(mode, osu_score, beatmap),
+        m.append("".join([f"{pos}\n", await format_new_score(mode, osu_score, beatmap),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
                           "".join([time_since_string, "\n"]) if not no_time else "",
                           "\n" if not i == limit - 1 else ""]))
