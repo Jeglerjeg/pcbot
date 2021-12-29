@@ -633,6 +633,8 @@ async def update_user_data(member_id: str, profile: str):
                                                                          not in osu_config.data["profiles"][member_id]):
         if member_id in osu_tracking:
             del osu_tracking[member_id]
+        if member_id in osu_profile_cache.data:
+            del osu_profile_cache.data[member_id]
         return
 
     # Check if the member is tracked, add to cache and tracking if not
@@ -673,6 +675,10 @@ async def update_user_data(member_id: str, profile: str):
         # User is already tracked
         if "scores" not in osu_tracking[member_id]:
             fetched_scores = await retrieve_osu_scores(profile, mode, current_time)
+            if fetched_scores:
+                osu_tracking[member_id]["scores"] = fetched_scores
+                if cache_user_profiles:
+                    osu_profile_cache.data[member_id]["scores"] = fetched_scores
     except aiohttp.ServerDisconnectedError:
         return
     except asyncio.TimeoutError:
@@ -688,10 +694,6 @@ async def update_user_data(member_id: str, profile: str):
         logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
     # Update the "new" data
-    if "scores" not in osu_tracking[member_id] and fetched_scores is not None:
-        osu_tracking[member_id]["scores"] = fetched_scores
-        if cache_user_profiles:
-            osu_profile_cache.data[member_id]["scores"] = fetched_scores
     if "new" in osu_tracking[member_id]:
         # Move the "new" data into the "old" data of this user
         osu_tracking[member_id]["old"] = osu_tracking[member_id]["new"]
