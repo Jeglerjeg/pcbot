@@ -162,6 +162,9 @@ async def render_failed_json(data: json):
         elif error_code == 26:
             await requested_renders[render_id]["message"].edit(error_message)
             requested_renders.pop(render_id)
+        elif error_code == 27:
+            await requested_renders[render_id]["message"].edit(error_message)
+            requested_renders.pop(render_id)
 
 
 @ordr_client.event()
