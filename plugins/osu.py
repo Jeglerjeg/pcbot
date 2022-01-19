@@ -791,7 +791,14 @@ async def notify_maps(member_id: str, data: dict):
 
 async def on_ready():
     """ Handle every event. """
-    global time_elapsed
+    global time_elapsed, previous_update
+    no_key = False
+
+    await client.wait_until_ready()
+    try:
+        await ordr.establish_ws_connection()
+    except ConnectionError:
+        logging.error("Failed to connnect to ordr websocket.")
 
     # Notify the owner when they have not set their API key
     if osu_config.data["key"] == "change to your api key":
