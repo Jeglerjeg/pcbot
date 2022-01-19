@@ -1460,7 +1460,10 @@ async def on_ready():
     no_key = False
 
     await client.wait_until_ready()
-    await ordr.establish_ws_connection()
+    try:
+        await ordr.establish_ws_connection()
+    except ConnectionError:
+        logging.error("Failed to connnect to ordr websocket.")
 
     # Notify the owner when they have not set their API key
     if osu_config.data["client_secret"] == "change to your client secret" or \
