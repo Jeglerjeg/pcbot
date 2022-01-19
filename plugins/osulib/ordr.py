@@ -291,4 +291,7 @@ async def send_render_job(option):
 async def establish_ws_connection():
     if ordr_client.connected:
         await ordr_client.disconnect()
-    await ordr_client.connect(ws_link)
+    try:
+        await ordr_client.connect(ws_link)
+    except socketio.exceptions.ConnectionError:
+        logging.error("Failed to connnect to ordr websocket.")
