@@ -659,7 +659,6 @@ async def update_user_data(member_id: str, profile: str):
         return
 
     # Get the user data for the player
-    fetched_scores = None
     current_time = datetime.now(tz=timezone.utc).isoformat()
     mode = get_mode(member_id)
     try:
@@ -787,9 +786,8 @@ async def get_new_score(member_id: str):
     return new_scores
 
 
-async def get_formatted_score_list(member: discord.Member, osu_scores: list, limit: int, no_time: bool = False):
+async def get_formatted_score_list(mode: api.GameMode, osu_scores: list, limit: int, no_time: bool = False):
     """ Return a list of formatted scores along with time since the score was set. """
-    mode = get_mode(str(member.id))
     m = []
     for i, osu_score in enumerate(osu_scores):
         if i > limit - 1:
@@ -1060,7 +1058,7 @@ async def notify_pp(member_id: str, data: dict):
             if new["events"]:
                 osu_score["scoreboard_rank"] = api.rank_from_events(new["events"],
                                                                     str(osu_score["beatmap"]["id"]), osu_score)
-        m.append(await get_formatted_score_list(member, osu_scores,
+        m.append(await get_formatted_score_list(mode, osu_scores,
                                                 limit=len(osu_scores) if len(osu_scores) <= 5 else 5, no_time=True))
         thumbnail_url = data["new"]["avatar_url"]
         author_text = f"""{data["new"]["username"]} set new best scores"""
@@ -2095,12 +2093,12 @@ async def top(message: discord.Message, *options):
                                                           new_total_pp -
                                                           osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
             sorted_scores = get_sorted_scores(osu_scores, list_type)
-            m = await get_formatted_score_list(member, sorted_scores["score_list"], 5)
+            m = await get_formatted_score_list(mode, sorted_scores["score_list"], 5)
     else:
         osu_scores = osu_tracking[str(member.id)]["scores"]
         author_text = osu_tracking[str(member.id)]["new"]["username"]
         sorted_scores = get_sorted_scores(osu_scores, list_type)
-        m = await get_formatted_score_list(member, sorted_scores["score_list"], 5)
+        m = await get_formatted_score_list(mode, sorted_scores["score_list"], 5)
     e = discord.Embed(color=member.color)
     e.description = m
     e.set_author(name=author_text,
