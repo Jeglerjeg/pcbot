@@ -56,6 +56,7 @@ errors when modules are missing, although modules as of now are:
 | aiofiles  | `pip install aiofiles`, support async file operations in [`config.py`](pcbot/config.py)          |
 | ffmpeg    | Not a python module; see doc in [`music.py`](plugins/music.py)      |
 | imageio   | `pip install imageio`, support gif in [`image.py`](plugins/image.py)|
+| rosu-pp  | `pip install rosu-pp-py`, support pp calculation in [`pp.py`](plugins/pp.py), requires rust toolchain to be installed |
 
 ## Running
 Running the bot is simple. Go to the root directory 
