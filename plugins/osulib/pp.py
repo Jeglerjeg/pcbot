@@ -1,21 +1,20 @@
 """ Implement pp calculation features using rosu-pp python bindings.
-    https://github.com/MaxOhn/rosu-pp
-    https://github.com/Jeglet/pp-bindings
+    https://github.com/MaxOhn/rosu-pp-py
 """
 
 import logging
 import os
+import rosu_pp_py
 from collections import namedtuple
 
 from pcbot import utils
 from . import api
-from . import pp_bindings
 from .args import parse as parse_options
 
 host = "https://osu.ppy.sh/"
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
-PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs od hp clock_rate")
+PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs od hp bpm")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars")
 
 cache_path = "plugins/osulib/mapcache"
@@ -113,80 +112,128 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
     # If the pp arg is given, return using the closest pp function
-    if args.pp is not None and mode is api.GameMode.osu:
-        return await find_closest_pp(beatmap_path, mods_bitmask, args)
+    #if args.pp is not None and mode is api.GameMode.osu:
+    #    return await find_closest_pp(beatmap_path, mods_bitmask, args)
 
     # Calculate the pp
+    calculator = rosu_pp_py.Calculator(beatmap_path)
     max_pp = None
     max_combo = None
+    # Calculate maximum stars and pp
+    score_params = rosu_pp_py.ScoreParams(mods=mods_bitmask)
+    if args.potential_acc:
+        score_params.acc = args.potential_acc
+    [potential_pp_info] = calculator.calculate(score_params)
+    # Calculate actual stars and pp
+    partial_stars = potential_pp_info.stars
+    score_params = get_score_params(score_params, mode, args)
+    [pp_info] = calculator.calculate(score_params)
     if mode is api.GameMode.osu:
-        pp_info = pp_bindings.std_pp(beatmap_path, mods_bitmask, args.combo, args.acc, args.potential_acc, args.c300,
-                                     args.c100, args.c50, args.misses, args.objects)
-        max_pp = pp_info["max_pp"]
-        max_combo = pp_info["max_combo"]
+        max_pp = potential_pp_info.pp
+        max_combo = pp_info.maxCombo
+    elif mode is api.GameMode.taiko or mode is api.GameMode.fruits:
+        max_combo = pp_info.maxCombo
+
+    pp = pp_info.pp
+    total_stars = partial_stars
+    partial_stars = pp_info.stars
+    ar = pp_info.ar
+    cs = pp_info.od
+    od = pp_info.od
+    hp = pp_info.hp
+    bpm = pp_info.bpm
+    return PPStats(pp, total_stars, partial_stars, max_pp, max_combo, ar, cs, od, hp, bpm)
+
+
+def get_score_params(score_params: rosu_pp_py.ScoreParams, mode: api.GameMode, args):
+    if args.objects:
+        score_params.passedObjects = args.objects
+    if mode is api.GameMode.osu:
+        if args.combo:
+            score_params.combo = args.combo
+        if args.acc:
+            score_params.acc = args.acc
+        if args.c300:
+            score_params.n300 = args.c300
+        if args.c100:
+            score_params.n100 = args.c100
+        if args.c50:
+            score_params.n50 = args.c50
+        if args.misses:
+            score_params.nMisses = args.misses
     elif mode is api.GameMode.taiko:
-        pp_info = pp_bindings.taiko_pp(beatmap_path, mods_bitmask, args.combo, args.acc, args.c300,
-                                       args.c100, args.misses, args.objects)
-        max_combo = pp_info["max_combo"]
+        if args.combo:
+            score_params.combo = args.combo
+        if args.acc:
+            score_params.acc = args.acc
+        if args.c300:
+            score_params.n300 = args.c300
+        if args.c100:
+            score_params.n100 = args.c100
+        if args.misses:
+            score_params.nMisses = args.misses
     elif mode is api.GameMode.mania:
-        pp_info = pp_bindings.mania_pp(beatmap_path, mods_bitmask, args.score, args.objects)
+        if args.score:
+            score_params.score = args.score
     elif mode is api.GameMode.fruits:
-        pp_info = pp_bindings.catch_pp(beatmap_path, mods_bitmask, args.combo, args.c300, args.c100,
-                                       args.c50, args.dropmiss, args.misses, args.objects)
-        max_combo = pp_info["max_combo"]
+        if args.combo:
+            score_params.combo = args.combo
+        if args.acc:
+            score_params.acc = args.acc
+        if args.c300:
+            score_params.n300 = args.c300
+        if args.c100:
+            score_params.n100 = args.c100
+        if args.c50:
+            score_params.n50 = args.c50
+        if args.dropmiss:
+            score_params.nKatu = args.dropmiss
+        if args.misses:
+            score_params.nMisses = args.misses
     else:
         logging.info("Unknown gamemode {} passed to pp calculator".format(mode))
         return
-
-    pp = pp_info["pp"]
-    total_stars = pp_info["total_stars"]
-    partial_stars = pp_info["partial_stars"]
-    ar = pp_info["ar"]
-    cs = pp_info["cs"]
-    od = pp_info["od"]
-    hp = pp_info["hp"]
-    clock_rate = pp_info["clock_rate"]
-    return PPStats(pp, total_stars, partial_stars, max_pp, max_combo, ar, cs, od, hp, clock_rate)
+    return score_params
 
 
-async def find_closest_pp(beatmap_path, mods_bitmask, args):
-    """ Find the accuracy required to get the given amount of pp from this map. """
-    # Define a partial command for easily setting the pp value by 100s count
-    def calc(accuracy: float):
-        pp_info = pp_bindings.std_pp(beatmap_path, mods_bitmask, args.combo, accuracy, args.potential_acc, args.c300,
-                                     args.c100, args.c50, args.misses, args.objects)
-
-        return pp_info
-
-    # Find the smallest possible value rosu-pp is willing to give
-    min_pp = calc(accuracy=0.0)
-
-    if args.pp <= min_pp["pp"]:
-        raise ValueError(f"The given pp value is too low (calculator gives **{min_pp['pp']:.02f}pp** as the "
-                         "lowest possible).")
+#async def find_closest_pp(beatmap_path, mods_bitmask, args):
+#    """ Find the accuracy required to get the given amount of pp from this map. """
+#    # Define a partial command for easily setting the pp value by 100s count
+#    def calc(accuracy: float):
+#        pp_info = pp_bindings.std_pp(beatmap_path, mods_bitmask, args.combo, accuracy, args.potential_acc, args.c300,
+#                                     args.c100, args.c50, args.misses, args.objects)
+#
+#        return pp_info
+#
+#    # Find the smallest possible value rosu-pp is willing to give
+#    min_pp = calc(accuracy=0.0)
+#
+#    if args.pp <= min_pp["pp"]:
+#        raise ValueError(f"The given pp value is too low (calculator gives **{min_pp['pp']:.02f}pp** as the "
+#                         "lowest possible).")
 
     # Calculate the max pp value by using 100% acc
-    previous_pp = calc(accuracy=100.0)
+#    previous_pp = calc(accuracy=100.0)
 
-    if args.pp >= previous_pp["pp"]:
-        raise ValueError(f"PP value should be below **{previous_pp['pp']:.02f}pp** for this map.")
+#    if args.pp >= previous_pp["pp"]:
+#        raise ValueError(f"PP value should be below **{previous_pp['pp']:.02f}pp** for this map.")
 
-    dec = .05
-    acc = 100.0 - dec
-    while True:
-        current_pp = calc(accuracy=acc)
+#    dec = .05
+#    acc = 100.0 - dec
+#    while True:
+#        current_pp = calc(accuracy=acc)
+#
+#        # Stop when we find a pp value between the current 100 count and the previous one
+#        if current_pp["pp"] <= args.pp <= previous_pp["pp"]:
+#            break
+#
+#        previous_pp = current_pp
+#        acc -= dec
 
-        # Stop when we find a pp value between the current 100 count and the previous one
-        if current_pp["pp"] <= args.pp <= previous_pp["pp"]:
-            break
-
-        previous_pp = current_pp
-        acc -= dec
-
-    # Calculate the star difficulty
-    totalstars = current_pp["total_stars"]
+#    # Calculate the star difficulty
+#    totalstars = current_pp["total_stars"]
 
     # Find the closest pp of our two values, and return the amount of 100s
-    closest_pp = min([previous_pp["pp"], current_pp["pp"]], key=lambda v: abs(args.pp - v))
-    acc = acc if closest_pp == current_pp["pp"] else acc + dec
-    return ClosestPPStats(round(acc, 2), closest_pp, totalstars)
+#    closest_pp = min([previous_pp["pp"], current_pp["pp"]], key=lambda v: abs(args.pp - v))
+#    acc = acc if closest_pp == current_pp["pp"] else acc + dec
+#    return ClosestPPStats(round(acc, 2), closest_pp, totalstars)
