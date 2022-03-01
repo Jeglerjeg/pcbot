@@ -126,7 +126,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     [potential_pp_info] = calculator.calculate(score_params)
     # Calculate actual stars and pp
     partial_stars = potential_pp_info.stars
-    score_params = get_score_params(score_params, mode, args)
+    score_params = get_score_params(score_params, args)
     [pp_info] = calculator.calculate(score_params)
     if mode is api.GameMode.osu:
         max_pp = potential_pp_info.pp
@@ -145,54 +145,25 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     return PPStats(pp, total_stars, partial_stars, max_pp, max_combo, ar, cs, od, hp, bpm)
 
 
-def get_score_params(score_params: rosu_pp_py.ScoreParams, mode: api.GameMode, args):
+def get_score_params(score_params: rosu_pp_py.ScoreParams, args):
     if args.objects:
         score_params.passedObjects = args.objects
-    if mode is api.GameMode.osu:
-        if args.combo:
-            score_params.combo = args.combo
-        if args.acc:
-            score_params.acc = args.acc
-        if args.c300:
-            score_params.n300 = args.c300
-        if args.c100:
-            score_params.n100 = args.c100
-        if args.c50:
-            score_params.n50 = args.c50
-        if args.misses:
-            score_params.nMisses = args.misses
-    elif mode is api.GameMode.taiko:
-        if args.combo:
-            score_params.combo = args.combo
-        if args.acc:
-            score_params.acc = args.acc
-        if args.c300:
-            score_params.n300 = args.c300
-        if args.c100:
-            score_params.n100 = args.c100
-        if args.misses:
-            score_params.nMisses = args.misses
-    elif mode is api.GameMode.mania:
-        if args.score:
-            score_params.score = args.score
-    elif mode is api.GameMode.fruits:
-        if args.combo:
-            score_params.combo = args.combo
-        if args.acc:
-            score_params.acc = args.acc
-        if args.c300:
-            score_params.n300 = args.c300
-        if args.c100:
-            score_params.n100 = args.c100
-        if args.c50:
-            score_params.n50 = args.c50
-        if args.dropmiss:
-            score_params.nKatu = args.dropmiss
-        if args.misses:
-            score_params.nMisses = args.misses
-    else:
-        logging.info("Unknown gamemode {} passed to pp calculator".format(mode))
-        return
+    if args.combo:
+        score_params.combo = args.combo
+    if args.acc:
+        score_params.acc = args.acc
+    if args.c300:
+        score_params.n300 = args.c300
+    if args.c100:
+        score_params.n100 = args.c100
+    if args.c50:
+        score_params.n50 = args.c50
+    if args.misses:
+        score_params.nMisses = args.misses
+    if args.score:
+        score_params.score = args.score
+    if args.dropmiss:
+        score_params.nKatu = args.dropmiss
     return score_params
 
 
