@@ -4,12 +4,16 @@
 
 import logging
 import os
-import rosu_pp_py
 from collections import namedtuple
 
 from pcbot import utils
 from . import api
 from .args import parse as parse_options
+
+try:
+    import rosu_pp_py
+except ImportError:
+    rosu_pp_py = None
 
 host = "https://osu.ppy.sh/"
 
@@ -101,6 +105,9 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     :param mode: which mode to calculate PP for
     :param ignore_osu_cache: When true, does not download or use .osu file cache
     """
+
+    if not rosu_pp_py:
+        return
 
     beatmap_path = await parse_map(beatmap_url_or_id, ignore_osu_cache=ignore_osu_cache)
     args = parse_options(*options)
