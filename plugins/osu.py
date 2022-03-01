@@ -1657,7 +1657,9 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
 @osu.command(hidden=True, owner=True)
 async def wipe_tracking(message: discord.Message, member: discord.Member = None):
-    """ Wipe all tracked members or just the specified member. """
+    """ Wipe all tracked members or just the specified member, as well as the map cache in osu.json. """
+    osu_config.data["map_cache"] = {}
+    await osu_config.asyncsave()
     if member:
         if str(member.id) in osu_tracking:
             del osu_tracking[str(member.id)]
