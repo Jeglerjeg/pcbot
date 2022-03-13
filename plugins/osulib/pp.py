@@ -97,13 +97,15 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False):
     return beatmap_path
 
 
-async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_osu_cache: bool = False):
+async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_osu_cache: bool = False, failed: bool = False, potential: bool = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
     :param mode: which mode to calculate PP for
     :param ignore_osu_cache: When true, does not download or use .osu file cache
+    :param failed: whether or not the play was failed
+    :param potential: whether or not potential PP should be calculated
     """
 
     if not rosu_pp_py:
@@ -126,23 +128,27 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     calculator = rosu_pp_py.Calculator(beatmap_path)
     max_pp = None
     max_combo = None
+    total_stars = None
     # Calculate maximum stars and pp
     score_params = rosu_pp_py.ScoreParams(mods=mods_bitmask)
-    if args.potential_acc:
-        score_params.acc = args.potential_acc
-    [potential_pp_info] = calculator.calculate(score_params)
+    if failed or potential:
+        if args.potential_acc:
+            score_params.acc = args.potential_acc
+        [potential_pp_info] = calculator.calculate(score_params)
+        total_stars = potential_pp_info.stars
+        if mode is api.GameMode.osu:
+            max_pp = potential_pp_info.pp
+
     # Calculate actual stars and pp
-    partial_stars = potential_pp_info.stars
     score_params = get_score_params(score_params, args)
     [pp_info] = calculator.calculate(score_params)
     if mode is api.GameMode.osu:
-        max_pp = potential_pp_info.pp
         max_combo = pp_info.maxCombo
     elif mode is api.GameMode.taiko or mode is api.GameMode.fruits:
         max_combo = pp_info.maxCombo
 
     pp = pp_info.pp
-    total_stars = partial_stars
+    total_stars = total_stars if failed else pp_info.stars
     partial_stars = pp_info.stars
     ar = pp_info.ar
     cs = pp_info.od
