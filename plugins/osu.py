@@ -859,7 +859,7 @@ async def get_score_pp(osu_score: dict, mode: api.GameMode, beatmap: dict = None
             score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
                                           ignore_osu_cache=not bool(beatmap["status"] == "ranked"
                                                                     or beatmap["status"] == "approved") if beatmap
-                                          else False,
+                                          else False, potential=not osu_score["perfect"] or not osu_score["passed"], failed=osu_score["passed"],
                                           *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
                                            "{countmiss}m {maxcombo}x {objects}objects"
                                           .format(acc=calculate_acc(mode, osu_score),
