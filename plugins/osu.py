@@ -746,7 +746,7 @@ async def get_new_score(member_id: str):
     profile = osu_config.data["profiles"][member_id]
     mode = get_mode(member_id)
     try:
-        user_scores = await retrieve_osu_scores(profile, mode, datetime.now(tz=timezone.utc).isoformat())
+        fetched_scores = await retrieve_osu_scores(profile, mode, datetime.now(tz=timezone.utc).isoformat())
     except aiohttp.ServerDisconnectedError:
         return None
     except asyncio.TimeoutError:
@@ -758,31 +758,38 @@ async def get_new_score(member_id: str):
     except Exception:
         logging.error(traceback.format_exc())
         return None
-    if user_scores is None:
+    if fetched_scores is None:
         return None
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
-    for i, osu_score in enumerate(user_scores["score_list"]):
+    for i, osu_score in enumerate(fetched_scores["score_list"]):
         if datetime.fromisoformat(osu_tracking[member_id]["scores"]["time_updated"]) <\
                 datetime.fromisoformat(osu_score["created_at"]):
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
-                osu_tracking[member_id]["debug"] = dict(scores=user_scores,
+                osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,
                                                         old_scores=osu_tracking[member_id]["scores"],
                                                         old=dict(osu_tracking[member_id]["old"]),
                                                         new=dict(osu_tracking[member_id]["new"]))
 
             # Calculate the difference in pp from the score below
-            if i < len(user_scores["score_list"]) - 2:
+            if i < len(fetched_scores["score_list"]) - 2:
                 pp = float(osu_score["pp"])
-                diff = pp - float(user_scores["score_list"][i + 1]["pp"])
+                diff = pp - float(fetched_scores["score_list"][i + 1]["pp"])
             else:
                 diff = 0
             new_scores.append(dict(osu_score, diff=diff))
+
+    # Save the updated score list, and if there are new scores, update time_updated
+    osu_tracking[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
+    if cache_user_profiles:
+        osu_profile_cache.data[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
+        await osu_profile_cache.asyncsave()
     if new_scores:
-        osu_tracking[member_id]["scores"] = user_scores
+        osu_tracking[member_id]["scores"]["time_updated"] = fetched_scores["time_updated"]
         if cache_user_profiles:
-            osu_profile_cache.data[member_id]["scores"] = user_scores
+            osu_profile_cache.data[member_id]["scores"]["time_updated"] = fetched_scores["time_updated"]
+            await osu_profile_cache.asyncsave()
     return new_scores
 
 
