@@ -994,7 +994,7 @@ def get_embed_from_template(description: str, color: discord.Colour, author_text
     if potential_string:
         footer.append(potential_string)
     if completion_rate:
-        footer.append(potential_string)
+        footer.append(completion_rate)
     if time:
         footer.append(time)
     embed.set_footer(text="\n".join(footer))
