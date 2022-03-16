@@ -2028,7 +2028,7 @@ osu.command(name="score", usage="[member] <url> +<mods>")(score)
 
 
 async def scores(message: discord.Message, *options):
-    """ Display all of your own or the member's scores on a beatmap.
+    """ Display all of your own or the member's scores on a beatmap. Add mods to only show the score with those mods.
     If URL is not provided it searches the last 10 messages for a URL. """
     member = None
     beatmap_url = None
@@ -2037,6 +2037,8 @@ async def scores(message: discord.Message, *options):
     for value in options:
         if utils.http_url_pattern.match(value):
             beatmap_url = value
+        elif value.startswith("+"):
+            mods = value.replace("+", "").upper()
         else:
             member = get_user(message, value)
     if not member:
@@ -2071,8 +2073,25 @@ async def scores(message: discord.Message, *options):
     }
     beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id,
                                         mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
+    if mods:
+        modslist = wrap(mods, 2)
+        for osu_score in fetched_osu_scores["scores"]:
+            if set(osu_score["mods"]) == set(modslist):
+                matching_score = osu_score
+                break
+        else:
+            await client.send_message(message.channel, content=f"Found no scores with +{mods} by **{member.name}**")
+            return
 
-    if len(fetched_osu_scores["scores"]) == 1:
+        # Add a beatmap ID and user to the score so formatting will work properly.
+        matching_score["beatmap"] = {}
+        matching_score["beatmap"]["id"] = beatmap_info.beatmap_id
+        matching_score["user"] = osu_tracking[str(member.id)]["new"]
+        embed = await create_score_embed_with_pp(member, matching_score, beatmap, beatmap_info.gamemode
+        if beatmap_info.gamemode else mode)
+        embed.set_footer(text="".join([embed.footer.text, ("".join(["\n", get_formatted_score_time(matching_score)
+        if not mods and pendulum else ""]))]))
+    elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add a beatmap ID and user to the score so formatting will work properly.
         osu_score["beatmap"] = {}
@@ -2098,8 +2117,8 @@ async def scores(message: discord.Message, *options):
         embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
     await client.send_message(message.channel, embed=embed)
 
-plugins.command(name="scores", usage="[member] <url>")(scores)
-osu.command(name="scores", usage="[member] <url>")(scores)
+plugins.command(name="scores", usage="[member] <url> <+mods>")(scores)
+osu.command(name="scores", usage="[member] <url> <+mods>")(scores)
 
 
 @osu.command(aliases="map")
