@@ -941,21 +941,21 @@ async def get_score_pp(osu_score: dict, mode: api.GameMode, beatmap: dict = None
     return score_pp
 
 
-def get_sorted_scores(osu_scores: dict, list_type: str):
+def get_sorted_scores(osu_scores: list, list_type: str):
     """ Sort scores by newest or oldest scores. """
     if list_type == "oldest":
-        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("created_at"))
+        sorted_scores = sorted(osu_scores, key=itemgetter("created_at"))
     elif list_type == "newest":
-        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("created_at"), reverse=True)
+        sorted_scores = sorted(osu_scores, key=itemgetter("created_at"), reverse=True)
     elif list_type == "acc":
-        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("accuracy"), reverse=True)
+        sorted_scores = sorted(osu_scores, key=itemgetter("accuracy"), reverse=True)
     elif list_type == "combo":
-        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("max_combo"), reverse=True)
+        sorted_scores = sorted(osu_scores, key=itemgetter("max_combo"), reverse=True)
     elif list_type == "score":
-        sorted_scores = sorted(osu_scores["score_list"], key=itemgetter("score"), reverse=True)
+        sorted_scores = sorted(osu_scores, key=itemgetter("score"), reverse=True)
     else:
-        sorted_scores = osu_scores["score_list"]
-    return dict(score_list=sorted_scores, time_updated=osu_scores["time_updated"])
+        sorted_scores = osu_scores
+    return sorted_scores
 
 
 def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, pp_stats: PPStats):
@@ -992,6 +992,25 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
 
     embed.set_footer(text="".join(footer))
     return embed
+
+
+async def find_beatmap_info(channel: discord.TextChannel):
+    beatmap_info = None
+    async for m in channel.history():
+        to_search = [m.content]
+        if m.embeds:
+            for embed in m.embeds:
+                to_search.append(embed.description if embed.description else "")
+                to_search.append(embed.title if embed.title else "")
+                to_search.append(embed.footer.text if embed.footer else "")
+        found_url = utils.http_url_pattern.search("".join(to_search))
+        if found_url:
+            try:
+                beatmap_info = await api.beatmap_from_url(found_url.group(), return_type="info")
+                break
+            except SyntaxError:
+                continue
+    return beatmap_info
 
 
 async def notify_pp(member_id: str, data: dict):
@@ -1965,25 +1984,9 @@ async def score(message: discord.Message, *options):
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
-        beatmap_info = None
-        match = False
-        async for m in message.channel.history():
-            to_search = [m.content]
-            if m.embeds:
-                for embed in m.embeds:
-                    to_search.append(embed.description if embed.description else "")
-                    to_search.append(embed.title if embed.title else "")
-                    to_search.append(embed.footer.text if embed.footer else "")
-            found_url = utils.http_url_pattern.search("".join(to_search))
-            if found_url:
-                try:
-                    beatmap_info = await api.beatmap_from_url(found_url.group(), return_type="info")
-                    match = True
-                    break
-                except SyntaxError:
-                    continue
+        beatmap_info = await find_beatmap_info(message.channel)
         # Check if URL was found
-        assert match, "No beatmap link found"
+        assert beatmap_info, "No beatmap link found"
     else:
         try:
             beatmap_info = await api.beatmap_from_url(beatmap_url, return_type="info")
@@ -2020,9 +2023,83 @@ async def score(message: discord.Message, *options):
                                                        if not mods and pendulum else ""]))]))
     await client.send_message(message.channel, embed=embed)
 
-
 plugins.command(name="score", usage="[member] <url> +<mods>")(score)
 osu.command(name="score", usage="[member] <url> +<mods>")(score)
+
+
+async def scores(message: discord.Message, *options):
+    """ Display all of your own or the member's scores on a beatmap.
+    If URL is not provided it searches the last 10 messages for a URL. """
+    member = None
+    beatmap_url = None
+    mods = None
+
+    for value in options:
+        if utils.http_url_pattern.match(value):
+            beatmap_url = value
+        else:
+            member = get_user(message, value)
+    if not member:
+        member = message.author
+
+    assert str(member.id) in osu_config.data["profiles"], get_missing_user_string(member)
+    assert str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)], \
+        "This command requires user data to have been fetched. Please wait a bit and try again."
+
+    # Attempt to find beatmap URL in previous messages
+    if not beatmap_url:
+        beatmap_info = await find_beatmap_info(message.channel)
+        # Check if URL was found
+        assert beatmap_info, "No beatmap link found"
+    else:
+        try:
+            beatmap_info = await api.beatmap_from_url(beatmap_url, return_type="info")
+        except SyntaxError as e:
+            await client.say(message, str(e))
+            return
+
+    user_id = osu_config.data["profiles"][str(member.id)]
+    mode = get_mode(str(member.id))
+    params = {
+        "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
+    }
+    fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, user_id, params=params)
+    assert fetched_osu_scores["scores"], f"Found no scores by **{member.name}**."
+
+    params = {
+        "beatmap_id": beatmap_info.beatmap_id,
+    }
+    beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id,
+                                        mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
+
+    if len(fetched_osu_scores["scores"]) == 1:
+        osu_score = fetched_osu_scores["scores"][0]
+        # Add a beatmap ID and user to the score so formatting will work properly.
+        osu_score["beatmap"] = {}
+        osu_score["beatmap"]["id"] = beatmap_info.beatmap_id
+        osu_score["user"] = osu_tracking[str(member.id)]["new"]
+        embed = await create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
+        if beatmap_info.gamemode else mode)
+        embed.set_footer(text="".join([embed.footer.text, ("".join(["\n", get_formatted_score_time(osu_score)
+        if not mods and pendulum else ""]))]))
+    else:
+        osu_score_list = fetched_osu_scores["scores"]
+        sorted_scores = get_sorted_scores(osu_score_list, "pp")
+        # Add a beatmap ID and position to the scores so formatting the score list will work properly.
+        for i, osu_score in enumerate(osu_score_list):
+            osu_score["pos"] = i + 1
+            osu_score["beatmap"] = {}
+            osu_score["beatmap"]["id"] = beatmap_info.beatmap_id
+        embed_description = await get_formatted_score_list(mode, sorted_scores, 5)
+        embed = discord.Embed(color=member.color)
+        embed.description = embed_description
+        embed.set_author(name=osu_tracking[str(member.id)]["new"]["username"],
+                     icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
+        embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
+    await client.send_message(message.channel, embed=embed)
+
+plugins.command(name="scores", usage="[member] <url>")(scores)
+osu.command(name="scores", usage="[member] <url>")(scores)
 
 
 @osu.command(aliases="map")
@@ -2102,12 +2179,12 @@ async def top(message: discord.Message, *options):
                                                           new_total_pp -
                                                           osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
             sorted_scores = get_sorted_scores(osu_scores, list_type)
-            m = await get_formatted_score_list(mode, sorted_scores["score_list"], 5)
+            m = await get_formatted_score_list(mode, sorted_scores, 5)
     else:
         osu_scores = osu_tracking[str(member.id)]["scores"]
         author_text = osu_tracking[str(member.id)]["new"]["username"]
         sorted_scores = get_sorted_scores(osu_scores, list_type)
-        m = await get_formatted_score_list(mode, sorted_scores["score_list"], 5)
+        m = await get_formatted_score_list(mode, sorted_scores, 5)
     e = discord.Embed(color=member.color)
     e.description = m
     e.set_author(name=author_text,

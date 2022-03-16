@@ -306,6 +306,18 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
     return result
 
 
+async def get_user_beatmap_scores(beatmap_id, user_id, params=None):
+    """ Returns all of a user's scores on a beatmap. """
+    request = def_section(f"beatmaps/{beatmap_id}/scores/users/{user_id}/all")
+    if params:
+        result = await request(**params)
+    else:
+        result = await request()
+    if "{'error': None}" in str(result):
+        result = None
+    return result
+
+
 async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     """ Returns a beatmapset using beatmapset ID"""
     result = retrieve_cache(beatmapset_id, "set")
