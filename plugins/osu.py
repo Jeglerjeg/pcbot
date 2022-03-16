@@ -958,18 +958,8 @@ def get_sorted_scores(osu_scores: list, list_type: str):
     return sorted_scores
 
 
-def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted_score: str, pp_stats: PPStats):
-    """ Return a formatted score as an embed """
-    embed = discord.Embed(color=member.color, url=get_user_url(str(member.id)))
-    embed.description = formatted_score
-    footer = []
-
-    # Add potential pp in the footer
-    potential_string = format_potential_pp(pp_stats, osu_score)
-    if potential_string:
-        footer.append(potential_string)
-
-    # Add completion rate to footer if score is failed
+def format_completion_rate(osu_score: dict, pp_stats: PPStats):
+    completion_rate = ""
     if osu_score and pp_stats and osu_score["passed"] is False and osu_score["mode"] != "fruits":
         if osu_score["mode"] == "osu":
             objects = (osu_score["statistics"]["count_300"] + osu_score["statistics"]["count_100"] +
@@ -987,12 +977,28 @@ def get_formatted_score_embed(member: discord.Member, osu_score: dict, formatted
                        osu_score["statistics"]["count_miss"])
             beatmap_objects = (osu_score["beatmap"]["count_circles"] + osu_score["beatmap"]["count_sliders"] +
                                osu_score["beatmap"]["count_spinners"])
-        footer.append(f"\nCompletion rate: {(objects / beatmap_objects) * 100:.2f}% "
-                      f"({utils.format_number(pp_stats.partial_stars, 2)}\u2605)")
+        completion_rate = f"Completion rate: {(objects / beatmap_objects) * 100:.2f}% " \
+                          f"({utils.format_number(pp_stats.partial_stars, 2)}\u2605)"
+    return completion_rate
 
-    embed.set_footer(text="".join(footer))
+
+def get_embed_from_template(description: str, color: discord.Colour, author_text: str, author_url: str,
+                            author_icon: str, thumbnail_url: str = "", time: str = "", potential_string: str = "",
+                            completion_rate: str = ""):
+    embed = discord.Embed(color=color)
+    embed.description = description
+    embed.set_author(name=author_text, url=author_url, icon_url=author_icon)
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+    footer = []
+    if potential_string:
+        footer.append(potential_string)
+    if completion_rate:
+        footer.append(potential_string)
+    if time:
+        footer.append(time)
+    embed.set_footer(text="\n".join(footer))
     return embed
-
 
 async def find_beatmap_info(channel: discord.TextChannel):
     beatmap_info = None
@@ -1032,7 +1038,7 @@ async def notify_pp(member_id: str, data: dict):
     update_mode = get_update_mode(member_id)
     m = []
     score_pp = None
-    thumbnail_url = None
+    thumbnail_url = ""
     osu_score = None
     osu_scores = []  # type: list
     # Since the user got pp they probably have a new score in their own top 100
@@ -1103,16 +1109,11 @@ async def notify_pp(member_id: str, data: dict):
 
         primary_guild = get_primary_guild(str(member.id))
         is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
-        if len(osu_scores) <= 1:
-            embed = get_formatted_score_embed(member, osu_score, "".join(m), score_pp if score_pp is not None
-                                              and not bool(osu_score["perfect"] and osu_score["passed"]) else None)
-        else:
-            embed = discord.Embed(color=member.color)
-            embed.description = "".join(m)
-        if osu_scores:
-            embed.set_thumbnail(url=thumbnail_url)
-        embed.set_author(name=author_text, icon_url=data["new"]["avatar_url"], url=get_user_url(str(member.id)))
-
+        potential_string = format_potential_pp(score_pp if score_pp is not None
+                                              and not bool(osu_score["perfect"] and osu_score["passed"]) else None,
+                                               osu_score)
+        embed = get_embed_from_template("".join(m), member.color, author_text, get_user_url(str(member.id)),
+                                        data["new"]["avatar_url"], thumbnail_url, potential_string=potential_string)
         for i, channel in enumerate(channels):
             try:
                 await client.send_message(channel, embed=embed)
@@ -1896,7 +1897,8 @@ osu.command(name="pp", aliases="oppai")(pp_)
 
 
 async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, beatmap: dict,
-                                     mode: api.GameMode, scoreboard_rank: bool = False, twitch_link: bool = False):
+                                     mode: api.GameMode, scoreboard_rank: bool = False, twitch_link: bool = False,
+                                     time: str = ""):
     """ Returns a score embed for use outside of automatic score notifications. """
     score_pp = await get_score_pp(osu_score, mode, beatmap)
     mods = Mods.format_mods(osu_score["mods"])
@@ -1916,15 +1918,21 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
         scoreboard_rank = api.rank_from_events(osu_tracking[str(member.id)]["new"]["events"],
                                                str(osu_score["beatmap"]["id"]), osu_score)
 
-    embed = get_formatted_score_embed(member, osu_score, await format_new_score(mode, osu_score, beatmap,
-                                                                                scoreboard_rank,
+    embed = get_embed_from_template(await format_new_score(mode, osu_score, beatmap, scoreboard_rank,
                                                                                 member if twitch_link else None),
-                                      score_pp if score_pp is not None and not bool(osu_score["perfect"]
-                                                                                    and osu_score["passed"]) else None)
-    embed.set_author(name=osu_score["user"]["username"], icon_url=osu_score["user"]["avatar_url"],
-                     url=get_user_url(str(member.id)))
-    embed.set_thumbnail(url=osu_score["beatmapset"]["covers"]["list@2x"] if bool(
-        "beatmapset" in osu_score) else beatmap["beatmapset"]["covers"]["list@2x"])
+                                    member.color, osu_score["user"]["username"], get_user_url(str(member.id)),
+                                    osu_score["user"]["avatar_url"], osu_score["beatmapset"]["covers"]["list@2x"] if
+                                    bool("beatmapset" in osu_score) else beatmap["beatmapset"]["covers"]["list@2x"],
+                                    time=time,
+                                    potential_string=format_potential_pp(score_pp if score_pp is not None and
+                                                                    not bool(osu_score["perfect"] and
+                                                                             osu_score["passed"]) else None, osu_score),
+                                    completion_rate=format_completion_rate(osu_score,
+                                                                           score_pp if
+                                                                           score_pp is not None
+                                                                           and not bool(osu_score["perfect"]
+                                                                                        and osu_score["passed"])
+                                                                           else None))
     return embed
 
 
@@ -2060,9 +2068,9 @@ async def score(message: discord.Message, *options):
                                         mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
 
     embed = await create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-                                             if beatmap_info.gamemode else mode, scoreboard_rank)
-    embed.set_footer(text="".join([embed.footer.text, ("".join(["\n", get_formatted_score_time(osu_score)
-                                                       if not mods and pendulum else ""]))]))
+                                             if beatmap_info.gamemode else mode, scoreboard_rank,
+                                             time=(get_formatted_score_time(osu_score) if not mods
+                                                                                          and pendulum else ""))
     await client.send_message(message.channel, embed=embed)
 
 plugins.command(name="score", usage="[member] <url> +<mods>")(score)
@@ -2129,10 +2137,8 @@ async def scores(message: discord.Message, *options):
         matching_score["beatmap"] = {}
         matching_score["beatmap"]["id"] = beatmap_info.beatmap_id
         matching_score["user"] = osu_tracking[str(member.id)]["new"]
-        embed = await create_score_embed_with_pp(member, matching_score, beatmap, beatmap_info.gamemode
-        if beatmap_info.gamemode else mode)
-        embed.set_footer(text="".join([embed.footer.text, ("".join(["\n", get_formatted_score_time(matching_score)
-        if not mods and pendulum else ""]))]))
+        embed = await create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
+        if beatmap_info.gamemode else mode, time=get_formatted_score_time(osu_score) if not mods and pendulum else "")
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add a beatmap ID and user to the score so formatting will work properly.
@@ -2140,9 +2146,7 @@ async def scores(message: discord.Message, *options):
         osu_score["beatmap"]["id"] = beatmap_info.beatmap_id
         osu_score["user"] = osu_tracking[str(member.id)]["new"]
         embed = await create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-        if beatmap_info.gamemode else mode)
-        embed.set_footer(text="".join([embed.footer.text, ("".join(["\n", get_formatted_score_time(osu_score)
-        if not mods and pendulum else ""]))]))
+        if beatmap_info.gamemode else mode, time=get_formatted_score_time(osu_score) if not mods and pendulum else "")
     else:
         osu_score_list = fetched_osu_scores["scores"]
         sorted_scores = get_sorted_scores(osu_score_list, "pp")
@@ -2151,12 +2155,10 @@ async def scores(message: discord.Message, *options):
             osu_score["pos"] = i + 1
             osu_score["beatmap"] = {}
             osu_score["beatmap"]["id"] = beatmap_info.beatmap_id
-        embed_description = await get_formatted_score_list(mode, sorted_scores, 5)
-        embed = discord.Embed(color=member.color)
-        embed.description = embed_description
-        embed.set_author(name=osu_tracking[str(member.id)]["new"]["username"],
-                     icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
-        embed.set_thumbnail(url=beatmap["beatmapset"]["covers"]["list@2x"])
+        embed = get_embed_from_template(await get_formatted_score_list(mode, sorted_scores, 5), member.color,
+                                        osu_tracking[str(member.id)]["new"]["username"], get_user_url(str(member.id)),
+                                        osu_tracking[str(member.id)]["new"]["avatar_url"],
+                                        thumbnail_url=beatmap["beatmapset"]["covers"]["list@2x"])
     await client.send_message(message.channel, embed=embed)
 
 plugins.command(name="scores", usage="[member] <url> <+mods>")(scores)
@@ -2246,11 +2248,9 @@ async def top(message: discord.Message, *options):
         author_text = osu_tracking[str(member.id)]["new"]["username"]
         sorted_scores = get_sorted_scores(osu_scores["score_list"], list_type)
         m = await get_formatted_score_list(mode, sorted_scores, 5)
-    e = discord.Embed(color=member.color)
-    e.description = m
-    e.set_author(name=author_text,
-                 icon_url=osu_tracking[str(member.id)]["new"]["avatar_url"], url=get_user_url(str(member.id)))
-    e.set_thumbnail(url=osu_tracking[str(member.id)]["new"]["avatar_url"])
+    e = get_embed_from_template(m, member.color, author_text, get_user_url(str(member.id)),
+                                osu_tracking[str(member.id)]["new"]["avatar_url"],
+                                osu_tracking[str(member.id)]["new"]["avatar_url"])
     await client.send_message(message.channel, embed=e)
 
 
