@@ -7,7 +7,6 @@ import logging
 import os
 from collections import namedtuple, defaultdict
 from functools import partial
-from traceback import format_exc
 
 import discord
 import pendulum
@@ -520,7 +519,7 @@ def load_plugin(name: str, package: str = "plugins"):
             logging.error("An error occurred when loading plugin {}:\n{}".format(name, format_exception(e)))
             return False
         except Exception as e:
-            logging.error("An error occurred when loading plugin {}:\n{}".format(name, format_exc(e)))
+            logging.error("An error occurred when loading plugin {}:\n{}".format(name, format_exception(e)))
             return False
 
         loaded_plugins[name] = loaded_plugin
@@ -597,7 +596,7 @@ async def save_plugin(name):
             try:
                 await loaded_plugin.save(loaded_plugins)
             except Exception as e:
-                logging.error("An error occurred when saving plugin {}:\n{}".format(name, format_exc(e)))
+                logging.error("An error occurred when saving plugin {}:\n{}".format(name, format_exception(e)))
 
 
 async def save_plugins():
