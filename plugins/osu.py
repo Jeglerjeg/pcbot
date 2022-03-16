@@ -2239,12 +2239,12 @@ async def top(message: discord.Message, *options):
                                                        utils.format_number(
                                                           new_total_pp -
                                                           osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
-            sorted_scores = get_sorted_scores(osu_scores, list_type)
+            sorted_scores = get_sorted_scores(osu_scores["score_list"], list_type)
             m = await get_formatted_score_list(mode, sorted_scores, 5)
     else:
         osu_scores = osu_tracking[str(member.id)]["scores"]
         author_text = osu_tracking[str(member.id)]["new"]["username"]
-        sorted_scores = get_sorted_scores(osu_scores, list_type)
+        sorted_scores = get_sorted_scores(osu_scores["score_list"], list_type)
         m = await get_formatted_score_list(mode, sorted_scores, 5)
     e = discord.Embed(color=member.color)
     e.description = m
