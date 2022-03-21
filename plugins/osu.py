@@ -866,7 +866,8 @@ async def get_score_pp(osu_score: dict, mode: api.GameMode, beatmap: dict = None
             score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
                                           ignore_osu_cache=not bool(beatmap["status"] == "ranked"
                                                                     or beatmap["status"] == "approved") if beatmap
-                                          else False, potential=not osu_score["perfect"] or not osu_score["passed"], failed=not osu_score["passed"],
+                                          else False, potential=not osu_score["perfect"] or not osu_score["passed"],
+                                          failed=not osu_score["passed"],
                                           *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
                                            "{countmiss}m {maxcombo}x {objects}objects"
                                           .format(acc=calculate_acc(mode, osu_score),
@@ -1000,6 +1001,7 @@ def get_embed_from_template(description: str, color: discord.Colour, author_text
     embed.set_footer(text="\n".join(footer))
     return embed
 
+
 async def find_beatmap_info(channel: discord.TextChannel):
     beatmap_info = None
     async for m in channel.history():
@@ -1110,7 +1112,7 @@ async def notify_pp(member_id: str, data: dict):
         primary_guild = get_primary_guild(str(member.id))
         is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
         potential_string = format_potential_pp(score_pp if score_pp is not None
-                                              and not bool(osu_score["perfect"] and osu_score["passed"]) else None,
+                                               and not bool(osu_score["perfect"] and osu_score["passed"]) else None,
                                                osu_score)
         embed = get_embed_from_template("".join(m), member.color, author_text, get_user_url(str(member.id)),
                                         data["new"]["avatar_url"], thumbnail_url, potential_string=potential_string)
@@ -1923,14 +1925,15 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
         time_string = get_formatted_score_time(osu_score) if pendulum else ""
 
     embed = get_embed_from_template(await format_new_score(mode, osu_score, beatmap, scoreboard_rank,
-                                                                                member if twitch_link else None),
+                                                           member if twitch_link else None),
                                     member.color, osu_score["user"]["username"], get_user_url(str(member.id)),
                                     osu_score["user"]["avatar_url"], osu_score["beatmapset"]["covers"]["list@2x"] if
                                     bool("beatmapset" in osu_score) else beatmap["beatmapset"]["covers"]["list@2x"],
                                     time=time_string,
                                     potential_string=format_potential_pp(score_pp if score_pp is not None and
-                                                                    not bool(osu_score["perfect"] and
-                                                                             osu_score["passed"]) else None, osu_score),
+                                                                         not bool(osu_score["perfect"] and
+                                                                                  osu_score["passed"]) else None,
+                                                                         osu_score),
                                     completion_rate=format_completion_rate(osu_score,
                                                                            score_pp if
                                                                            score_pp is not None
@@ -2141,7 +2144,7 @@ async def scores(message: discord.Message, *options):
         matching_score["beatmap"]["id"] = beatmap_info.beatmap_id
         matching_score["user"] = osu_tracking[str(member.id)]["new"]
         embed = await create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-        if beatmap_info.gamemode else mode, time=bool(not mods))
+                                                 if beatmap_info.gamemode else mode, time=bool(not mods))
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add a beatmap ID and user to the score so formatting will work properly.
@@ -2149,7 +2152,7 @@ async def scores(message: discord.Message, *options):
         osu_score["beatmap"]["id"] = beatmap_info.beatmap_id
         osu_score["user"] = osu_tracking[str(member.id)]["new"]
         embed = await create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-        if beatmap_info.gamemode else mode, time=bool(not mods))
+                                                 if beatmap_info.gamemode else mode, time=bool(not mods))
     else:
         osu_score_list = fetched_osu_scores["scores"]
         sorted_scores = get_sorted_scores(osu_score_list, "pp")
