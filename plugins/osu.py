@@ -1845,7 +1845,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
     """ Calculate and return the would be pp using `rosu-pp`.
 
     Options are a parsed set of command-line arguments:  /
-    `([acc]% | [num_100s]x100 [num_50s]x50) +[mods] [combo]x [misses]m`
+    `([acc]% | [num_100s]x100 [num_50s]x50) +[mods] [combo]x [misses]m hp[hp] ar[ar] od[od] cs[cs] [clock_rate]*`
 
     **Additionally**, PCBOT includes a *find closest pp* feature. This works as an
     argument in the options, formatted like `[pp_value]pp`

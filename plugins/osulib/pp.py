@@ -97,7 +97,8 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False):
     return beatmap_path
 
 
-async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_osu_cache: bool = False, failed: bool = False, potential: bool = False):
+async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_osu_cache: bool = False,
+                       failed: bool = False, potential: bool = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
 
@@ -121,7 +122,17 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
     calculator = rosu_pp_py.Calculator(beatmap_path)
+    if args.ar:
+        calculator.set_ar(args.ar)
+    if args.od:
+        calculator.set_od(args.od)
+    if args.hp:
+        calculator.set_hp(args.hp)
+    if args.cs:
+        calculator.set_hp(args.cs)
     score_params = rosu_pp_py.ScoreParams(mods=mods_bitmask)
+    if args.clock_rate:
+        score_params.clockRate = args.clock_rate
 
     # If the pp arg is given, return using the closest pp function
     if args.pp is not None and mode is api.GameMode.osu:
