@@ -45,7 +45,8 @@ class Game:
         for i in range(self.num):
 
             def check(m):
-                return m.channel == self.channel and m.content.lower().strip() == "i" and m.author not in self.participants
+                return m.channel == self.channel and m.content.lower().strip() == "i" \
+                       and m.author not in self.participants
 
             # Wait with a timeout of 2 minutes and check each message with check(m)
             try:
@@ -56,8 +57,8 @@ class Game:
             if reply:  # A user replied with a valid check
                 asyncio.ensure_future(
                     client.say(self.message,
-                                   "{} has entered! `{}/{}`. Type `I` to join!".format(
-                                       reply.author.mention, i + 1, self.num))
+                               "{} has entered! `{}/{}`. Type `I` to join!".format(
+                                   reply.author.mention, i + 1, self.num))
                 )
                 self.participants.append(reply.author)
 
@@ -178,11 +179,11 @@ class HotPotato(Game):
 
             if reply is not None:
                 await client.send_message(self.channel,
-                                              "{} :bomb: got the bomb! Pass it to either {} or {}!".format(
-                                                  member.mention, pass_to[0].mention, pass_to[1].mention))
+                                          "{} :bomb: got the bomb! Pass it to either {} or {}!".format(
+                                              member.mention, pass_to[0].mention, pass_to[1].mention))
 
             def check(m):
-                return m.channel == self.channel and m.author == member and m.mentions[0] in pass_to
+                return m.channel == self.channel and m.author == member and m.mentions and m.mentions[0] in pass_to
 
             wait = (self.time_remaining - notify) if (self.time_remaining >= notify) else self.time_remaining
             try:
