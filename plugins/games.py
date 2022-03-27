@@ -6,6 +6,7 @@ Commands:
 """
 
 import asyncio
+import random
 from datetime import datetime
 from difflib import SequenceMatcher
 from random import randint, choice
@@ -111,6 +112,7 @@ class Roulette(Game):
 
     async def game(self):
         """ Start playing. """
+        random.shuffle(self.participants)
         for i, member in enumerate(self.participants):
             await client.send_message(
                 self.channel,
