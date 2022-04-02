@@ -421,6 +421,8 @@ async def on_message(message: discord.Message):
 
     # Store to persistent if enabled for this channel
     if str(message.channel.id) in summary_options.data["persistent_channels"]:
+        if str(message.channel.id) not in summary_data.data["channels"]:
+            summary_data.data["channels"][str(message.channel.id)] = []
         summary_data.data["channels"][str(message.channel.id)].append(to_persistent(message))
         await summary_data.asyncsave()
 
