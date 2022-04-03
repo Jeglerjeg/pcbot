@@ -219,7 +219,8 @@ async def check_nsfw(message: discord.Message):
         return False
 
     # Do not check if the channel is designed for nsfw content
-    if "nsfw" in message.channel.name or message.channel.is_nsfw():
+    if "nsfw" in message.channel.name or \
+            isinstance(message.channel, discord.abc.TextChannel) and message.channel.is_nsfw():
         return False
 
     # Check if message includes keyword nsfw and a link
