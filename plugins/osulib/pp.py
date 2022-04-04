@@ -129,7 +129,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     if args.hp:
         calculator.set_hp(args.hp)
     if args.cs:
-        calculator.set_hp(args.cs)
+        calculator.set_cs(args.cs)
     score_params = rosu_pp_py.ScoreParams(mods=mods_bitmask)
     if args.clock_rate:
         score_params.clockRate = args.clock_rate
