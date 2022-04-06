@@ -644,6 +644,12 @@ async def update_user_data(member_id: str, profile: str):
         if cache_user_profiles:
             osu_profile_cache.data[member_id] = {}
 
+    if "schedule_wipe" not in osu_tracking[member_id]:
+        osu_tracking[member_id]["schedule_wipe"] = False
+    elif osu_tracking[member_id]["schedule_wipe"] is True:
+        osu_tracking[member_id] = {}
+        osu_profile_cache.data[member_id] = {}
+
     # Add update ticks to member tracking
     if "ticks" not in osu_tracking[member_id]:
         osu_tracking[member_id]["ticks"] = -1
@@ -1695,19 +1701,15 @@ async def wipe_tracking(message: discord.Message, member: discord.Member = None)
     await osu_config.asyncsave()
     if member:
         if str(member.id) in osu_tracking:
-            del osu_tracking[str(member.id)]
-            await client.say(message, f"Deleted {member.name} from tracking.")
-        if str(member.id) in osu_profile_cache.data:
-            del osu_profile_cache.data[str(member.id)]
+            osu_tracking[str(member.id)]["schedule_wipe"] = True
+            await client.say(message, f"Scheduled wipe from tracking for {member.name} during the next update.")
         else:
             await client.say(message, "User not in tracking.")
     else:
-        previous_length = len(osu_tracking)
+        tracking_length = len(osu_tracking)
         for entry in list(osu_tracking):
-            del osu_tracking[entry]
-        osu_profile_cache.data = {}
-        await osu_profile_cache.asyncsave()
-        await client.say(message, f"Deleted {previous_length} entries.")
+            osu_tracking[entry]["schedule_wipe"] = True
+        await client.say(message, f"Scheduled {tracking_length} entries for wiping during the next update.")
 
 
 @osu.command(aliases="unset")
