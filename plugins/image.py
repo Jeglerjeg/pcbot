@@ -9,12 +9,13 @@ from io import BytesIO
 
 import discord
 from PIL import Image, ImageSequence, ImageOps
+from typing import Any
 
 import bot
 import plugins
 from pcbot import utils
 
-url_only, gif_support = False, True
+url_only = False
 
 # See if we can convert emoji using the emoji.py plugin
 try:
@@ -25,8 +26,8 @@ except:
 # See if we can create gifs using imageio
 try:
     import imageio
-except:
-    gif_support = False
+except ImportError:
+    imageio = None
 
 client = plugins.client  # type: bot.Client
 
@@ -36,7 +37,7 @@ max_bytes = 4096 ** 2  # 4 MB
 max_gif_bytes = 1024 * 6000  # 128kB
 
 
-def convert_image(image_object, mode, real_convert=True):
+def convert_image(image_object: Image.Image, mode: str, real_convert: bool = True):
     """ Convert the image object to a specified mode. """
     if mode == "RGB" and image_object.mode == "RGBA" and real_convert:
         return to_rgb(image_object)
@@ -44,7 +45,7 @@ def convert_image(image_object, mode, real_convert=True):
     return image_object.convert(mode)
 
 
-def to_rgb(image_object):
+def to_rgb(image_object: Image.Image):
     """ Convert to RGB using solution from http://stackoverflow.com/questions/9166400/ """
     image_object.load()
     background = Image.new("RGB", image_object.size, (0, 0, 0))
@@ -52,7 +53,7 @@ def to_rgb(image_object):
     return background
 
 
-def to_jpg(image_object, quality, real_convert=True):
+def to_jpg(image_object: Image.Image, quality: int, real_convert=True):
     """ Save an image object as JPG and reopen it. """
     if image_object.mode != "RGB":
         image_object = convert_image(image_object, "RGB", real_convert)
@@ -61,31 +62,31 @@ def to_jpg(image_object, quality, real_convert=True):
 
 
 class ImageArg:
-    def __init__(self, image_object: Image.Image, format: str):
+    def __init__(self, image_object: Image.Image, image_format: str):
         self.object = image_object
-        self.format = format
-        self.extension = format.lower()
+        self.format = image_format
+        self.extension = image_format.lower()
         self.clean_format()
 
         # Figure out if this is a gif by looking for the duration argument. Might only work for gifs
         self.gif = bool(self.object.info.get("duration"))
         self.gif_bytes = None  # For easier upload of gifs, store the bytes in memory
 
-    def clean_format(self, real_convert=True):
+    def clean_format(self):
         """ Return working options of JPG images. """
         if self.extension.lower() == "jpeg":
             self.extension = "jpg"
         if self.format.lower() == "jpg":
             self.format = "JPEG"
 
-    def set_extension(self, ext: str, real_jpg=True):
+    def set_extension(self, ext: str):
         """ Change the extension of an image. """
         self.extension = self.format = ext
 
     def modify(self, function, *args, convert=None, **kwargs):
         """ Modify the image object using the given Image function.
         This function supplies sequence support. """
-        if not gif_support or not self.gif:
+        if not imageio or not self.gif:
             if convert:
                 self.object = convert_image(self.object, convert)
 
@@ -107,7 +108,7 @@ class ImageArg:
                     frame_bytes = utils.convert_image_object(frame)
                 else:
                     frame_bytes = utils.convert_image_object(function(frame, *args, **kwargs))
-                frames.append(imageio.imread(frame_bytes, format="PNG"))
+                frames.append(imageio.v2.imread(frame_bytes, format="PNG"))
 
             # Save the image as bytes and recreate the image object
             image_bytes = imageio.mimwrite(imageio.RETURN_BYTES, frames, format=self.format, duration=duration)
@@ -115,12 +116,12 @@ class ImageArg:
             self.gif_bytes = image_bytes
 
 
-async def convert_attachment(attachment):
+async def convert_attachment(attachment: discord.Attachment):
     """ Convert an attachment to an image argument.
 
     Returns None if the attachment is not an image.
     """
-    url = attachment["url"]
+    url = attachment.url
     headers = await utils.retrieve_headers(url)
     match = extension_regex.search(headers["CONTENT-TYPE"])
     if not match:
@@ -129,7 +130,7 @@ async def convert_attachment(attachment):
     image_format = match.group("ext")
     image_bytes = await utils.download_file(url, bytesio=True)
     image_object = Image.open(image_bytes)
-    return ImageArg(image_object, format=image_format)
+    return ImageArg(image_object, image_format=image_format)
 
 
 async def find_prev_image(channel: discord.TextChannel, limit: int = 200):
@@ -179,7 +180,7 @@ async def image(message: discord.Message, url_or_emoji: str):
             image_bytes = await utils.download_file(str(member.display_avatar.replace(static_format="png").url),
                                                     bytesio=True)
             image_object = Image.open(image_bytes)
-            return ImageArg(image_object, format="PNG")
+            return ImageArg(image_object, image_format="PNG")
 
         # Nope, not a mention. If we support emoji, we can progress further
         assert not url_only, "`{}` **is not a valid URL or user mention.**".format(url_or_emoji)
@@ -188,14 +189,14 @@ async def image(message: discord.Message, url_or_emoji: str):
         char = "-".join(hex(ord(c))[2:] for c in url_or_emoji)  # Convert to a hex string
         image_object = get_emoji(char, size=256)
         if image_object:
-            return ImageArg(image_object, format="PNG")
+            return ImageArg(image_object, image_format="PNG")
 
         # Not an emoji, perhaps it's an emote
         match = emote_regex.match(url_or_emoji)
         if match:
             image_object = await get_emote(match.group("id"))
             if image_object:
-                return ImageArg(image_object, format="PNG")
+                return ImageArg(image_object, image_format="PNG")
 
         # Alright, we're out of ideas
         raise AssertionError("`{}` **is neither a URL, a mention nor an emoji.**".format(url_or_emoji))
@@ -218,7 +219,7 @@ async def image(message: discord.Message, url_or_emoji: str):
     # Download the image and create the object
     image_bytes = await utils.download_file(url_or_emoji, bytesio=True)
     image_object = Image.open(image_bytes)
-    return ImageArg(image_object, format=image_format)
+    return ImageArg(image_object, image_format=image_format)
 
 
 @plugins.argument("({open}width{close}x{open}height{close} or *{open}scale{close})")
@@ -243,7 +244,7 @@ def parse_resolution(res: str):
         try:
             scale = float(res[1:])
         except ValueError:
-            raise AssertionError("**Characters following \* must be a number, not `{}`**".format(res[1:]))
+            raise AssertionError(r"**Characters following \* must be a number, not `{}`**".format(res[1:]))
 
         # Make sure the scale isn't less than 0. Whatever uses this argument will have to manually check for max size
         assert scale > 0, "**Scale must be greater than 0.**"
@@ -265,7 +266,7 @@ def clean_format(image_format: str, extension: str):
 async def send_image(message: discord.Message, image_arg: ImageArg, **params):
     """ Send an image. """
     try:
-        if image_arg.gif and gif_support:
+        if image_arg.gif and imageio:
             image_fp = BytesIO(image_arg.gif_bytes)
         else:
             image_fp = utils.convert_image_object(image_arg.object, image_arg.format, **params)
@@ -317,7 +318,7 @@ async def jpeg(message: discord.Message, image_arg: image, *effect: utils.choice
 
 
 @plugins.command(aliases="ff")
-async def fuckify(message: discord.Message, image_arg: image, seed=None):
+async def fuckify(message: discord.Message, image_arg: image, seed: Any = None):
     """ destroy images """
     if seed:
         random.seed(seed)

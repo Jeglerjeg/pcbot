@@ -25,7 +25,6 @@ try:
     import imageio
 except ImportError:
     imageio = None
-gif_support = imageio is not None
 
 client = plugins.client  # type: bot.Client
 
@@ -279,14 +278,14 @@ async def gif(message: discord.Message, text: Annotate.CleanContent):
     frames = []
     for image in images:
         frame_bytes = utils.convert_image_object(image, format="PNG")
-        frames.append(imageio.imread(frame_bytes))
+        frames.append(imageio.v2.imread(frame_bytes))
 
     # Make a gif
     image_bytes = imageio.mimwrite(imageio.RETURN_BYTES, frames, format="GIF", duration=duration)
     await client.send_file(message.channel, BytesIO(image_bytes), filename="emojies.gif")
 
 
-if gif_support:
+if imageio:
     plugins.command(aliases="gifter grifter")(gif)
 
 init_emoji()
