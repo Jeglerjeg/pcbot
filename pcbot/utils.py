@@ -290,17 +290,17 @@ async def download_json(url: str, headers=None, **params):
     return await retrieve_page(url, call=convert_to_json, headers=headers, **params)
 
 
-def convert_image_object(image, format: str = "PNG", **params):
+def convert_image_object(image, image_format: str = "PNG", **params):
     """ Saves a PIL.Image.Image object to BytesIO buffer. Effectively
     returns the byte-like object for sending through discord.Client.send_file.
     
     :param image: PIL.Image.Image: object to convert.
-    :param format: The image format, defaults to PNG.
+    :param image_format: The image format, defaults to PNG.
     :param params: Any additional parameters sent to the writer.
     :return: BytesIO: the image object in bytes.
     """
     buffer = BytesIO()
-    image.save(buffer, format, **params)
+    image.save(buffer, image_format, **params)
     buffer.seek(0)
     return buffer
 

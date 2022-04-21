@@ -87,11 +87,11 @@ async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, w
     # Wait for the user to enter a word!wor
     if not word:
         await client.send_message(host, "**Please enter a word!**\n"
-                                            "The word should be **maximum 32 characters long** and "
-                                            "may **only** contain `letters A-Å` and *numbers*.")
+                                        "The word should be **maximum 32 characters long** and "
+                                        "may **only** contain `letters A-Å` and *numbers*.")
 
-        def check(m):
-            return m.author == host and valid_word(m)
+        def check(message):
+            return message.author == host and valid_word(message)
 
         try:
             reply = await client.wait_for_message(check=check, timeout=30)
@@ -115,8 +115,8 @@ async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, w
     hint = ""
 
     while channel.id in wordsearch:
-        def check(m):
-            return m.channel == channel and valid_guess(m)
+        def check(message):
+            return message.channel == channel and valid_guess(message)
         try:
             reply = await client.wait_for_message(timeout=60 * 30, check=check)
         except asyncio.TimeoutError:
@@ -126,7 +126,7 @@ async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, w
         if not reply:
             stop_wordsearch(channel)
             await client.send_message(channel, "**The wordsearch was cancelled after 30 minutes of inactivity.**\n"
-                                                   "The word was `{}`.".format(word))
+                                               "The word was `{}`.".format(word))
             return
 
         guessed_word = reply.content.lower()[:-1]

@@ -260,8 +260,8 @@ class Typing(Game):
 
         # We'll wait for a message from all of our participants
         for i in range(len(self.participants)):
-            def check(m):
-                return m.channel == self.channel and self.is_participant(m) is True
+            def check(message):
+                return message.channel == self.channel and self.is_participant(message) is True
 
             try:
                 reply = await client.wait_for_message(timeout=timeout, check=check)

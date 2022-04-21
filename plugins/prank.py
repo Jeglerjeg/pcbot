@@ -25,7 +25,7 @@ image_width, image_height = image_base.size
 
 
 @plugins.command()
-async def prank(message: discord.Message, phrase: Annotate.CleanContent="IT'S A"):
+async def prank(message: discord.Message, phrase: Annotate.CleanContent = "IT'S A"):
     """ Prank! """
     phrase = phrase.upper()
 

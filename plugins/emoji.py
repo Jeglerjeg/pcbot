@@ -277,7 +277,7 @@ async def gif(message: discord.Message, text: Annotate.CleanContent):
 
     frames = []
     for image in images:
-        frame_bytes = utils.convert_image_object(image, format="PNG")
+        frame_bytes = utils.convert_image_object(image, image_format="PNG")
         frames.append(imageio.v2.imread(frame_bytes))
 
     # Make a gif

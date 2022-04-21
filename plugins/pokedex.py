@@ -110,8 +110,9 @@ def get_pokemon(name_or_id: str, assert_on_error: bool = True):
             name = matches[0]
 
         if name not in pokedex:
-            assert not assert_on_error, "There is no pokémon called **{}** in my pokédex!\nPerhaps you meant: `{}`?".format(
-                name, ", ".join(get_close_matches(name, pokedex.keys(), cutoff=0.5)))
+            assert not assert_on_error, \
+                "There is no pokémon called **{}** in my pokédex!\nPerhaps you meant: `{}`?".format(
+                    name, ", ".join(get_close_matches(name, pokedex.keys(), cutoff=0.5)))
             return None
     else:
         name = id_to_name(pokemon_id)
@@ -259,16 +260,16 @@ def assert_type(slot: str, guild: discord.Guild):
 types_str = "**Valid types are** ```\n{}```".format(", ".join(s.capitalize() for s in api["types"]))
 
 
-def attack_method(type):
+def attack_method(pokemon_type):
     """ Iterate through the pokemon type's attack damage factor. """
-    for damage_type, damage in api["types"][type]["damage_factor"].items():
+    for damage_type, damage in api["types"][pokemon_type]["damage_factor"].items():
         yield damage_type, damage
 
 
-def defense_method(type):
+def defense_method(pokemon_type):
     """ Iterate through the pokemon type's defense damage factor. """
     for value in api["types"].values():
-        yield value["name"], value["damage_factor"][type]
+        yield value["name"], value["damage_factor"][pokemon_type]
 
 
 def resolve_damage_factor(method, type_1: str, type_2: str = None):

@@ -42,16 +42,16 @@ required unless you want a specific plugin to work. Some features and
 modules are only supported if you're using Linux. The bot will prompt 
 errors when modules are missing, although modules as of now are:
 
-| Module   | Notes                                                                                                                 |
-|----------|-----------------------------------------------------------------------------------------------------------------------|
-| Pillow   | `pip install Pillow`                                                                                                  |
-| pendulum | `pip install pendulum`, might also need `pytz`                                                                        |
-| cairosvg | `pip install cairosvg`, only supported for Linux                                                                      |
-| aiofiles | `pip install aiofiles`, support async file operations in [`config.py`](pcbot/config.py)                               |
-| ffmpeg   | Not a python module; see doc in [`music.py`](plugins/music.py)                                                        |
-| imageio  | `pip install imageio`, support gif in [`image.py`](plugins/image.py)                                                  |
-| nltk     | `pip install nltk`, support bigrams in [`summary.py`](plugins/summary.py)                                             |
-| rosu-pp  | `pip install rosu-pp-py`, support pp calculation in [`pp.py`](plugins/pp.py), requires rust toolchain to be installed |
+| Module   | Notes                                                                                                                        |
+|----------|------------------------------------------------------------------------------------------------------------------------------|
+| Pillow   | `pip install Pillow`                                                                                                         |
+| pendulum | `pip install pendulum`, might also need `pytz`                                                                               |
+| cairosvg | `pip install cairosvg`, only supported for Linux                                                                             |
+| aiofiles | `pip install aiofiles`, support async file operations in [`config.py`](pcbot/config.py)                                      |
+| ffmpeg   | Not a python module; see doc in [`music.py`](plugins/music.py)                                                               |
+| imageio  | `pip install imageio`, support gif in [`image.py`](plugins/image.py)                                                         |
+| nltk     | `pip install nltk`, support bigrams in [`summary.py`](plugins/summary.py)                                                    |
+| rosu-pp  | `pip install rosu-pp-py`, support pp calculation in [`pp.py`](plugins/osulib/pp.py), requires rust toolchain to be installed |
 
 ## Running
 Running the bot is simple. Go to the root directory 
