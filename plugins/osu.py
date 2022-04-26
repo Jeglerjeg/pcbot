@@ -2010,11 +2010,12 @@ async def render(message: discord.Message, *options):
     render_job = await ordr.send_render_job(replay_url)
 
     if not isinstance(render_job, dict):
-        await placeholder_msg.edit("An error occured when sending this replay. The bot might be rate-limited.")
+        await placeholder_msg.edit("An error occured when sending this replay. Please try again later.")
         return
 
     if "renderID" not in render_job:
-        await placeholder_msg.edit("An error occured when sending this replay. The bot might be rate-limited.")
+        await placeholder_msg.edit("\n".join(["An error occured when sending this replay.",
+                                              ordr.get_render_error(int(render_job["errorCode"]))]))
         return
 
     last_rendered[message.author.id] = datetime.utcnow()

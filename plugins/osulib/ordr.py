@@ -66,7 +66,75 @@ ordr_config = Config("ordr", pretty=True, data=dict(
     showKeyOverlay="true",  # Whether or not the key overlay should be shown
     showAvatarsOnScoreboard="false",  # Whether or not to show avatars on the scoreboard. May break some skins
     showAimErrorMeter="false",  # Whether or not to show an aim error meter
+    playNightcoreSamples="true",  # Whether or not to play nightcore hitsounds
 ))
+
+
+def get_render_error(error_code: int):
+    error = ""
+    if error_code == 1:
+        error = "Render stopped manually by ordr."
+    elif error_code == 2:
+        error = "Error downloading replay."
+    elif error_code == 3:
+        error = "Error downloading replay."
+    elif error_code == 4:
+        error = "Beatmap mirrors unavailable."
+    elif error_code == 5:
+        error = "Replay file corrupted."
+    elif error_code == 6:
+        error = "Only osu!standard is supported for replay rendering."
+    elif error_code == 7:
+        error = "Replay has no input data."
+    elif error_code == 8:
+        error = "Custom difficulties or unsubmitted maps are unsupported."
+    elif error_code == 9:
+        error = "Audio for this beatmap is unavailable."
+    elif error_code == 10:
+        error = "Cannot connect to osu!api."
+    elif error_code == 11:
+        error = "Auto is not supported."
+    elif error_code == 12:
+        error = "Invalid characters in replay username."
+    elif error_code == 13:
+        error = "The beatmap is longer than 15 minutes."
+    elif error_code == 14:
+        error = "This player is banned from ordr."
+    elif error_code == 15:
+        error = "Beatmap not found on any mirrors."
+    elif error_code == 16:
+        error = "This IP is banned from ordr."
+    elif error_code == 17:
+        error = "This username is banned from ordr."
+    elif error_code == 18:
+        error = "An unknown error from the renderer occured."
+    elif error_code == 19:
+        error = "The renderer cannot download the beatmap."
+    elif error_code == 20:
+        error = "Beatmap version is not the same on mirrors as the replay."
+    elif error_code == 21:
+        error = "Replay is corrupted (danser can't process it)."
+    elif error_code == 22:
+        error = "Server-side error finalizing the video."
+    elif error_code == 23:
+        error = "Server-side error preparing the replay."
+    elif error_code == 24:
+        error = "The beatmap has no name."
+    elif error_code == 25:
+        error = "The replay is missing input data."
+    elif error_code == 26:
+        error = "The replay has incompatible mods."
+    elif error_code == 27:
+        error = "Something went wrong while rendering."
+    elif error_code == 28:
+        error = "The renderer cannot download the replay."
+    elif error_code == 29:
+        error = "The replay is already rendering."
+    elif error_code == 30:
+        error = "The star rating is greater than 20."
+    elif error_code == 31:
+        error = "This mapper is blacklisted from ordr."
+    return error
 
 
 @ordr_client.event()
@@ -81,90 +149,10 @@ async def render_done_json(data: json):
 @ordr_client.event()
 async def render_failed_json(data: json):
     render_id = data["renderID"]
-    error_code = data["errorCode"]
     error_message = data["errorMessage"]
     if render_id in requested_renders:
-        if error_code == 1:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 2:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 3:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 4:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 5:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 6:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 7:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 8:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 9:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 10:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 11:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 12:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 13:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 14:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 15:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 16:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 17:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 18:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 19:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 20:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 21:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 22:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 23:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 24:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 25:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 26:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
-        elif error_code == 27:
-            await requested_renders[render_id]["message"].edit(error_message)
-            requested_renders.pop(render_id)
+        await requested_renders[render_id]["message"].edit(error_message)
+        requested_renders.pop(render_id)
 
 
 @ordr_client.event()
@@ -265,7 +253,8 @@ async def send_render_job(option):
         "showHitCounter": ordr_config.data["showHitCounter"],
         "showKeyOverlay": ordr_config.data["showKeyOverlay"],
         "showAvatarsOnScoreboard": ordr_config.data["showAvatarsOnScoreboard"],
-        "showAimErrorMeter": ordr_config.data["showAimErrorMeter"]
+        "showAimErrorMeter": ordr_config.data["showAimErrorMeter"],
+        "playNightcoreSamples": ordr_config.data["playNightcoreSamples"]
     }
 
     if replay:
