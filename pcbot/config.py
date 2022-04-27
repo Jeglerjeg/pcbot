@@ -12,10 +12,8 @@ import discord
 
 try:
     import aiofiles
-
-    async_io = True
 except ImportError:
-    async_io = False
+    aiofiles = None
 
 github_repo = "pckv/pcbot/"
 default_command_prefix = "!"
@@ -115,7 +113,7 @@ class Config:
 
     async def asyncsave(self):
         """ Write the current config to file asynchronously. """
-        if async_io:
+        if aiofiles:
             async with aiofiles.open(self.filepath, "w") as f:
                 if self.pretty:
                     await f.write(json.dumps(self.data, sort_keys=True, indent=4))
