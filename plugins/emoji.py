@@ -28,7 +28,7 @@ except ImportError:
 
 client = plugins.client  # type: bot.Client
 
-emoji_path = "plugins/twemoji12lib/"
+emoji_path = "plugins/twemojilib/"
 default_size = 1024
 max_width = 2048
 max_emoji = 64
