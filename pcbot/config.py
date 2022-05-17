@@ -15,6 +15,11 @@ try:
 except ImportError:
     aiofiles = None
 
+try:
+    import orjson
+except ImportError:
+    orjson = None
+
 github_repo = "pckv/pcbot/"
 default_command_prefix = "!"
 default_case_sensitive_commands = True
@@ -64,6 +69,20 @@ def migrate():
                 rename(path1, path2)
 
 
+def serialize_json(data, pretty: bool = False):
+    if orjson:
+        if pretty:
+            serialized_json = orjson.dumps(data, option=orjson.OPT_SORT_KEYS | orjson.OPT_INDENT_2).decode("utf-8")
+        else:
+            serialized_json = orjson.dumps(data).decode("utf-8")
+    else:
+        if pretty:
+            serialized_json = json.dumps(data, sort_keys=True, indent=2)
+        else:
+            serialized_json = json.dumps(data)
+    return serialized_json
+
+
 class Config:
     config_path = "config/"
 
@@ -107,18 +126,18 @@ class Config:
         """ Write the current config to file. """
         with open(self.filepath, "w") as f:
             if self.pretty:
-                json.dump(self.data, f, sort_keys=True, indent=4)
+                f.write(serialize_json(self.data, pretty=True))
             else:
-                json.dump(self.data, f)
+                f.write(serialize_json(self.data))
 
     async def asyncsave(self):
         """ Write the current config to file asynchronously. """
         if aiofiles:
             async with aiofiles.open(self.filepath, "w") as f:
                 if self.pretty:
-                    await f.write(json.dumps(self.data, sort_keys=True, indent=4))
+                    await f.write(serialize_json(self.data, pretty=True))
                 else:
-                    await f.write(json.dumps(self.data))
+                    await f.write(serialize_json(self.data))
         else:
             self.save()
 
