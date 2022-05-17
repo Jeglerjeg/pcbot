@@ -428,8 +428,19 @@ async def on_message(message: discord.Message):
 
 
 @summary.command(owner=True)
-async def enable_persistent_messages(message: discord.Message):
+async def enable_persistent_messages(message: discord.Message, disable: bool = False):
     """ Stores every message in this channel in persistent storage. """
+    if disable:
+        if str(message.channel.id) not in summary_options.data["persistent_channels"]:
+            await client.say(message, "Persistent messages are not enabled in this channel.")
+            return
+        summary_options.data["persistent_channels"].remove(str(message.channel.id))
+        await summary_options.asyncsave()
+        del summary_data.data['channels'][str(message.channel.id)]
+        await summary_data.asyncsave()
+        await client.say(message, "Persistent messages are no longer enabled in this channel.")
+        return
+
     if str(message.channel.id) in summary_options.data["persistent_channels"]:
         await client.say(message, "Persistent messages are already enabled and tracked in this channel")
         return
