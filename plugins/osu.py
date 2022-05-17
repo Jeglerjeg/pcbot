@@ -96,7 +96,7 @@ rankings_url = "https://osu.ppy.sh/rankings/osu/performance"
 
 recent_map_events = []
 event_repeat_interval = osu_config.data.get("map_event_repeat_interval", 6)
-timestamp_pattern = re.compile(r"(\d+:\d+:\d+\s(\([0-9,]+\))?\s*)-")
+timestamp_pattern = re.compile(r"(\d+:\d+:\d+\s(\([\d,]+\))?\s*)-")
 
 
 class MapEvent:
@@ -615,6 +615,21 @@ async def retrieve_osu_scores(profile: str, mode: api.GameMode, timestamp: str):
     return user_scores
 
 
+async def retrieve_user_proile(profile: str, mode: api.GameMode, timestamp: str):
+    params = {
+        "key": "id"
+    }
+    user_data = await api.get_user(profile, mode.name, params=params)
+    user_data["time_updated"] = timestamp
+    del user_data["monthly_playcounts"]
+    del user_data["page"]
+    del user_data["replays_watched_counts"]
+    del user_data["user_achievements"]
+    del user_data["rankHistory"]
+    del user_data["rank_history"]
+    return user_data
+
+
 async def update_user_data(member_id: str, profile: str):
     """ Go through all registered members playing osu!, and update their data. """
     # Go through each member playing and give them an "old" and a "new" subsection
@@ -668,10 +683,7 @@ async def update_user_data(member_id: str, profile: str):
     current_time = datetime.now(tz=timezone.utc).isoformat()
     mode = get_mode(member_id)
     try:
-        params = {
-            "key": "id"
-        }
-        user_data = await api.get_user(profile, mode.name, params=params)
+        user_data = await retrieve_user_proile(profile, mode, current_time)
 
         params = {
             "limit": 20
@@ -705,7 +717,6 @@ async def update_user_data(member_id: str, profile: str):
         osu_tracking[member_id]["old"] = osu_tracking[member_id]["new"]
 
     osu_tracking[member_id]["new"] = user_data
-    osu_tracking[member_id]["new"]["time_updated"] = current_time
     osu_tracking[member_id]["new"]["events"] = user_recent
     if cache_user_profiles:
         osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
