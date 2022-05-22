@@ -221,38 +221,7 @@ def generate_message(message: discord.Message, message_content: list, phrase: st
 
     # Generate the summary, or num summaries
     for i in range(num):
-        if bigram:
-            bigram_count = defaultdict(lambda: defaultdict(lambda: 0))
-            bigram_model = defaultdict(lambda: defaultdict(lambda: 0.0))
-            # Count the frequency of a bigram
-            for sentence in message_content:
-                split_sentence = nltk.tokenize.word_tokenize(sentence)
-                # Remove punctuation
-                for word in split_sentence:
-                    if word is not None and word in string.punctuation:
-                        split_sentence.remove(word)
-                # Count occurences of a word after another word
-                for first_word, second_word in nltk.bigrams(split_sentence, pad_right=True, pad_left=True):
-                    bigram_count[first_word][second_word] += 1
-            # Calculate the probability of a bigram occuring
-            for first_word in bigram_count:
-                total_bigram_count = sum(bigram_count[first_word].values())
-                for second_word in bigram_count[first_word]:
-                    bigram_model[first_word][second_word] = bigram_count[first_word][second_word] / total_bigram_count
-            # Generate a sentence using the bigram model
-            text = [phrase if phrase else None]
-            sentence_complete = False
-            while not sentence_complete:
-                key = text[-1]
-                bigram_word = list(bigram_model[key].keys())
-                probabilities = list(bigram_model[key].values())
-                random_word = numpy.random.choice(bigram_word, p=probabilities)
-                text.append(random_word)
-
-                if text[-1] is None:
-                    sentence_complete = True
-            sentence = " ".join([t for t in text if t])
-        elif strict and markovify_model:
+        if strict and markovify_model:
             if phrase and is_endswith(phrase):
                 try:
                     sentence = markovify_model.make_sentence_with_start(phrase[:-3])
@@ -261,6 +230,9 @@ def generate_message(message: discord.Message, message_content: list, phrase: st
 
             else:
                 sentence = markovify_model.make_sentence(tries=1000)
+        elif bigram:
+            bigram_model = create_bigram_model(message_content)
+            sentence = generate_bigram_message(bigram_model, phrase)
         else:
             sentence = markov_messages(message_content, coherent)
 
@@ -273,6 +245,44 @@ def generate_message(message: discord.Message, message_content: list, phrase: st
         sentence = sentence.replace(NEW_LINE_IDENTIFIER.strip(" "), "\n")
         sentences.append(sentence)
     return sentences
+
+
+def create_bigram_model(message_content: list):
+    bigram_count = defaultdict(lambda: defaultdict(lambda: 0))
+    bigram_model = defaultdict(lambda: defaultdict(lambda: 0.0))
+    # Count the frequency of a bigram
+    for sentence in message_content:
+        split_sentence = nltk.tokenize.word_tokenize(sentence)
+        # Remove punctuation
+        for word in split_sentence:
+            if word is not None and word in string.punctuation:
+                split_sentence.remove(word)
+        # Count occurences of a word after another word
+        for first_word, second_word in nltk.bigrams(split_sentence, pad_right=True, pad_left=True):
+            bigram_count[first_word][second_word] += 1
+    # Calculate the probability of a bigram occuring
+    for first_word in bigram_count:
+        total_bigram_count = sum(bigram_count[first_word].values())
+        for second_word in bigram_count[first_word]:
+            bigram_model[first_word][second_word] = bigram_count[first_word][second_word] / total_bigram_count
+    return bigram_model
+
+
+def generate_bigram_message(bigram_model: defaultdict[lambda: defaultdict[lambda: 0.0]], phrase: str):
+    # Generate a sentence using the bigram model
+    text = [phrase if phrase else None]
+    sentence_complete = False
+    while not sentence_complete:
+        key = text[-1]
+        bigram_word = list(bigram_model[key].keys())
+        probabilities = list(bigram_model[key].values())
+        random_word = numpy.random.choice(bigram_word, p=probabilities)
+        text.append(random_word)
+
+        if text[-1] is None:
+            sentence_complete = True
+    sentence = " ".join([t for t in text if t])
+    return sentence
 
 
 def is_valid_option(arg: str):
