@@ -620,6 +620,8 @@ async def retrieve_user_proile(profile: str, mode: api.GameMode, timestamp: str)
         "key": "id"
     }
     user_data = await api.get_user(profile, mode.name, params=params)
+    if not user_data:
+        return None
     user_data["time_updated"] = timestamp
     del user_data["monthly_playcounts"]
     del user_data["page"]
