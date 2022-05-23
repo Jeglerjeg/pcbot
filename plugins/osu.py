@@ -68,7 +68,7 @@ osu_config = Config("osu", pretty=True, data=dict(
     cache_user_profiles=True,  # Whether or not to cache user profiles when the bot turns off
 ))
 
-osu_profile_cache = Config("osu_profile_cache", data=dict())
+osu_profile_cache = Config("osu_profile_cache", data={})
 osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Stores tracked osu! users
 last_rendered = {}  # Saves when the member last rendered a replay
 previous_score_updates = []  # Saves the score IDs of recent map notifications so they don't get posted several times
@@ -314,7 +314,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             mode=osu_score["mode"],
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
+            acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
             pp=utils.format_number(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
@@ -355,7 +355,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             mode=osu_score["mode"],
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
+            acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
             pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
@@ -395,7 +395,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             mode=osu_score["mode"],
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
+            acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
             pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
@@ -435,7 +435,7 @@ async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, r
             mode=osu_score["mode"],
             sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
             modslist=Mods.format_mods(osu_score["mods"]),
-            acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
+            acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
             pp=utils.format_number(osu_score["pp"], 2),
             rank=osu_score["rank"],
             score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
@@ -474,7 +474,7 @@ async def format_minimal_score(osu_score: dict, beatmap: dict, rank: int, member
         beatmapset_id=beatmap["beatmapset_id"],
         mode=osu_score["mode"],
         mods=Mods.format_mods(osu_score["mods"]),
-        acc="{}%".format(utils.format_number(osu_score["accuracy"] * 100, 2)),
+        acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
         beatmap_id=osu_score["beatmap"]["id"],
         artist=beatmap["beatmapset"]["artist"].replace("*", r"\*").replace("_", r"\_"),
         title=beatmap["beatmapset"]["title"].replace("*", r"\*").replace("_", r"\_"),
@@ -1892,13 +1892,13 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
     options = list(options)
     if isinstance(pp_stats, ClosestPPStats):
         # Remove any accuracy percentage from options as we're setting this manually, and remove unused options
-        for opt in options:
+        for opt in options.copy():
             if opt.endswith("%") or opt.endswith("pp") or opt.endswith("x300") or opt.endswith("x100") or opt.endswith(
                     "x50"):
                 options.remove(opt)
 
         options.insert(0, f"{pp_stats.acc}%")
-    for opt in options:
+    for opt in options.copy():
         if opt.startswith("+"):
             options.append(opt.upper())
             options.remove(opt)
@@ -2304,8 +2304,8 @@ async def config(message, _: utils.placeholder):
     """ Manage configuration for this plugin. """
 
 
-@config.command(alias="score", permissions="manage_guild")
-async def scores(message: discord.Message, *channels: discord.TextChannel):
+@config.command(name="scores", alias="score", permissions="manage_guild")
+async def config_scores(message: discord.Message, *channels: discord.TextChannel):
     """ Set which channels to post scores to. """
     init_guild_config(message.guild)
     osu_config.data["guild"][str(message.guild.id)]["score-channels"] = list(str(c.id) for c in channels)

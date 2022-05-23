@@ -82,8 +82,8 @@ def choice(*options: str, ignore_case: bool = True):
         # Compare lowercased version
         if ignore_case:
             return arg if arg.lower() in [s.lower() for s in options] else None
-        else:
-            return arg if arg in options else None
+
+        return arg if arg in options else None
 
     return wrapped
 
@@ -98,7 +98,7 @@ def placeholder(_: str):
 async def confirm(message: discord.Message, text: str, timeout: int = 10):
     """ Have the message author confirm their action. """
     await client.send_message(message.channel,
-                              text + " [{}{}]".format(str(timeout) + "s " if timeout else "", "yes/no"))
+                              text + f' [{str(timeout) + "s " if timeout else ""}{"yes/no"}]')
     author = message.author
     channel = message.channel
 
@@ -135,8 +135,8 @@ def permission(*perms: str):
 
 def role(*roles: str):
     """ Decorator that runs the command only if the author has the specified Roles.
-    roles must be a string representing a role's name. 
-    
+    roles must be a string representing a role's name.
+
     NOTE: this function is deprecated. Use the command 'roles' attribute instead.
     """
 
@@ -195,13 +195,13 @@ async def retrieve_page(url: str, head=False, call=None, headers=None, **params)
 
         async with coro(url=url, params=params, headers=headers or {}) as response:
             if call is not None:
-                if type(call) is str:
+                if isinstance(call, str):
                     attr = getattr(response, call)
                     return await attr()
-                else:
-                    return await call(response)
-            else:
-                return response
+
+                return await call(response)
+
+            return response
 
 
 async def post_request(url: str, call=None, headers=None, data=None, **params):
@@ -220,13 +220,13 @@ async def post_request(url: str, call=None, headers=None, data=None, **params):
 
         async with coro(url, data=data, params=params, headers=headers) as response:
             if call is not None:
-                if type(call) is str:
+                if isinstance(call, str):
                     attr = getattr(response, call)
                     return await attr()
-                else:
-                    return await call(response)
-            else:
-                return response
+
+                return await call(response)
+
+            return response
 
 
 async def retrieve_headers(url: str, headers=None, **params):
@@ -273,7 +273,7 @@ async def convert_to_json(response):
     :returns: The parsed json of the response
     """
     if "Content-Type" in response.headers and "application/json" not in response.headers["Content-Type"]:
-        raise ValueError("The response from {} does not have application/json mimetype".format(response.url))
+        raise ValueError(f"The response from {response.url} does not have application/json mimetype")
 
     return await response.json()
 
@@ -293,7 +293,7 @@ async def download_json(url: str, headers=None, **params):
 def convert_image_object(image, image_format: str = "PNG", **params):
     """ Saves a PIL.Image.Image object to BytesIO buffer. Effectively
     returns the byte-like object for sending through discord.Client.send_file.
-    
+
     :param image: PIL.Image.Image: object to convert.
     :param image_format: The image format, defaults to PNG.
     :param params: Any additional parameters sent to the writer.
@@ -374,12 +374,12 @@ def find_channel(guild: discord.Guild, name, steps=3, mention=True, channel_type
     channel = None
 
     # We want to allow both str and discord.ChannelType, so try converting str and handle exceptions
-    if type(channel_type) is str:
+    if isinstance(channel_type, str):
         try:
             channel_type = getattr(discord.ChannelType, channel_type)
-        except AttributeError:
-            raise TypeError("channel_type (str) must be an attribute of discord.ChannelType")
-    elif type(channel_type) is not discord.ChannelType:
+        except AttributeError as e:
+            raise TypeError("channel_type (str) must be an attribute of discord.ChannelType") from e
+    elif not isinstance(channel_type, discord.ChannelType):
         raise TypeError("channel_type must be discord.ChannelType or a str of a discord.ChannelType attribute")
 
     # Return a member from mention
@@ -426,13 +426,13 @@ def format_objects(*objects, attr=None, dec: str = "", sep: str = None):
     :return: str: the formatted objects.
     """
     if not objects:
-        return
+        return None
 
     first_object = objects[0]
     if attr is None:
         if isinstance(first_object, discord.Member):
             attr = "display_name"
-        elif isinstance(first_object, discord.TextChannel) or isinstance(first_object, discord.Role):
+        elif isinstance(first_object, (discord.TextChannel, discord.Role)):
             attr = "mention"
             sep = " "
         elif isinstance(first_object, discord.Guild):
@@ -472,9 +472,9 @@ def format_code(code: str, language: str = None, *, simple: bool = False):
     :return: str of markdown code.
     """
     if simple:
-        return "`{}`".format(code)
-    else:
-        return "```{}\n{}```".format(language or "", code)
+        return f"`{code}`"
+
+    return f'```{language or ""}\n{code}```'
 
 
 async def convert_to_embed(text: str, *, author: discord.Member = None, **kwargs):
@@ -485,7 +485,7 @@ async def convert_to_embed(text: str, *, author: discord.Member = None, **kwargs
     :param kwargs: Any kwargs to be passed to discord.Embed's init function.
     """
     embed = discord.Embed(**kwargs)
-    url = embed.Empty
+    url = ""
 
     # Find the first url or None
     for word in text.split():
@@ -565,5 +565,5 @@ def split(text: str, maxsplit: int = -1):
 
 def format_number(number: float, precision: int):
     """ Removes trailing zeroes from floating point numbers. """
-    formatted_number = float(('%f' % round(number, precision)).rstrip('0').rstrip('.'))
+    formatted_number = float(f'{round(number, precision)}'.rstrip('0').rstrip('.'))
     return formatted_number if not formatted_number % 1 == 0 else int(formatted_number)

@@ -194,8 +194,8 @@ async def autosave():
 def log_message(message: discord.Message, prefix: str = ""):
     """ Logs a command/message. """
     logging.info("%s@%s%s -> %s", prefix, message.author,
-                 " ({})".format(message.guild.name) if not isinstance(message.channel,
-                                                                      discord.abc.PrivateChannel) else "",
+                 f" ({message.guild.name})" if not isinstance(message.channel,
+                                                              discord.abc.PrivateChannel) else "",
                  message.content.split("\n")[0])
 
 
@@ -212,8 +212,8 @@ async def execute_command(command: plugins.Command, message: discord.Message, *a
         if plugins.is_owner(message.author) and config.owner_error:
             await client.say(message, utils.format_code(traceback.format_exc()))
         else:
-            await client.say(message, "An error occurred while executing this command. If the error persists, "
-                                      "please send a PM to {}.".format(app_info.owner))
+            await client.say(message, f"An error occurred while executing this command. If the error persists, "
+                                      f"please send a PM to {app_info.owner}.")
 
 
 def default_self(anno, default, message: discord.Message):
@@ -532,7 +532,7 @@ async def on_message(message: discord.Message):
     # Log time spent parsing the command
     stop_time = datetime.utcnow()
     time_elapsed = (stop_time - start_time).total_seconds() * 1000
-    logging.debug("Time spent parsing command: {elapsed:.6f}ms".format(elapsed=time_elapsed))
+    logging.debug("Time spent parsing command: %sms", utils.format_number(time_elapsed, 6))
 
 
 async def add_tasks():
@@ -550,9 +550,9 @@ async def add_tasks():
 
 
 async def main():
+    """ The main function. Parses command line arguments, sets up logging,
+    gets the user's login info, sets up any background task and starts the bot. """
     async with client:
-        """ The main function. Parses command line arguments, sets up logging,
-            gets the user's login info, sets up any background task and starts the bot. """
         # Setup logger with level specified in start_args or logging.INFO
         logging.basicConfig(filename=start_args.log_file, level=start_args.log_level,
                             format="%(levelname)s %(asctime)s [%(module)s / %(name)s]: %(message)s")

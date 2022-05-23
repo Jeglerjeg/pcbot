@@ -48,12 +48,12 @@ def migrate():
             path1 = path.join(root, filename)
             # search and replace within files themselves
             filepath = path.join(root, filename)
-            with open(filepath) as f:
+            with open(filepath, encoding="utf-8") as f:
                 file_contents = json.load(f)
                 if isinstance(file_contents, dict):
                     for keys in list(file_contents.keys()):
                         if find in keys:
-                            with open(filepath, "w") as e:
+                            with open(filepath, "w", encoding="utf-8") as e:
                                 file_contents[keys.replace(find, replace)] = file_contents[keys]
                                 del file_contents[keys]
                                 if "bot_meta" in filename or "blacklist" in filename or "osu" in filename or \
@@ -93,7 +93,7 @@ class Config:
         :param data: default data setup, usually an empty/defaulted dictionary or list.
         :param load: should the config file load when initialized? Only loads when a config already exists.
         """
-        self.filepath = "{}{}.json".format(self.config_path, filename)
+        self.filepath = f"{self.config_path}{filename}.json"
         self.pretty = pretty
 
         if not exists(self.config_path):
@@ -106,7 +106,7 @@ class Config:
         elif loaded_data:
             # If the default data is a dict, compare and add missing keys
             updated = False
-            if type(loaded_data) is dict:
+            if isinstance(loaded_data, dict):
                 for k, v in data.items():
                     if k not in loaded_data:
                         loaded_data[k] = v
@@ -124,7 +124,7 @@ class Config:
 
     def save(self):
         """ Write the current config to file. """
-        with open(self.filepath, "w") as f:
+        with open(self.filepath, "w", encoding="utf-8") as f:
             if self.pretty:
                 f.write(serialize_json(self.data, pretty=True))
             else:
@@ -133,7 +133,7 @@ class Config:
     async def asyncsave(self):
         """ Write the current config to file asynchronously. """
         if aiofiles:
-            async with aiofiles.open(self.filepath, "w") as f:
+            async with aiofiles.open(self.filepath, "w", encoding="utf-8") as f:
                 if self.pretty:
                     await f.write(serialize_json(self.data, pretty=True))
                 else:
@@ -147,7 +147,7 @@ class Config:
         :return: config parsed from json or None
         """
         if exists(self.filepath):
-            with open(self.filepath) as f:
+            with open(self.filepath, encoding="utf-8") as f:
                 return json.load(f)
 
         return None

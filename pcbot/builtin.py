@@ -107,7 +107,7 @@ async def stop(message: discord.Message):
 @plugins.command(owner=True)
 async def update(message: discord.Message):
     """ Update the bot by running `git pull`. """
-    await client.say(message, "```diff\n{}```".format(await utils.subprocess("git", "pull", no_stderr=True)))
+    await client.say(message, f'```diff\n{await utils.subprocess("git", "pull", no_stderr=True)}```')
 
 
 @update.command(owner=True)
@@ -126,14 +126,14 @@ async def reset(message: discord.Message):
 async def game(message: discord.Message, name: Annotate.Content = None):
     """ Stop playing or set game to `name`. """
     await client.change_presence(activity=discord.Game(name=name))
-    await client.say(message, "**Set the game to** `{}`.".format(name) if name else "**No longer playing.**")
+    await client.say(message, f"**Set the game to** `{name}`." if name else "**No longer playing.**")
 
 
 @game.command(owner=True)
 async def stream(message: discord.Message, url: str, title: Annotate.Content):
     """ Start streaming a game. """
     await client.change_presence(activity=discord.Streaming(name=title, url=url))
-    await client.say(message, "Started streaming **{}**.".format(title))
+    await client.say(message, f"Started streaming **{title}**.")
 
 
 @plugins.command(name="as", owner=True)
@@ -149,8 +149,8 @@ async def send_result(channel: discord.TextChannel, result, time_elapsed: timede
     if isinstance(result, discord.Embed):
         await client.send_message(channel, embed=result)
     else:
-        embed = discord.Embed(color=channel.guild.me.color, description="```py\n{}```".format(result))
-        embed.set_footer(text="Time elapsed: {:.3f}ms".format(time_elapsed.total_seconds() * 1000))
+        embed = discord.Embed(color=channel.guild.me.color, description=f"```py\n{result}```")
+        embed.set_footer(text=f"Time elapsed: {time_elapsed.total_seconds() * 1000:.3f}ms")
         await client.send_message(channel, embed=embed)
 
 
@@ -204,7 +204,7 @@ async def plugin_(message: discord.Message):
     """ Manage plugins.
         **Owner command unless no argument is specified.**
         """
-    await client.say(message, "**Plugins:** ```{}```".format(", ".join(plugins.all_keys())))
+    await client.say(message, f'**Plugins:** ```{", ".join(plugins.all_keys())}```')
 
 
 @plugin_.command(aliases="r", pos_check=False, owner=True)
@@ -214,7 +214,7 @@ async def reload(message: discord.Message, *names: str.lower):
         reloaded = []
         for name in names:
             if not plugins.get_plugin(name):
-                await client.say(message, "`{}` is not a plugin.".format(name))
+                await client.say(message, f"`{name}` is not a plugin.")
                 continue
 
             # The plugin entered is valid so we reload it
@@ -223,8 +223,7 @@ async def reload(message: discord.Message, *names: str.lower):
             reloaded.append(name)
 
         if reloaded:
-            await client.say(message, "Reloaded plugin{} `{}`.".format(
-                "s" if len(reloaded) > 1 else "", ", ".join(reloaded)))
+            await client.say(message, f'Reloaded plugin{"s" if len(reloaded) > 1 else ""} `{", ".join(reloaded)}`.')
     else:
         # Reload all plugins
         await plugins.save_plugins()
@@ -238,24 +237,24 @@ async def reload(message: discord.Message, *names: str.lower):
 @plugin_.command(owner=True, error="You need to specify the name of the plugin to load.")
 async def load(message: discord.Message, name: str.lower):
     """ Loads a plugin. """
-    assert not plugins.get_plugin(name), "Plugin `{}` is already loaded.".format(name)
+    assert not plugins.get_plugin(name), f"Plugin `{name}` is already loaded."
 
     # The plugin isn't loaded so we'll try to load it
-    assert plugins.load_plugin(name), "Plugin `{}` could not be loaded.".format(name)
+    assert plugins.load_plugin(name), f"Plugin `{name}` could not be loaded."
 
     # The plugin was loaded successfully
-    await client.say(message, "Plugin `{}` loaded.".format(name))
+    await client.say(message, f"Plugin `{name}` loaded.")
 
 
 @plugin_.command(owner=True, error="You need to specify the name of the plugin to unload.")
 async def unload(message: discord.Message, name: str.lower):
     """ Unloads a plugin. """
-    assert plugins.get_plugin(name), "`{}` is not a loaded plugin.".format(name)
+    assert plugins.get_plugin(name), f"`{name}` is not a loaded plugin."
 
     # The plugin is loaded so we unload it
     await plugins.save_plugin(name)
     plugins.unload_plugin(name)
-    await client.say(message, "Plugin `{}` unloaded.".format(name))
+    await client.say(message, f"Plugin `{name}` unloaded.")
 
 
 @plugins.command(name="lambda", hidden=True)
@@ -266,7 +265,7 @@ async def lambda_(message: discord.Message):
     where the default argument is what to return when the argument does not exist.
     **Owner command unless no argument is specified.**
     """
-    await client.say(message, "**Lambdas:** ```\n" "{}```".format(", ".join(sorted(lambdas.data.keys()))))
+    await client.say(message, "**Lambdas:** ```\n" f'{", ".join(sorted(lambdas.data.keys()))}```')
 
 
 @lambda_.command(aliases="a", owner=True)
@@ -274,18 +273,18 @@ async def add(message: discord.Message, trigger: str, python_code: Annotate.Code
     """ Add a command that runs the specified python code. """
     lambdas.data[trigger] = python_code
     await lambdas.asyncsave()
-    await client.say(message, "Command `{}` set.".format(trigger))
+    await client.say(message, f"Command `{trigger}` set.")
 
 
 @lambda_.command(aliases="r", owner=True)
 async def remove(message: discord.Message, trigger: str):
     """ Remove a command. """
-    assert trigger in lambdas.data, "Command `{}` does not exist.".format(trigger)
+    assert trigger in lambdas.data, f"Command `{trigger}` does not exist."
 
     # The command specified exists and we remove it
     del lambdas.data[trigger]
     await lambdas.asyncsave()
-    await client.say(message, "Command `{}` removed.".format(trigger))
+    await client.say(message, f"Command `{trigger}` removed.")
 
 
 @lambda_.command(owner=True)
@@ -295,12 +294,12 @@ async def enable(message: discord.Message, trigger: str):
     if trigger in lambda_config.data["blacklist"]:
         lambda_config.data["blacklist"].remove(trigger)
         await lambda_config.asyncsave()
-        await client.say(message, "Command `{}` enabled.".format(trigger))
+        await client.say(message, f"Command `{trigger}` enabled.")
     else:
-        assert trigger in lambdas.data, "Command `{}` does not exist.".format(trigger)
+        assert trigger in lambdas.data, f"Command `{trigger}` does not exist."
 
         # The command exists so surely it must be disabled
-        await client.say(message, "Command `{}` is already enabled.".format(trigger))
+        await client.say(message, f"Command `{trigger}` is already enabled.")
 
 
 @lambda_.command(owner=True)
@@ -310,12 +309,12 @@ async def disable(message: discord.Message, trigger: str):
     if trigger not in lambda_config.data["blacklist"]:
         lambda_config.data["blacklist"].append(trigger)
         await lambda_config.asyncsave()
-        await client.say(message, "Command `{}` disabled.".format(trigger))
+        await client.say(message, f"Command `{trigger}` disabled.")
     else:
-        assert trigger in lambdas.data, "Command `{}` does not exist.".format(trigger)
+        assert trigger in lambdas.data, f"Command `{trigger}` does not exist."
 
         # The command exists so surely it must be disabled
-        await client.say(message, "Command `{}` is already disabled.".format(trigger))
+        await client.say(message, f"Command `{trigger}` is already disabled.")
 
 
 def import_module(module: str, attr: str = None):
@@ -330,7 +329,7 @@ def import_module(module: str, attr: str = None):
     try:
         imported = importlib.import_module(module)
     except ImportError as error:
-        e = "Unable to import module {}.".format(module)
+        e = f"Unable to import module {module}."
         logging.error(e)
         raise ImportError from error
     else:
@@ -338,7 +337,7 @@ def import_module(module: str, attr: str = None):
             if hasattr(imported, attr):
                 code_globals[name] = getattr(imported, attr)
             else:
-                e = "Module {} has no attribute {}".format(module, attr)
+                e = f"Module {module} has no attribute {attr}"
                 logging.error(e)
                 raise KeyError(e)
         else:
@@ -358,23 +357,23 @@ async def import_(message: discord.Message, module: str, attr: str = None):
     try:
         name = import_module(module, attr)
     except ImportError:
-        await client.say(message, "Unable to import `{}`.".format(module))
+        await client.say(message, f"Unable to import `{module}`.")
     except KeyError:
-        await client.say(message, "Unable to import `{}` from `{}`.".format(attr, module))
+        await client.say(message, f"Unable to import `{attr}` from `{module}`.")
     else:
         # There were no errors when importing, so we add the name to our startup imports
         lambda_config.data["imports"].append((module, attr))
         await lambda_config.asyncsave()
-        await client.say(message, "Imported and setup `{}` for import.".format(name))
+        await client.say(message, f"Imported and setup `{name}` for import.")
 
 
 @lambda_.command()
 async def source(message: discord.Message, trigger: str):
     """ Disable source of a command """
-    assert trigger in lambdas.data, "Command `{}` does not exist.".format(trigger)
+    assert trigger in lambdas.data, f"Command `{trigger}` does not exist."
 
     # The command exists so we display the source
-    await client.say(message, "```py\n{}```".format(lambdas.data[trigger]))
+    await client.say(message, f"```py\n{lambdas.data[trigger]}```")
 
 
 @plugins.command(hidden=True)
@@ -387,13 +386,13 @@ async def ping(message: discord.Message):
 
     # Edit our message with the tracked time (in ms)
     time_elapsed = (stop_time - start_time).microseconds / 1000
-    await first_message.edit(content="Pong! `{elapsed:.4f}ms`".format(elapsed=time_elapsed))
+    await first_message.edit(content=f"Pong! `{time_elapsed:.4f}ms`")
 
 
 async def get_changelog(num: int):
     """ Get the latest commit messages from PCBOT. """
     since = datetime.utcnow() - timedelta(days=7)
-    commits = await utils.download_json("https://api.github.com/repos/{}commits".format(config.github_repo),
+    commits = await utils.download_json(f"https://api.github.com/repos/{config.github_repo}commits",
                                         since=since.strftime("%Y-%m-%dT00:00:00"))
     changelog = []
 
@@ -423,17 +422,11 @@ async def bot_hub(message: discord.Message):
     """ Display basic information. """
     app_info = await client.application_info()
 
-    await client.say(message, "**{ver}** - **{name}** ```elm\n"
-                              "Owner   : {owner}\n"
-                              "Up      : {up} UTC\n"
-                              "Guilds  : {guilds}```"
-                              "{desc}".format(
-                               ver=config.version, name=app_info.name,
-                               owner=str(app_info.owner),
-                               up=client.time_started.strftime("%d-%m-%Y %H:%M:%S"),
-                               guilds=len(client.guilds),
-                               desc=app_info.description.replace("\\n", "\n")
-                              )
+    await client.say(message, f"**{config.version}** - **{app_info.name}** ```elm\n"
+                              f"Owner   : {str(app_info.owner)}\n"
+                              f'Up      : {client.time_started.strftime("%d-%m-%Y %H:%M:%S")} UTC\n'
+                              f"Guilds  : {len(client.guilds)}```"
+                              f'{app_info.description}'
                      )
 
 
@@ -449,15 +442,15 @@ async def set_prefix(message: discord.Message, prefix: str = None):
     await config.set_guild_config(message.guild, "command_prefix", utils.split(prefix)[0] if prefix else None)
 
     pre = config.default_command_prefix if prefix is None else prefix
-    await client.say(message, "Set the guild prefix to `{}`.".format(pre))
+    await client.say(message, f"Set the guild prefix to `{pre}`.")
 
 
 @bot_hub.command(name="case", permissions="administrator", disabled_pm=True)
 async def set_case_sensitivity(message: discord.Message, value: plugins.true_or_false):
     """ Enable or disable case sensitivity in command triggers. """
     await config.set_guild_config(message.guild, "case_sensitive_commands", value)
-    await client.say(message, "**{}** case sensitive command triggers in this guild. ".format(
-        "Enabled" if value else "Disabled"))
+    await client.say(message,
+                     f'**{"Enabled" if value else "Disabled"}** case sensitive command triggers in this guild.')
 
 
 def init():
