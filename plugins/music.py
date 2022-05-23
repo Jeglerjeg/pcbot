@@ -84,10 +84,11 @@ def format_song(song: Song, url=True):
     # The player duration is given in seconds; convert it to h:mm
     duration = ""
     if song.player.duration:
-        duration = "Duration: **{0}:{1:02}**".format(*divmod(int(song.player.duration), 60))
+        length = divmod(int(song.player.duration), 60)
+        duration = f"Duration: **{length[0]}:{length[1]:02}**"
 
-    return "**{0.title}**\nRequested by: **{1.display_name}**\n{2}".format(song.player, song.requester, duration) \
-           + ("\n**URL**: <{0.url}>".format(song.player) if url else "")
+    return f"**{song.player.title}**\nRequested by: **{song.requester.display_name}**\n{duration}" \
+           + (f"\n**URL**: <{song.player.url}>" if url else "")
 
 
 class VoiceState:
@@ -165,7 +166,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
 async def music(message, _: utils.placeholder):
     """ Manage music. If a music channel is assigned, the bot will join
     whenever someone plays music. """
-    pass
 
 
 def get_guild_channel(guild: discord.Guild):
@@ -296,7 +296,7 @@ async def skip(message: discord.Message):
         await client.say(message, "**Skipped song.**")
         state.skip()
     else:
-        await client.say(message, "Voted to skip the current song. `{}/{}`".format(votes, needed_to_skip))
+        await client.say(message, f"Voted to skip the current song. `{votes}/{needed_to_skip}`")
 
 
 @music.command(aliases="u nvm fuck no")
@@ -307,7 +307,7 @@ async def undo(message: discord.Message):
 
     for song in reversed(state.queue):
         if song.requester == message.author:
-            await client.say(message, "Removed previous request **{0.title}** from the queue.".format(song.player))
+            await client.say(message, f"Removed previous request **{song.player.title}** from the queue.")
             state.queue.remove(song)
             return
 
@@ -327,7 +327,7 @@ async def clear(message: discord.Message):
             removed = True
 
     if removed:
-        await client.say(message, "Removed all queued songs by **{0.display_name}**.".format(message.author))
+        await client.say(message, f"Removed all queued songs by **{message.author.display_name}**.")
     else:
         await client.say(message, "**You have no queued songs.**")
 
@@ -348,7 +348,7 @@ async def vol(message: discord.Message, volume: int):
     assert_connected(message.author)
     state = voice_states[message.guild]
     state.volume = volume / 100
-    await client.say(message, "Set the volume to **{:.00%}**.".format(state.volume))
+    await client.say(message, f"Set the volume to **{state.volume:.00%}**.")
 
 
 @music.command(aliases="np")
@@ -386,7 +386,7 @@ async def link(message: discord.Message, voice_channel: Annotate.VoiceChannel):
     # Link the channel
     music_channels.data.append(str(voice_channel.id))
     await music_channels.asyncsave()
-    await client.say(message, "Voice channel **{0.name}** is now the music channel.".format(voice_channel))
+    await client.say(message, f"Voice channel **{voice_channel.name}** is now the music channel.")
 
 
 @music.command(permissions="manage_guild")

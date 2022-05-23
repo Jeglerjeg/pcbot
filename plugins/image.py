@@ -90,7 +90,7 @@ class ImageArg:
             if convert:
                 self.object = convert_image(self.object, convert)
 
-            if type(function) is list:
+            if isinstance(function, list):
                 for func in function:
                     self.object = func(self.object, *args, **kwargs)
             else:
@@ -102,7 +102,7 @@ class ImageArg:
                 if convert:
                     frame = convert_image(frame, convert, real_convert=False)
 
-                if type(function) is list:
+                if isinstance(function, list):
                     for func in function:
                         frame = func(frame, *args, **kwargs)
                     frame_bytes = utils.convert_image_object(frame)
@@ -170,7 +170,7 @@ async def image(message: discord.Message, url_or_emoji: str):
 
     try:  # Check if the given string is a url and save the headers for later
         headers = await utils.retrieve_headers(url_or_emoji)
-    except ValueError:  # Not a valid url, let's see if it's a mention
+    except ValueError as e:  # Not a valid url, let's see if it's a mention
         match = mention_regex.match(url_or_emoji)
         if match:
             member = message.guild.get_member(int(match.group("id")))
@@ -183,7 +183,7 @@ async def image(message: discord.Message, url_or_emoji: str):
             return ImageArg(image_object, image_format="PNG")
 
         # Nope, not a mention. If we support emoji, we can progress further
-        assert not url_only, "`{}` **is not a valid URL or user mention.**".format(url_or_emoji)
+        assert not url_only, f"`{url_or_emoji}` **is not a valid URL or user mention.**"
 
         # There was no image to get, so let's see if it's an emoji
         char = "-".join(hex(ord(c))[2:] for c in url_or_emoji)  # Convert to a hex string
@@ -199,7 +199,7 @@ async def image(message: discord.Message, url_or_emoji: str):
                 return ImageArg(image_object, image_format="PNG")
 
         # Alright, we're out of ideas
-        raise AssertionError("`{}` **is neither a URL, a mention nor an emoji.**".format(url_or_emoji))
+        raise AssertionError(f"`{url_or_emoji}` **is neither a URL, a mention nor an emoji.**") from e
 
     # The URL was valid so let's make sure it's an image
     match = extension_regex.search(headers["CONTENT-TYPE"])
@@ -212,7 +212,7 @@ async def image(message: discord.Message, url_or_emoji: str):
         size = headers["CONTENT-LENGTH"]
         max_size = max_gif_bytes if gif else max_bytes
         assert int(size) <= max_size, \
-            "**This image exceeds the maximum size of `{}kB` for this format.**".format(max_size // 1024)
+            f"**This image exceeds the maximum size of `{max_size // 1024}kB` for this format.**"
     elif gif:  # If there is no information on the size of the file, we'll refuse if the image is a gif
         raise AssertionError("**The size of this GIF is unknown and was therefore rejected.**")
 
@@ -234,23 +234,23 @@ def parse_resolution(res: str):
         try:
             x = int(x)
             y = int(y)
-        except ValueError:
-            raise AssertionError("**Width or height are not integers.**")
+        except ValueError as e:
+            raise AssertionError("**Width or height are not integers.**") from e
 
         # Assign a maximum and minimum size
         assert 1 <= x <= 3000 and 1 <= y <= 3000, "**Width and height must be between 1 and 3000.**"
         return x, y
-    elif res.startswith("*"):
+    if res.startswith("*"):
         try:
             scale = float(res[1:])
-        except ValueError:
-            raise AssertionError(r"**Characters following \* must be a number, not `{}`**".format(res[1:]))
+        except ValueError as e:
+            raise AssertionError(rf"**Characters following \* must be a number, not `{res[1:]}`**") from e
 
         # Make sure the scale isn't less than 0. Whatever uses this argument will have to manually check for max size
         assert scale > 0, "**Scale must be greater than 0.**"
         return scale, 0
-    else:
-        return None
+
+    return None
 
 
 def clean_format(image_format: str, extension: str):
@@ -271,10 +271,10 @@ async def send_image(message: discord.Message, image_arg: ImageArg, **params):
         else:
             image_fp = utils.convert_image_object(image_arg.object, image_arg.format, **params)
     except KeyError as e:
-        await client.send_message(message.channel, "Image format `{}` is unsupported.".format(e))
+        await client.send_message(message.channel, f"Image format `{e}` is unsupported.")
     else:
         await client.send_file(message.channel, image_fp,
-                               filename="{}.{}".format(message.author.display_name, image_arg.extension))
+                               filename=f"{message.author.display_name}.{image_arg.extension}")
 
 
 @plugins.command(pos_check=lambda s: s.startswith("-"))
@@ -312,7 +312,7 @@ async def jpeg(message: discord.Message, image_arg: image, *effect: utils.choice
     """ Give an image some proper jpeg artifacting.
 
     Valid effects are: `meme` """
-    image_arg.modify(to_jpg, quality, real_convert=False if "meme" in effect else True)
+    image_arg.modify(to_jpg, quality, real_convert="meme" not in effect)
 
     await send_image(message, image_arg)
 

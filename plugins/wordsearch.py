@@ -43,7 +43,7 @@ def valid_guess(message: discord.Message):
 
 def format_hint(hint):
     """ Formats the hint string for our messages. """
-    return "The word starts with `{0}`.".format(hint) if hint else ""
+    return f"The word starts with `{hint}`." if hint else ""
 
 
 async def auto_word(count=1):
@@ -76,7 +76,7 @@ def stop_wordsearch(channel: discord.TextChannel):
 async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, word: str = None):
     if channel.id not in wordsearch:
         if not word:
-            await client.send_message(channel, "Waiting for {0.mention} to choose a word!".format(host))
+            await client.send_message(channel, f"Waiting for {host.mention} to choose a word!")
     else:
         await client.send_message(channel, "A wordsearch is already active in this channel!")
         return
@@ -101,15 +101,15 @@ async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, w
         # Stop the wordsearch if the user spent more than 30 seconds writing a valid word
         if not reply:
             stop_wordsearch(channel)
-            await client.send_message(channel, "{0.mention} failed to enter a valid word.".format(host))
+            await client.send_message(channel, f"{host.mention} failed to enter a valid word.")
             return
 
         # Start the wordsearch
         word = reply.content.lower()
-        await client.send_message(host, "Set the word to `{}`.".format(word))
-        await client.send_message(channel, "{0.mention} has entered a word! {1}".format(host, tutorial))
+        await client.send_message(host, f"Set the word to `{word}`.")
+        await client.send_message(channel, f"{host.mention} has entered a word! {tutorial}")
     else:
-        await client.send_message(channel, "{0.mention} made me set a word! {1}".format(host, tutorial))
+        await client.send_message(channel, f"{host.mention} made me set a word! {tutorial}")
 
     tries = 0
     hint = ""
@@ -126,7 +126,7 @@ async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, w
         if not reply:
             stop_wordsearch(channel)
             await client.send_message(channel, "**The wordsearch was cancelled after 30 minutes of inactivity.**\n"
-                                               "The word was `{}`.".format(word))
+                                               f"The word was `{word}`.")
             return
 
         guessed_word = reply.content.lower()[:-1]
@@ -146,19 +146,15 @@ async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, w
 
         # Compare the words
         if guessed_word > word:
-            m = "{0.mention} `{1}` is *after* in the dictionary. {2}".format(reply.author, guessed_word,
-                                                                             format_hint(hint))
+            m = f"{reply.author.mention} `{guessed_word}` is *after* in the dictionary. {format_hint(hint)}"
         elif guessed_word < word:
-            m = "{0.mention} `{1}` is *before* in the dictionary. {2}".format(reply.author, guessed_word,
-                                                                              format_hint(hint))
+            m = f"{reply.author.mention} `{guessed_word}` is *before* in the dictionary. {format_hint(hint)}"
         else:
             m = ""
 
         if guessed_word.startswith(word):
             # User guessed the right word (kind of)
-            m = "{0.mention} ***got it*** after **{tries}** tries! The word was `{word}`.".format(reply.author,
-                                                                                                  tries=tries,
-                                                                                                  word=word)
+            m = f"{reply.author.mention} ***got it*** after **{tries}** tries! The word was `{word}`."
             stop_wordsearch(channel)
 
         asyncio.ensure_future(client.send_message(channel, m))
@@ -186,4 +182,4 @@ async def on_reload(name: str):
     await plugins.reload(name)
 
     wordsearch = local_wordsearch
-    wordsearch_words = wordsearch_words
+    wordsearch_words = local_words

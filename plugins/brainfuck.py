@@ -86,7 +86,7 @@ def find_loop_end(code: str, start: int):
         if nest == 0:
             return start + i
 
-    raise SyntaxError("{}: Loop never ends!".format(start))
+    raise SyntaxError(f"{start}: Loop never ends!")
 
 
 def run_brainfuck(code: str, for_input: str = ""):
@@ -123,7 +123,7 @@ def run_brainfuck(code: str, for_input: str = ""):
         elif char == "]":
             if loops:
                 if loops[-1].compare_pointer(pointer):
-                    raise InfiniteLoop("{}: Pointer value unchanged.".format(loops[-1].start))
+                    raise InfiniteLoop(f"{loops[-1].start}: Pointer value unchanged.")
 
                 if not pointer.value == 0:
                     i = loops[-1].start
@@ -133,21 +133,21 @@ def run_brainfuck(code: str, for_input: str = ""):
 
         i += 1
         if i >= len(code):
-            return output or "Pointer value: {}".format(pointer.value)
+            return output or f"Pointer value: {pointer.value}"
 
         iterations += 1
         if iterations >= max_iterations:
-            raise TooManyIterations("Program exceeded maximum number of iterations ({})".format(max_iterations))
+            raise TooManyIterations(f"Program exceeded maximum number of iterations ({max_iterations})")
 
 
 async def brainfuck_in_channel(channel: discord.TextChannel, code, program_input):
     try:
         output = run_brainfuck(code, program_input)
     except Exception as e:
-        await client.send_message(channel, "```\n{}: {}```".format(type(e).__name__, str(e)))
+        await client.send_message(channel, f"```\n{type(e).__name__}: {str(e)}```")
     else:
         assert len(output) <= 4000, "**The output was too long.**"
-        await client.send_message(channel, "```\n{}```".format(output))
+        await client.send_message(channel, f"```\n{output}```")
 
 
 @plugins.command(aliases="bf")
@@ -187,14 +187,14 @@ def snippet_name(name: str):
 
 def assert_exists(name: str):
     """ Check if the brainfuck entry exists. """
-    assert name in cfg.data, "No saved entry with name `{}`.".format(name)
+    assert name in cfg.data, f"No saved entry with name `{name}`."
 
 
 def assert_author(name: str, member: discord.Member):
     """ Make sure that whoever is modifying a brainfuck entry
     is the author of said entry. """
     author = cfg.data[name]["author"]
-    assert author == str(member.id), "You are not the author of this entry. **({})**".format(author or "Unknown author")
+    assert author == str(member.id), f'You are not the author of this entry. **({author or "Unknown author"})**'
 
 
 @brainfuck.command(aliases="exec do load")
@@ -210,11 +210,11 @@ async def run(message: discord.Message, name: snippet_name, args: Annotate.Clean
 async def add(message: discord.Message, name: snippet_name, code: Annotate.Code):
     """ Adds a brainfuck snippet entry with the given code. This code can be executed
     with `{pre}brainfuck run`."""
-    assert name not in cfg.data, "Entry `{}` already exists.".format(name)
+    assert name not in cfg.data, f"Entry `{name}` already exists."
 
     cfg.data[name] = dict(author=str(str(message.author.id)), code=code)
     await cfg.asyncsave()
-    await client.say(message, "Entry `{}` created.".format(name))
+    await client.say(message, f"Entry `{name}` created.")
 
 
 @brainfuck.command(aliases="extend more")
@@ -226,7 +226,7 @@ async def append(message: discord.Message, name: snippet_name, code: Annotate.Co
 
     cfg.data[name]["code"] += code
     await cfg.asyncsave()
-    await client.say(message, "The given code was appended to `{}`.".format(name))
+    await client.say(message, f"The given code was appended to `{name}`.")
 
 
 @brainfuck.command(aliases="delete")
@@ -237,20 +237,20 @@ async def remove(message: discord.Message, name: snippet_name):
 
     del cfg.data[name]
     await cfg.asyncsave()
-    await client.say(message, "Removed entry with name `{}`.".format(name))
+    await client.say(message, f"Removed entry with name `{name}`.")
 
 
 @brainfuck.command(name="list")
 async def list_entries(message: discord.Message):
     """ Display a list of all brainfuck entries. """
-    await client.say(message, "**Entries:**```\n{}```".format(", ".join(cfg.data.keys())))
+    await client.say(message, f"**Entries:**```\n{', '.join(cfg.data.keys())}```")
 
 
 @brainfuck.command(aliases="min reduce")
 async def minimize(message: discord.Message, code: Annotate.Code):
     """ Minimize the given code by removing everything that is not recognized
     brainfuck code. """
-    await client.say(message, "```\n{}```".format("".join(c for c in code if c in brainfuck_chars)))
+    await client.say(message, f"```\n{''.join(c for c in code if c in brainfuck_chars)}```")
 
 
 @brainfuck.command(aliases="code")
@@ -259,7 +259,7 @@ async def source(message: discord.message, name: snippet_name):
     assert_exists(name)
     code = cfg.data[name]["code"]
 
-    m = "```{}```".format(code)
+    m = f"```{code}```"
     if len(m) > 4000:
         await client.say(message, "The code for this entry exceeds 4000 characters.")
     else:

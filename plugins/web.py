@@ -30,7 +30,7 @@ async def define(message: discord.Message, term: Annotate.LowerCleanContent):
     for definition in definitions:
         # Format example in code if there is one
         if definition.get("example"):
-            definition["example"] = "```{}```".format(definition["example"])
+            definition["example"] = f"```{definition['example']}```"
 
         # Format definition
         msg = "**{word}**:\n{definition}{example}".format(**definition)

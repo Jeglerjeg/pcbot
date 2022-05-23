@@ -196,8 +196,8 @@ def filter_messages(message_content: list, phrase: str, regex: bool = False, cas
             try:
                 if re.search(phrase, content, 0 if case else re.IGNORECASE):
                     yield content
-            except:  # Return error message when regex does not work
-                raise AssertionError("**Invalid regex.**")
+            except Exception as e:  # Return error message when regex does not work
+                raise AssertionError("**Invalid regex.**") from e
         elif not regex and (phrase in content if case else phrase.lower() in content.lower()):
             yield content
 

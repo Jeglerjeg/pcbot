@@ -62,26 +62,26 @@ def add_setting(setting: str, default=True, name=None, permissions=None):
     default_config[name] = default
 
     @moderate_.command(name=name, usage="[on | off]", permissions=permissions,
-                       description="Display current {} setting or enable/disable it.".format(setting))
+                       description=f"Display current {setting} setting or enable/disable it.")
     async def display_setting(message: discord.Message):
         """ The command to display the current setting. """
         setup_default_config(message.guild)
         current = moderate.data[str(message.guild.id)][name]
-        await client.say(message, "{} is **{}**.".format(setting, "enabled" if current else "disabled"))
+        await client.say(message, f'{setting} is **{"enabled" if current else "disabled"}**.')
 
     @display_setting.command(hidden=True, aliases="true set enable", permissions=permissions)
     async def on(message: discord.Message):
         """ The command to enable this setting. """
         moderate.data[str(message.guild.id)][name] = True
         await moderate.asyncsave()
-        await client.say(message, "{} **enabled**.".format(setting))
+        await client.say(message, f"{setting} **enabled**.")
 
     @display_setting.command(hidden=True, aliases="false unset disable", permissions=permissions)
     async def off(message: discord.Message):
         """ The command to enable this setting. """
         moderate.data[str(message.guild.id)][name] = False
         await moderate.asyncsave()
-        await client.say(message, "{} **disabled**.".format(setting))
+        await client.say(message, f"{setting} **disabled**.")
 
 
 add_setting("NSFW filter", permissions=["manage_guild"])
@@ -100,11 +100,11 @@ async def unmute(message: discord.Message, *members: discord.Member):
             await member.edit(timed_out_until=None)
             muted_members.append(member)
         else:
-            await client.say(message, "{} isn't muted.".format(member.display_name))
+            await client.say(message, f"{member.display_name} isn't muted.")
 
     # Some members were unmuted, success!
     if muted_members:
-        await client.say(message, "Unmuted {}".format(utils.format_objects(*muted_members, dec="`")))
+        await client.say(message, f"Unmuted {utils.format_objects(*muted_members, dec='`')}")
 
 
 @plugins.command(permissions="moderate_members", aliases="mute")
@@ -131,16 +131,16 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
     changelog_channel = get_changelog_channel(message.guild)
 
     # Tell the member and post in the changelog
-    m = "You were timed out from **{}** for **{} minutes**. \n**Reason:** {}".format(message.guild, minutes, reason)
+    m = f"You were timed out from **{message.guild}** for **{minutes} minutes**. \n**Reason:** {reason}"
     try:
         await client.send_message(member, m)
     except discord.Forbidden:
         pass
 
     if changelog_channel:
-        await client.send_message(changelog_channel, "{} Timed out {} for **{} minutes**. **Reason:** {}".format(
-            message.author.mention, member.mention, minutes, reason
-        ))
+        await client.send_message(changelog_channel,
+                                  f"{message.author.mention} Timed out {member.mention} for **{minutes} minutes**. "
+                                  f"**Reason:** {reason}")
 
 
 @plugins.command(aliases="muteall mute* unmuteall unmute*", permissions="manage_messages")
@@ -158,11 +158,11 @@ async def suspend(message: discord.Message, channel: discord.TextChannel = Annot
 
     try:
         if overwrite.send_messages:
-            await client.say(message, "{} is no longer suspended.".format(channel.mention))
+            await client.say(message, f"{channel.mention} is no longer suspended.")
         else:
-            await client.say(message, "Suspended {}.".format(channel.mention))
+            await client.say(message, f"Suspended {channel.mention}.")
     except discord.Forbidden:  # ...
-        await client.send_message(message.author, "You just removed my send permission in {}.".format(channel.mention))
+        await client.send_message(message.author, f"You just removed my send permission in {channel.mention}.")
 
 
 @plugins.argument("{open}member/#channel {suffix}{close}", pass_message=True)
@@ -183,7 +183,7 @@ async def purge(message: discord.Message, *instances: members_and_channels, num:
     instances = list(instances)
 
     channel = message.channel
-    for instance in instances:
+    for instance in instances.copy():
         if isinstance(instance, discord.TextChannel):
             channel = instance
             instances.remove(instance)
@@ -205,7 +205,7 @@ async def purge(message: discord.Message, *instances: members_and_channels, num:
     elif deleted == 1:
         await client.delete_message(to_delete[0])
 
-    m = await client.say(message, "Purged **{}** message{}.".format(deleted, "" if deleted == 1 else "s"))
+    m = await client.say(message, f'Purged **{deleted}** message{"" if deleted == 1 else "s"}.')
 
     # Remove both the command message and the feedback after 5 seconds
     await asyncio.sleep(5)
@@ -231,8 +231,8 @@ async def check_nsfw(message: discord.Message):
         nsfw_channel = discord.utils.find(lambda c: "nsfw" in c.name, message.guild.channels)
 
         if nsfw_channel:
-            await client.say(message, "{0.mention}: **Please post NSFW content in {1.mention}**".format(
-                message.author, nsfw_channel))
+            await client.say(message,
+                             f"{message.author.mention}: **Please post NSFW content in {nsfw_channel.mention}**")
 
         return True
 
@@ -300,13 +300,13 @@ async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
                 attachments += attachment.filename + "\n"
             await log_change(
                 changelog_channel,
-                "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}\nAttachments:\n"
-                "``{1}``".format(message, attachments)
+                f"{message.author.mention}'s message was deleted "
+                f"in {message.channel.mention}:\n{message.clean_content}\nAttachments:\n``{attachments}``"
             )
         else:
             await log_change(
                 changelog_channel,
-                "{0.author.mention}'s message was deleted in {0.channel.mention}:\n{0.clean_content}".format(message)
+                f"{message.author.mention}'s message was deleted in {message.channel.mention}:\n{message.clean_content}"
             )
     else:
         if changelog_channel is None:
@@ -314,7 +314,7 @@ async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
 
         await log_change(
             changelog_channel,
-            "An uncached message was deleted in {0.mention}".format(client.get_channel(raw_message.channel_id))
+            f"An uncached message was deleted in {client.get_channel(raw_message.channel_id).mention}"
         )
 
 
@@ -330,9 +330,9 @@ async def on_guild_channel_create(channel: discord.TextChannel):
 
     # Differ between voice channels and text channels
     if channel.type == discord.ChannelType.text:
-        await log_change(changelog_channel, "Channel {0.mention} was created.".format(channel))
+        await log_change(changelog_channel, f"Channel {channel.mention} was created.")
     else:
-        await log_change(changelog_channel, "Voice channel **{0.name}** was created.".format(channel))
+        await log_change(changelog_channel, f"Voice channel **{channel.name}** was created.")
 
 
 @plugins.event()
@@ -347,9 +347,9 @@ async def on_guild_channel_delete(channel: discord.TextChannel):
 
     # Differ between voice channels and text channels
     if channel.type == discord.ChannelType.text:
-        await log_change(changelog_channel, "Channel **#{0.name}** was deleted.".format(channel))
+        await log_change(changelog_channel, f"Channel **#{channel.name}** was deleted.")
     else:
-        await log_change(changelog_channel, "Voice channel **{0.name}** was deleted.".format(channel))
+        await log_change(changelog_channel, f"Voice channel **{channel.name}** was deleted.")
 
 
 @plugins.event()
@@ -369,10 +369,10 @@ async def on_guild_channel_update(before: discord.TextChannel, after: discord.Te
     # Differ between voice channels and text channels
     if after.type == discord.ChannelType.text:
         await log_change(
-            changelog_channel, "Channel **#{0.name}** changed name to {1.mention}, **{1.name}**.".format(before, after))
+            changelog_channel, f"Channel **#{before.name}** changed name to {after.mention}, **{after.name}**.")
     else:
         await log_change(
-            changelog_channel, "Voice channel **{0.name}** changed name to **{1.name}**.".format(before, after))
+            changelog_channel, f"Voice channel **{before.name}** changed name to **{after.name}**.")
 
 
 @plugins.event()
@@ -382,7 +382,7 @@ async def on_member_join(member: discord.Member):
     if not changelog_channel:
         return
 
-    await log_change(changelog_channel, "{0.mention} joined the guild.".format(member))
+    await log_change(changelog_channel, f"{member.mention} joined the guild.")
 
 
 @plugins.event()
@@ -392,7 +392,7 @@ async def on_member_remove(member: discord.Member):
     if not changelog_channel:
         return
 
-    await log_change(changelog_channel, "{0.mention} ({0.name}) left the guild.".format(member))
+    await log_change(changelog_channel, f"{member.mention} ({member.name}) left the guild.")
 
 
 @plugins.event()
@@ -408,14 +408,14 @@ async def on_member_update(before: discord.Member, after: discord.Member):
 
     # Format the nickname or username changed
     if name_change:
-        m = "{0.mention} (previously **{0.name}**) changed their username to **{1.name}**."
+        m = f"{before.mention} (previously **{before.name}**) changed their username to **{after.name}**."
     elif nick_change:
         if not before.nick:
-            m = "{0.mention} (previously **{0.name}**) got the nickname **{1.nick}**."
+            m = f"{before.mention} (previously **{before.name}**) got the nickname **{after.nick}**."
         elif not after.nick:
-            m = "{0.mention} (previously **{0.nick}**) no longer has a nickname."
+            m = f"{before.mention} (previously **{before.nick}**) no longer has a nickname."
         else:
-            m = "{0.mention} (previously **{0.nick}**) got the nickname **{1.nick}**."
+            m = f"{before.mention} (previously **{before.nick}**) got the nickname **{after.nick}**."
     elif role_change:
         muted_role = discord.utils.get(after.guild.roles, name="Muted")
 
@@ -424,20 +424,17 @@ async def on_member_update(before: discord.Member, after: discord.Member):
             if role == muted_role:
                 return
 
-            m = "{0.mention} lost the role **{1.name}**".format(after, role)
+            m = f"{after.mention} lost the role **{role.name}**"
         else:
             role = [r for r in after.roles if r not in before.roles][0]
             if role == muted_role:
                 return
 
-            m = "{0.mention} received the role **{1.name}**".format(after, role)
+            m = f"{after.mention} received the role **{role.name}**"
     else:
         return
 
-    if name_change or nick_change:
-        await log_change(changelog_channel, m.format(before, after))
-    else:
-        await log_change(changelog_channel, m)
+    await log_change(changelog_channel, m)
 
 
 @plugins.event()
@@ -448,7 +445,7 @@ async def on_member_ban(guild: discord.Guild, member: discord.Member):
         return
 
     await log_change(changelog_channel,
-                     "{0.mention} ({0.name}) was banned from the guild.".format(member))
+                     f"{member.mention} ({member.name}) was banned from the guild.")
 
 
 @plugins.event()
@@ -458,4 +455,4 @@ async def on_member_unban(guild: discord.Guild, user: discord.Member):
     if not changelog_channel:
         return
 
-    await log_change(changelog_channel, "{0.mention} was unbanned from the guild.".format(user))
+    await log_change(changelog_channel, f"{user.mention} was unbanned from the guild.")

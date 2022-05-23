@@ -88,11 +88,9 @@ async def when(message: discord.Message, *time, timezone: tz_arg = "UTC"):
         timezone = reverse_gmt(timezone)
         dt = pendulum.now(timezone)
 
-        await client.say(message, "`{} {}` is **UTC{}{}**.".format(
-            dt.strftime(dt_format), timezone_name,
-            "-" if dt.offset_hours < 0 else ("+" if dt.offset_hours > 0 else ""),
-            abs(dt.offset_hours) if dt.offset_hours else "",
-        ))
+        await client.say(message, f'`{dt.strftime(dt_format)} {timezone_name}` is '
+                                  f'**UTC{"-" if dt.offset_hours < 0 else ("+" if dt.offset_hours > 0 else "")}'
+                                  f'{abs(dt.offset_hours) if dt.offset_hours else ""}**.')
 
 
 @plugins.argument()
@@ -105,7 +103,7 @@ def tag_arg(tag: str):
 async def countdown(message: discord.Message, tag: Annotate.Content):
     """ Display a countdown with the specified tag. """
     tag = tag_arg(tag)
-    assert tag in time_cfg.data["countdown"], "Countdown with tag `{}` does not exist.".format(tag)
+    assert tag in time_cfg.data["countdown"], f"Countdown with tag `{tag}` does not exist."
 
     cd = time_cfg.data["countdown"][tag]
     dt = pendulum.parse(cd["time"], tz=cd["tz"])
@@ -139,7 +137,7 @@ async def joined(message: discord.Message, member: discord.Member = Annotate.Sel
 @countdown.command(aliases="add", pos_check=True)
 async def create(message: discord.Message, tag: tag_arg, *time, timezone: tz_arg = "UTC"):
     """ Create a countdown with the specified tag, using the same format as `{pre}when`. """
-    assert tag not in time_cfg.data["countdown"], "Countdown with tag `{}` already exists.".format(tag)
+    assert tag not in time_cfg.data["countdown"], f"Countdown with tag `{tag}` already exists."
 
     timezone_name = timezone
     dt, timezone = await init_dt(message, " ".join(time), timezone)
@@ -153,7 +151,7 @@ async def create(message: discord.Message, tag: tag_arg, *time, timezone: tz_arg
               author=str(message.author.id), channel=str(message.channel.id))
     time_cfg.data["countdown"][tag] = cd
     await time_cfg.asyncsave()
-    await client.say(message, "Added countdown with tag `{}`.".format(tag))
+    await client.say(message, f"Added countdown with tag `{tag}`.")
 
     client.loop.create_task(wait_for_reminder(cd, seconds))
 
@@ -163,15 +161,16 @@ async def delete(message: discord.Message, tag: Annotate.Content):
     """ Remove a countdown with the specified tag. You need to be the author of a tag
     in order to remove it. """
     tag = tag_arg(tag)
-    assert tag in time_cfg.data["countdown"], "Countdown with tag `{}` does not exist.".format(tag)
+    assert tag in time_cfg.data["countdown"], f"Countdown with tag `{tag}` does not exist."
 
     author_id = time_cfg.data["countdown"][tag]["author"]
-    assert str(message.author.id) == author_id, "You are not the author of this tag ({}).".format(
-        getattr(discord.utils.get(client.get_all_members(), id=author_id), "name", None) or "~~Unknown~~")
+    assert str(message.author.id) == author_id, \
+        'You are not the author of this tag ' \
+        f'({getattr(discord.utils.get(client.get_all_members(), id=author_id), "name", None) or "~~Unknown~~"}).'
 
     del time_cfg.data["countdown"][tag]
     await time_cfg.asyncsave()
-    await client.say(message, "Countdown with tag `{}` removed.".format(tag))
+    await client.say(message, f"Countdown with tag `{tag}` removed.")
 
 
 @countdown.command(name="list")
@@ -185,7 +184,7 @@ async def countdown_list(message: discord.Message, author: discord.Member = None
         tags = (tag for tag in time_cfg.data["countdown"].keys())
 
     await client.say(message, "**{}countdown tags**:```\n{}```".format(
-        "{}'s ".format(author.name) if author else "", ", ".join(tags)))
+        f"{author.name}'s " if author else "", ", ".join(tags)))
 
 
 async def wait_for_reminder(cd, seconds):
@@ -198,7 +197,7 @@ async def wait_for_reminder(cd, seconds):
     channel = client.get_channel(int(cd["channel"]))
     author = channel.guild.get_member(int(cd["author"]))
 
-    msg = "Hey {0}, your countdown **{cd[tag]}** at `{cd[time]} {cd[tz_name]}` is over!".format(author.mention, cd=cd)
+    msg = f"Hey {author.mention}, your countdown **{cd['tag']}** at `{cd['time']} {cd['tz_name']}` is over!"
     await client.send_message(channel, msg)
 
     del time_cfg.data["countdown"][cd["tag"]]

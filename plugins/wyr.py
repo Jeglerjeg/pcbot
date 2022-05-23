@@ -43,7 +43,7 @@ def get_choice(choices: list, choice: str):
     for word in choice.lower().split():
         if word in words[0] and word not in words[1]:
             return 0
-        elif word in words[1] and word not in words[0]:
+        if word in words[1] and word not in words[0]:
             return 1
 
     # Invalid choice
@@ -68,7 +68,7 @@ async def wouldyourather(message: discord.Message, opt: options = None):
 
         question = random.choice(db.data["questions"])
         choices = question["choices"]
-        await client.say(message, "Would you rather **{}** or **{}**?".format(*choices))
+        await client.say(message, f"Would you rather **{choices[0]}** or **{choices[1]}**?")
 
         timeout = db.data["timeout"]
         replied = []
@@ -102,8 +102,8 @@ async def wouldyourather(message: discord.Message, opt: options = None):
             await client.say(message, response)
 
         # Say the total tallies
-        await client.say(message, "A total of {0} would **{2}**, while {1} would **{3}**!".format(
-            *question["answers"], *choices))
+        await client.say(message, f'A total of {question["answers"][0]} would **{choices[0]}**, '
+                                  f'while {question["answers"][1]} would **{choices[1]}**!')
         await db.asyncsave()
         sessions.remove(message.channel.id)
 
@@ -116,7 +116,7 @@ async def wouldyourather(message: discord.Message, opt: options = None):
         await db.asyncsave()
 
         answer = random.choice(opt)
-        await client.say(message, "**I would {}**!".format(answer))
+        await client.say(message, f"**I would {answer}**!")
 
 
 @wouldyourather.command(aliases="delete", owner=True)

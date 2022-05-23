@@ -90,7 +90,7 @@ def parse_emoji(chars: list):
     """ Go through and yield all emoji in the given list of characters
     (or Image objects). """
     # Convert all characters in the given list to hex format strings, and leave the Image objects alone
-    chars = [hex(ord(c))[2:] if type(c) is str else c for c in chars]
+    chars = [hex(ord(c))[2:] if isinstance(c, str) else c for c in chars]
     chars_remaining = length = len(chars)
 
     # Try the entire string backwards, and reduce the length by one character until there's a match
@@ -109,7 +109,7 @@ def parse_emoji(chars: list):
 
         # If the emoji is in the list, update the index and reset the length, with the updated index
         emoji_str = "-".join(e for e in sliced_emoji if not isinstance(e, Image.Image))
-        if emoji_str in emoji.keys():
+        if emoji_str in emoji:
             yield emoji_str
 
             chars = chars[length:]

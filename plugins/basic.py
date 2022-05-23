@@ -24,7 +24,7 @@ async def roll(message: discord.Message, num: utils.int_range(f=1) = 100):
     """ Roll a number from 1-100 if no second argument or second argument is not a number.
         Alternatively rolls `num` times (minimum 1). """
     rolled = random.randint(1, num)
-    await client.say(message, "**{0.display_name}** rolls `{1}`.".format(message.author, rolled))
+    await client.say(message, f"**{message.author.display_name}** rolls `{rolled}`.")
 
 
 @plugins.argument("{open}<num>[x<sides>]{suffix}{close}")
@@ -61,8 +61,7 @@ async def dice(message: discord.Message, num_and_sides: dice_roll = (1, 6)):
     for i in range(num):
         rolls.append(random.randint(1, sides))
 
-    await client.say(message, "**{0.display_name}** rolls `[{1}]`".format(message.author,
-                                                                          ", ".join(str(r)for r in rolls)))
+    await client.say(message, f"**{message.author.display_name}** rolls `[{', '.join(str(r)for r in rolls)}]`")
 
 
 @plugins.command()
@@ -76,12 +75,12 @@ async def rate(message: discord.Message, to_rate: str = None):
         random.seed(str(member.id))
         num = random.randint(0, 10)
         random.seed()
-        await client.say(message, "I rate **{0}** a **{1}/10**".format(member.display_name, num))
+        await client.say(message, f"I rate **{member.display_name}** a **{num}/10**")
     else:
         random.seed(to_rate.lower())
         num = random.randint(0, 10)
         random.seed()
-        await client.say(message, "I rate **{0}** a **{1}/10**".format(to_rate, num))
+        await client.say(message, f"I rate **{to_rate}** a **{num}/10**")
 
 
 @plugins.command()
@@ -116,7 +115,7 @@ def format_req(plugin, req_id: int):
             checked = "+"
             req = req[:-3]
 
-        return "{checked} #{id:<4}| {req}".format(checked=checked, id=req_id + 1, req=req)
+        return f"{checked} #{req_id + 1:<4}| {req}"
 
     return None
 
@@ -155,7 +154,7 @@ async def feature(message: discord.Message, plugin: plugin_in_req, req_id: get_r
         assert format_list, "This plugin has no feature requests!"
 
         # Format a list of all requests for the specified plugin when there are any
-        await client.say(message, "```diff\n{list}```".format(list=format_list))
+        await client.say(message, f"```diff\n{format_list}```")
 
 
 @feature.command()
@@ -170,7 +169,7 @@ async def new(message: discord.Message, plugin: plugin_in_req, content: Annotate
     # Add the feature request if an identical request does not exist
     feature_reqs.data[plugin].append(content)
     await feature_reqs.asyncsave()
-    await client.say(message, "Feature saved as `{0}` id **#{1}**.".format(plugin, len(req_list)))
+    await client.say(message, f"Feature saved as `{plugin}` id **#{len(req_list)}**.")
 
 
 @feature.command(owner=True)
@@ -186,11 +185,11 @@ async def mark(message: discord.Message, plugin: plugin_in_req, req_id: get_req_
     if not req.endswith("+++"):
         feature_reqs.data[plugin][req_id] += "+++"
         await feature_reqs.asyncsave()
-        await client.say(message, "Marked feature with `{}` id **#{}**.".format(plugin, req_id + 1))
+        await client.say(message, f"Marked feature with `{plugin}` id **#{req_id + 1}**.")
     else:
         feature_reqs.data[plugin][req_id] = req[:-3]
         await feature_reqs.asyncsave()
-        await client.say(message, "Unmarked feature with `{}` id **#{}**.".format(plugin, req_id + 1))
+        await client.say(message, f"Unmarked feature with `{plugin}` id **#{req_id + 1}**.")
 
 
 @feature.command(owner=True)
@@ -203,4 +202,4 @@ async def remove(message: discord.Message, plugin: plugin_in_req, req_id: get_re
     # Remove the feature
     del feature_reqs.data[plugin][req_id]
     await feature_reqs.asyncsave()
-    await client.say(message, "Removed feature with `{}` id **#{}**.".format(plugin, req_id + 1))
+    await client.say(message, f"Removed feature with `{plugin}` id **#{req_id + 1}**.")

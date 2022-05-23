@@ -70,7 +70,7 @@ def _format_usage(func, pos_check):
 
         # If there is a placeholder annotation, this command is a group and should not have a formatted usage
         if getattr(param.annotation, "__name__", "") == "placeholder":
-            return
+            return None
 
         param_format = getattr(param.annotation, "argument", argument_format)
         name = param.name
@@ -84,17 +84,17 @@ def _format_usage(func, pos_check):
             suffix = " ..."
 
         usage.append(param_format.format(open=opened, close=closed, name=name, suffix=suffix))
-    else:
-        return " ".join(usage)
+
+    return " ".join(usage)
 
 
 def _parse_str_list(obj, name, cmd_name):
     """ Return the list from the parsed str or an empty list if object is None. """
-    if type(obj) is str:
+    if isinstance(obj, str):
         return obj.split(" ")
-    elif type(obj) is not list:
+    if not isinstance(obj, list):
         if obj is not None:
-            logging.warning("Invalid parameter in command '{}': {} must be a str or a list".format(cmd_name, name))
+            logging.warning("Invalid parameter in command '%s': %s must be a str or a list", cmd_name, name)
         return []
 
 
@@ -148,7 +148,7 @@ def command(**options):
         pos_check = options.get("pos_check", False)
         description = options.get("description") or func.__doc__ or "Undocumented."
         disabled_pm = options.get("disabled_pm", False)
-        doc_args = options.get("doc_args", dict())
+        doc_args = options.get("doc_args", {})
         owner = options.get("owner", False)
         permissions = options.get("permissions")
         roles = options.get("roles")
@@ -196,18 +196,17 @@ def command(**options):
         if owner:
             description += "\n:information_source:`Only the bot owner can execute this command.`"
         if permissions:
-            description += "\n:information_source:`Permissions required: {}`".format(
-                ", ".join(" ".join(s.capitalize() for s in p.split("_")) for p in permissions))
+            description += '\n:information_source:`Permissions required: ' \
+                           f'{", ".join(" ".join(s.capitalize() for s in p.split("_")) for p in permissions)}`'
         if roles:
-            description += "\n:information_source:`Roles required: {}`".format(
-                ", ".join(roles))
+            description += f'\n:information_source:`Roles required: {", ".join(roles)}`'
 
         # Load the plugin the function is from, so that we can modify the __commands attribute
         loaded_plugin = inspect.getmodule(func)
-        commands = getattr(loaded_plugin, "__commands", list())
+        commands = getattr(loaded_plugin, "__commands", [])
 
         # Assert that __commands is usable and that this command doesn't already exist
-        if type(commands) is not list:
+        if not isinstance(commands, list):
             raise NameError("__commands is reserved for the plugin's commands, and must be of type list")
 
         # Assert that there are no commands already defined with the given name in this scope
@@ -235,8 +234,8 @@ def command(**options):
         # Add the cmd attribute to this function, in order to get the command assigned to the function
         setattr(func, "cmd", cmd)
 
-        logging.debug("Registered {} {} from plugin {}".format("subcommand" if parent else "command",
-                                                               name, loaded_plugin.__name__))
+        logging.debug("Registered %s %s from plugin %s", "subcommand" if parent else "command", name,
+                      loaded_plugin.__name__)
         return func
 
     return decorator
@@ -254,7 +253,7 @@ def event(name=None, bot=False, self=False):
             return func
 
         if self and not bot:
-            logging.warning("self=True has no effect in event {}. Consider setting bot=True".format(func.__name__))
+            logging.warning("self=True has no effect in event %s. Consider setting bot=True", func.__name__)
 
         # Set the bot attribute, which determines whether the function will be triggered by messages from bot accounts
         # The self attribute denotes if own messages will be logged
@@ -291,10 +290,10 @@ def format_usage(cmd: Command, guild: discord.Guild, message: discord.Message, s
     :return: str: formatted usage.
     """
     if cmd.hidden and cmd.parent is not None:
-        return
+        return None
 
     if not can_use_command(cmd, message.author, message.channel) and sub_command_format:
-        return
+        return None
 
     command_prefix = config.guild_command_prefix(guild)
     usage = [cmd.usage(guild)]
@@ -338,7 +337,7 @@ def format_help(cmd: Command, guild: discord.Guild, message: discord.Message, no
             ", ".join((command_prefix if identifier_prefix.match(alias[0]) and cmd.parent is None else "") +
                       alias for alias in cmd.aliases))
 
-    return "**Usage**: ```{}```**Description**: {}{}".format(usage, desc, alias_format)
+    return f"**Usage**: ```{usage}```**Description**: {desc}{alias_format}"
 
 
 def parent_attr(cmd: Command, attr: str):
@@ -355,8 +354,8 @@ def compare_command_name(trigger: str, cmd: Command, case_sensitive: bool = True
     """
     if case_sensitive:
         return trigger == cmd.name or trigger in cmd.aliases
-    else:
-        return trigger.lower() == cmd.name.lower() or trigger.lower() in (name.lower() for name in cmd.aliases)
+
+    return trigger.lower() == cmd.name.lower() or trigger.lower() in (name.lower() for name in cmd.aliases)
 
 
 def get_command(trigger: str, case_sensitive: bool = True):
@@ -375,8 +374,8 @@ def get_command(trigger: str, case_sensitive: bool = True):
         for cmd in loaded_plugin.__commands:
             if compare_command_name(trigger, cmd, case_sensitive):
                 return cmd
-        else:
-            continue
+
+        continue
 
     return None
 
@@ -407,7 +406,7 @@ def is_owner(user: discord.User):
     """
     if hasattr(user, 'id'):
         user = str(user.id)
-    elif type(user) is not str:
+    elif not isinstance(user, str):
         raise TypeError("member must be an instance of discord.User or a str representing the user's ID.")
 
     if user == owner_cfg.data:
@@ -459,9 +458,9 @@ def can_use_command(cmd: Command, author, channel: discord.TextChannel = None):
         return False
 
     # Handle guild specific commands for both guild and PM commands
-    if type(author) is discord.User and cmd.guilds:
+    if isinstance(author, discord.User) and cmd.guilds:
         return False
-    if type(author) is discord.Member and not is_valid_guild(cmd, author.guild):
+    if isinstance(author, discord.Member) and not is_valid_guild(cmd, author.guild):
         return False
 
     return True
@@ -478,13 +477,13 @@ async def execute(cmd, message: discord.Message, *args, **kwargs):
     :raises: NameError when command does not exist.
     """
     # Get the command object if the given command represents a name
-    if type(cmd) is not Command:
+    if not isinstance(cmd, Command):
         cmd = get_command(cmd, config.guild_case_sensitive_commands(message.guild))
 
     try:
         await cmd.function(message, *args, **kwargs)
-    except AttributeError:
-        raise NameError("{} is not a command".format(cmd))
+    except AttributeError as e:
+        raise NameError(f"{cmd} is not a command") from e
 
 
 def get_cooldown(member: discord.Member, cmd: Command):
@@ -501,8 +500,8 @@ def get_cooldown(member: discord.Member, cmd: Command):
                 return None
 
             return diff.in_words()
-    else:
-        return None
+
+    return None
 
 
 def load_plugin(name: str, package: str = "plugins"):
@@ -514,16 +513,16 @@ def load_plugin(name: str, package: str = "plugins"):
     if (not name.startswith("__") or not name.endswith("__")) and \
             name not in disabled_plugins_config.data["disabled_plugins"]:
         try:
-            loaded_plugin = importlib.import_module("{package}.{plugin}".format(plugin=name, package=package))
+            loaded_plugin = importlib.import_module(f"{package}.{name}")
         except ImportError as e:
-            logging.error("An error occurred when loading plugin {}:\n{}".format(name, format_exception(e)))
+            logging.error("An error occurred when loading plugin %s:\n%s", name, format_exception(e))
             return False
         except Exception as e:
-            logging.error("An error occurred when loading plugin {}:\n{}".format(name, format_exception(e)))
+            logging.error("An error occurred when loading plugin %s:\n%s", name, format_exception(e))
             return False
 
         loaded_plugins[name] = loaded_plugin
-        logging.debug("LOADED PLUGIN " + name)
+        logging.debug("LOADED PLUGIN %s", name)
         return True
 
     return False
@@ -546,14 +545,14 @@ async def reload(name: str):
             delattr(loaded_plugins[name], "__commands")
 
         # Remove all registered events from the given plugin
-        for event_name, funcs in events.items():
+        for funcs in events.values():
             for func in funcs:
                 if func.__module__.endswith(name):
-                    events[event_name].remove(func)
+                    funcs.remove(func)
 
         loaded_plugins[name] = importlib.reload(loaded_plugins[name])
 
-        logging.debug("Reloaded plugin {}".format(name))
+        logging.debug("Reloaded plugin %s", name)
 
 
 async def call_reload(name: str):
@@ -572,7 +571,7 @@ def unload_plugin(name: str):
     """ Unload a plugin by removing it from the plugin dictionary. """
     if name in loaded_plugins:
         del loaded_plugins[name]
-        logging.debug("Unloaded plugin {}".format(name))
+        logging.debug("Unloaded plugin %s", name)
 
 
 def load_plugins():
@@ -596,7 +595,7 @@ async def save_plugin(name):
             try:
                 await loaded_plugin.save(loaded_plugins)
             except Exception as e:
-                logging.error("An error occurred when saving plugin {}:\n{}".format(name, format_exception(e)))
+                logging.error("An error occurred when saving plugin %s:\n%s", name, format_exception(e))
 
 
 async def save_plugins():
@@ -612,7 +611,7 @@ def true_or_false(arg: str):
     """ Return True or False flexibly based on the input. """
     if arg.lower() in ("yes", "true", "enable", "1", "on"):
         return True
-    elif arg.lower() in ("no", "false", "disable", "0", "off"):
+    if arg.lower() in ("no", "false", "disable", "0", "off"):
         return False
-    else:
-        return None
+
+    return None

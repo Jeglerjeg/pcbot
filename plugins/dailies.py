@@ -13,16 +13,16 @@ client = plugins.client  # type: bot.Client
 
 words_path = pathlib.Path("plugins/wordlib/")
 
-with open(words_path / "SimpleWordlists" / "Wordlist-Nouns-Common-Audited-Len-3-6.txt") as f:
+with open(words_path / "SimpleWordlists" / "Wordlist-Nouns-Common-Audited-Len-3-6.txt", encoding="utf-8") as f:
     nouns = f.read().split("\n")
 
-with open(words_path / "SimpleWordlists" / "Wordlist-Nouns-All.txt") as f:
+with open(words_path / "SimpleWordlists" / "Wordlist-Nouns-All.txt", encoding="utf-8") as f:
     all_nouns = f.read().split("\n")
 
-with open(words_path / "SimpleWordlists" / "Wordlist-Adjectives-All.txt") as f:
+with open(words_path / "SimpleWordlists" / "Wordlist-Adjectives-All.txt", encoding="utf-8") as f:
     adjectives = f.read().split("\n")
 
-with open(words_path / "SimpleWordlists" / "Wordlist-Adverbs-All.txt") as f:
+with open(words_path / "SimpleWordlists" / "Wordlist-Adverbs-All.txt", encoding="utf-8") as f:
     adverbs = f.read().split("\n")
 
 with open(words_path / "verb.forms.dictionary" / "json" / "verbs-all.json", encoding="ISO-8859-1") as f:
@@ -102,8 +102,8 @@ async def meotey(message: discord.Message, member: discord.Member = Annotate.Sel
         return
     random.seed(seed_for_member(member, date))
     random_emote = str(random.choice(client.emojis))
-    await client.send_message(message.channel, "__**{}** emote of the day__".format(
-        "Your" if m == message.author else "{}'s".format(m.display_name)))
+    recipient = "Your" if m == message.author else f"{m.display_name}'s"
+    await client.send_message(message.channel, f"__**{recipient}** emoji of the day__")
     await client.send_message(message.channel, random_emote)
 
 
@@ -116,7 +116,7 @@ async def meoji(message: discord.Message, member: discord.Member = Annotate.Self
         await client.send_message(message.channel, "**Found no such member.**")
         return
     random.seed(seed_for_member(member, date))
-    await client.send_message(message.channel, "__**{}** emoji of the day__".format(
-        "Your" if m == message.author else "{}'s".format(m.display_name)))
+    recipient = "Your" if m == message.author else f"{m.display_name}'s"
+    await client.send_message(message.channel, f"__**{recipient}** emoji of the day__")
     await client.send_message(message.channel, chr(random.randint(128513, 128591)))
     random.seed()

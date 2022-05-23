@@ -48,11 +48,11 @@ async def alias(message: discord.Message, *options: str.lower, trigger: str, tex
 @alias.command(name="list")
 async def list_aliases(message: discord.Message, member: discord.Member = Annotate.Self):
     """ List all user's aliases. """
-    assert str(message.author.id) in aliases.data, "**{} has no aliases.**".format(member.display_name)
+    assert str(message.author.id) in aliases.data, f"**{member.display_name} has no aliases.**"
 
     # The user is registered so they must have aliases and we display them
     format_aliases = ", ".join(aliases.data[str(member.id)].keys())
-    await client.say(message, "**Aliases for {}:**```\n{}```\n".format(member.display_name, format_aliases))
+    await client.say(message, f"**Aliases for {member.display_name}:**```\n{format_aliases}```\n")
 
 
 @alias.command()
@@ -65,12 +65,12 @@ async def remove(message: discord.Message, trigger: Annotate.Content):
 
     # Check if the trigger is in the would be list (basically checks if trigger is in [] if user is not registered)
     assert trigger in aliases.data.get(str(message.author.id), []), \
-        "**Alias `{}` has never been set. Check `{}`.**".format(trigger, list_aliases.cmd.name_prefix(message.guild))
+        f"**Alias `{trigger}` has never been set. Check `{list_aliases.cmd.name_prefix(message.guild)}`.**"
 
     # Trigger is an assigned alias, remove it
     aliases.data[str(message.author.id)].pop(trigger)
     await aliases.asyncsave()
-    await client.say(message, "**Alias `{}` removed.**".format(trigger, message.author))
+    await client.say(message, f"**Alias `{trigger}` removed.**")
 
 
 @plugins.event()

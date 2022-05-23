@@ -36,8 +36,8 @@ async def generate_pasta(name: str):
     parsed_name = name.replace(" ", "")
 
     # Pasta might not be in the set
-    assert parsed_name in pastas.data, "Pasta `{}` is undefined.\nPerhaps you meant: `{}`?".format(
-        name, ", ".join(get_close_matches(parsed_name, pastas.data.keys(), cutoff=0.5)))
+    assert parsed_name in pastas.data, f"Pasta `{name}` is undefined.\n Perhaps you meant: " \
+                                       f"`{', '.join(get_close_matches(parsed_name, pastas.data.keys(), cutoff=0.5))}`?"
 
     text = pastas.data[parsed_name]
     embed = await convert_to_embed(text, color=embed_color)
@@ -69,12 +69,12 @@ async def add(message: discord.Message, name: str.lower, copypasta: Annotate.Con
     # When creating pastas we don't use spaces either!
     parsed_name = name.replace(" ", "")
 
-    assert parsed_name not in pastas.data, "Pasta `{}` already exists. ".format(name)
+    assert parsed_name not in pastas.data, f"Pasta `{name}` already exists. "
 
     # If the pasta doesn't exist, set it
     pastas.data[parsed_name] = copypasta
     await pastas.asyncsave()
-    await client.say(message, "Pasta `{}` set.".format(name))
+    await client.say(message, f"Pasta `{name}` set.")
 
 
 @pasta.command(aliases="r delete")
@@ -83,12 +83,12 @@ async def remove(message: discord.Message, name: Annotate.LowerContent):
     # We don't even use spaces when removing pastas!
     parsed_name = name.replace(" ", "")
 
-    assert parsed_name in pastas.data, "No pasta with name `{}`.".format(name)
+    assert parsed_name in pastas.data, f"No pasta with name `{name}`."
 
     copypasta = pastas.data.pop(parsed_name)
     await pastas.asyncsave()
-    await client.say(message, "Pasta `{}` removed. In case this was a mistake, "
-                              "here's the pasta: ```{}```".format(name, copypasta))
+    await client.say(message, f"Pasta `{name}` removed. In case this was a mistake, "
+                              f"here's the pasta: ```{copypasta}```")
 
 
 @plugins.event()

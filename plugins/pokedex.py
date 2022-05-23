@@ -37,7 +37,7 @@ min_scale_factor, max_scale_factor = 0.25, 4
 pokemon_go_gen = [1, 2, 3, 4, 5, 6]
 
 # Load the Pokedex API
-with open(api_path) as api_file:
+with open(api_path, encoding="utf-8") as api_file:
     api = json.load(api_file)
     pokedex = api["pokemon"]
 
@@ -111,14 +111,14 @@ def get_pokemon(name_or_id: str, assert_on_error: bool = True):
 
         if name not in pokedex:
             assert not assert_on_error, \
-                "There is no pokémon called **{}** in my pokédex!\nPerhaps you meant: `{}`?".format(
-                    name, ", ".join(get_close_matches(name, pokedex.keys(), cutoff=0.5)))
+                f"There is no pokémon called **{name}** in my pokédex!\nPerhaps you meant: " \
+                f"`{', '.join(get_close_matches(name, pokedex.keys(), cutoff=0.5))}`?"
             return None
     else:
         name = id_to_name(pokemon_id)
 
         if name is None:
-            assert not assert_on_error, "There is no pokémon with ID **#{:03}** in my pokédex!".format(pokemon_id)
+            assert not assert_on_error, f"There is no pokémon with ID **#{pokemon_id:03}** in my pokédex!"
             return None
 
     return name
@@ -173,13 +173,12 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
     # Format Pokemon GO specific info
     pokemon_go_info = ""
     if "evolution_cost" in pokemon:
-        pokemon_go_info += "Evolution cost: `{} {} Candy` ".format(
-            pokemon["evolution_cost"], egg_name(pokemon["evolution"]))
+        pokemon_go_info += f'Evolution cost: `{ pokemon["evolution_cost"]} {egg_name(pokemon["evolution"])} Candy` '
 
     if "hatches_from" in pokemon:
         if pokemon_go_info:
             pokemon_go_info += "\n"
-        pokemon_go_info += "Hatches from: `{}km Egg` ".format(pokemon["hatches_from"])
+        pokemon_go_info += f"Hatches from: `{pokemon['hatches_from']}km Egg` "
 
     # Format the message
     formatted_message = (
@@ -199,10 +198,10 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
         **pokemon
     )
     embed = discord.Embed(color=message.author.color)
-    embed.set_image(url="attachment://{}.png".format(name))
+    embed.set_image(url=f"attachment://{name}.png")
     embed.description = formatted_message
 
-    await client.send_message(message.channel, file=(discord.File(sprite, filename="{}.png".format(name))), embed=embed)
+    await client.send_message(message.channel, file=(discord.File(sprite, filename=f"{name}.png")), embed=embed)
 
 
 @pokedex_.command()
@@ -215,7 +214,7 @@ async def egg(message: discord.Message, egg_type: Annotate.LowerCleanContent):
     try:
         distance = int(float(egg_type))  # Using float for anyone willing to type 2.0km
     except ValueError:
-        await client.say(message, "The egg type **{}** is invalid.".format(egg_type))
+        await client.say(message, f"The egg type **{egg_type}** is invalid.")
         return
 
     pokemon_criteria = []
@@ -237,12 +236,12 @@ async def egg(message: discord.Message, egg_type: Annotate.LowerCleanContent):
             pokemon_criteria.append(pokemon["locale_name"])
 
     # The list might be empty
-    assert pokemon_criteria, "No pokemon hatch from a **{}km** egg. **Valid distances are** ```\n{}```".format(
-        distance, ", ".join("{}km".format(s) for s in sorted(egg_types)))
+    assert pokemon_criteria, f"No pokemon hatch from a **{distance}km** egg. **Valid distances are** " \
+                             f'```\n{", ".join(f"{s}km" for s in sorted(egg_types))}```'
 
     # Respond with the list of matching criteria
-    await client.say(message, "**The following Pokémon may hatch from a {}km egg**:```\n{}```".format(
-        distance, ", ".join(sorted(pokemon_criteria))))
+    await client.say(message, f"**The following Pokémon may hatch from a {distance}km egg**:"
+                              f"```\n{', '.join(sorted(pokemon_criteria))}```")
 
 
 def assert_type(slot: str, guild: discord.Guild):
@@ -250,14 +249,13 @@ def assert_type(slot: str, guild: discord.Guild):
     match = get_close_matches(slot, api["types"], n=1, cutoff=0.4)
 
     if match:
-        matches_string = " Perhaps you meant `{}`?".format(match[0])
+        matches_string = f" Perhaps you meant `{match[0]}`?"
     else:
-        matches_string = " See `{}help pokedex type`.".format(guild_command_prefix(guild))
-    assert slot in api["types"], "**{}** is not a valid pokemon type.{}".format(
-        slot.capitalize(), matches_string)
+        matches_string = f" See `{guild_command_prefix(guild)}help pokedex type`."
+    assert slot in api["types"], f"**{slot.capitalize()}** is not a valid pokemon type.{matches_string}"
 
 
-types_str = "**Valid types are** ```\n{}```".format(", ".join(s.capitalize() for s in api["types"]))
+types_str = f'**Valid types are** ```\n{", ".join(s.capitalize() for s in api["types"])}```'
 
 
 def attack_method(pokemon_type):
@@ -316,13 +314,13 @@ def format_specific_efficacy(method, type_1: str, type_2: str = None):
     """ Format the efficacy string specifically for defense or attack. """
     effective, ineffective, useless = format_damage(method, type_1, type_2)
     type_name = format_type(type_1, type_2)
-    s = "**{}** \N{EN DASH} **{}**\n".format(type_name, "DEFENSE" if method is defense_method else "ATTACK")
+    s = f'**{type_name}** \N{EN DASH} **{"DEFENSE" if method is defense_method else "ATTACK"}**\n'
     if effective:
-        s += "Super effective: `{}`\n".format(", ".join(effective))
+        s += f"Super effective: `{', '.join(effective)}`\n"
     if ineffective:
-        s += "Not very effective: `{}`\n".format(", ".join(ineffective))
+        s += f"Not very effective: `{', '.join(ineffective)}`\n"
     if useless:
-        s += "No effect: `{}`\n".format(", ".join(useless))
+        s += f"No effect: `{', '.join(useless)}`\n"
 
     return s
 
@@ -335,7 +333,7 @@ def format_efficacy(type_1: str, type_2: str = None):
     return efficacy.strip("\n")
 
 
-@pokedex_.command(name="type", description="Show pokemon with the specified types. {}".format(types_str))
+@pokedex_.command(name="type", description=f"Show pokemon with the specified types. {types_str}")
 async def filter_type(message: discord.Message, slot_1: str.lower, slot_2: str.lower = None):
     matched_pokemon = []
     assert_type(slot_1, message.guild)
@@ -355,15 +353,14 @@ async def filter_type(message: discord.Message, slot_1: str.lower, slot_2: str.l
                 matched_pokemon.append(pokemon["locale_name"])
 
     # There might not be any pokemon with the specified types
-    assert matched_pokemon, "Looks like there are no pokemon of type **{}**!".format(format_type(slot_1, slot_2))
+    assert matched_pokemon, f"Looks like there are no pokemon of type **{format_type(slot_1, slot_2)}**!"
 
-    await client.say(message, "**Pokemon with type {}**: ```\n{}```".format(
-        format_type(slot_1, slot_2), ", ".join(sorted(matched_pokemon))))
+    await client.say(message, f"**Pokemon with type {format_type(slot_1, slot_2)}**: "
+                              f"```\n{', '.join(sorted(matched_pokemon))}```")
 
 
 @pokedex_.command(aliases="e",
-                  description="Display type efficacy (effectiveness) of the specified type or pokemon. {}".format(
-                      types_str))
+                  description=f"Display type efficacy (effectiveness) of the specified type or pokemon. {types_str}")
 async def effect(message: discord.Message, slot_1_or_pokemon: str.lower, slot_2: str.lower = None):
     name = get_pokemon(slot_1_or_pokemon, assert_on_error=False)
     formatted = ""
@@ -372,7 +369,7 @@ async def effect(message: discord.Message, slot_1_or_pokemon: str.lower, slot_2:
         slot_1 = types[0]
         if len(types) > 1:
             slot_2 = types[1]
-        formatted += "Using types of **{}**:\n\n".format(name.capitalize())
+        formatted += f"Using types of **{name.capitalize()}**:\n\n"
     else:
         slot_1 = slot_1_or_pokemon
 
@@ -388,10 +385,10 @@ async def effect(message: discord.Message, slot_1_or_pokemon: str.lower, slot_2:
 async def scalefactor(message: discord.Message, factor: float = default_scale_factor):
     """ Set the image scaling factor for your guild. If no factor is given, the default is set. /
     **This command requires the `Manage Guild` permission.**"""
-    assert not factor == 0, "If you wish to disable images, remove the `Attach Files` permission from this bot."
+    assert factor != 0, "If you wish to disable images, remove the `Attach Files` permission from this bot."
 
-    assert factor <= max_scale_factor, "The factor **{}** is too high **(max={})**.".format(factor, max_scale_factor)
-    assert min_scale_factor <= factor, "The factor **{}** is too low **(min={})**.".format(factor, min_scale_factor)
+    assert factor <= max_scale_factor, f"The factor **{factor}** is too high **(max={max_scale_factor})**."
+    assert min_scale_factor <= factor, f"The factor **{factor}** is too low **(min={min_scale_factor})**."
 
     if message.guild.id not in pokedex_config.data:
         pokedex_config.data[message.guild.id] = {}

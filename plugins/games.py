@@ -37,8 +37,8 @@ class Game:
 
     async def on_start(self):
         """ Notify the channel that the game has been initialized. """
-        m = "**{}** has started a game of {}! To participate, say `I`! **{} players needed.**".format(
-            self.message.author.display_name, self.name, self.num)
+        m = f"**{self.message.author.display_name}** has started a game of {self.name}! " \
+            f"To participate, say `I`! **{self.num} players needed.**"
         await client.say(self.message, m)
 
     async def get_participants(self):
@@ -58,8 +58,7 @@ class Game:
             if reply:  # A user replied with a valid check
                 asyncio.ensure_future(
                     client.say(self.message,
-                               "{} has entered! `{}/{}`. Type `I` to join!".format(
-                                   reply.author.mention, i + 1, self.num))
+                               f"{reply.author.mention} has entered! `{i + 1}/{self.num}`. Type `I` to join!")
                 )
                 self.participants.append(reply.author)
 
@@ -68,8 +67,7 @@ class Game:
                     asyncio.ensure_future(client.delete_message(reply))
             else:
                 # At this point we got no reply in time and thus, gathering participants failed
-                await client.say(self.message, "**The {} game failed to gather {} participants.**".format(
-                    self.name, self.num))
+                await client.say(self.message, f"**The { self.name} game failed to gather {self.num} participants.**")
                 started.pop(started.index(self.channel.id))
 
                 return False
@@ -78,11 +76,9 @@ class Game:
 
     async def prepare(self):
         """ Prepare anything needed before starting the game. """
-        pass
 
     async def game(self):
         """ Start playing the game. """
-        pass
 
     async def start(self):
         """ Run the entire game's cycle. """
@@ -114,10 +110,7 @@ class Roulette(Game):
         """ Start playing. """
         random.shuffle(self.participants)
         for i, member in enumerate(self.participants):
-            await client.send_message(
-                self.channel,
-                "{} is up next! Say `go` whenever you are ready.".format(member.mention)
-            )
+            await client.send_message(self.channel, f"{member.mention} is up next! Say `go` whenever you are ready.")
 
             def check(m):
                 return m.channel == self.channel and m.author == member and "go" in m.content.lower()
@@ -135,7 +128,7 @@ class Roulette(Game):
             if reply is None:
                 await client.send_message(self.channel, "*fuck you*")
 
-            await client.send_message(self.channel, "{} {} :gun: ".format(member.mention, hit))
+            await client.send_message(self.channel, f"{member.mention} {hit} :gun: ")
 
             if self.bullets[i] == 1:
                 break
@@ -181,8 +174,8 @@ class HotPotato(Game):
 
             if reply is not None:
                 await client.send_message(self.channel,
-                                          "{} :bomb: got the bomb! Pass it to either {} or {}!".format(
-                                              member.mention, pass_to[0].mention, pass_to[1].mention))
+                                          f"{member.mention} :bomb: got the bomb! "
+                                          f"Pass it to either {pass_to[0].mention} or {pass_to[1].mention}!")
 
             def check(m):
                 return m.channel == self.channel and m.author == member and m.mentions and m.mentions[0] in pass_to
@@ -202,7 +195,7 @@ class HotPotato(Game):
                 asyncio.ensure_future(client.send_message(self.channel, ":bomb: :fire: **IT'S GONNA BLOW!**"))
                 self.time_remaining -= 1
 
-        await client.send_message(self.channel, "{0.mention} :fire: :boom: :boom: :fire:".format(member))
+        await client.send_message(self.channel, f"{member.mention} :fire: :boom: :boom: :fire:")
         await client.send_message(self.channel, "**GAME OVER**")
 
 

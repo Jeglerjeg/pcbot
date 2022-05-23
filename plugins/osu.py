@@ -834,7 +834,7 @@ async def get_formatted_score_list(mode: api.GameMode, osu_scores: list, limit: 
         time_since_string = f"<t:{int(score_datetime.timestamp())}:R>"
 
         # Add score position to the score
-        pos = "{}.".format(osu_score["pos"]) if "diff" not in osu_score else \
+        pos = f"{osu_score['pos']}." if "diff" not in osu_score else \
             f"{osu_score['pos']}. ({utils.format_number(osu_score['diff'], 2):+}pp)"
 
         # Add potential pp to the score
@@ -1179,13 +1179,14 @@ async def format_beatmapset_diffs(beatmapset: dict):
 
     for diff in sorted(beatmapset["beatmaps"], key=lambda d: float(d["difficulty_rating"])):
         diff_name = diff["version"]
+        length = divmod(int(diff["hit_length"] / (diff["new_bpm"] / diff["bpm"])), 60)
         m.append("\n{gamemode: <2}{name: <{diff_len}}  {stars: <7}{drain: <7}{pp}".format(
             gamemode=format_mode_name(api.GameMode(int(diff["mode_int"])), short_name=True),
             name=diff_name if len(diff_name) < max_diff_length else diff_name[:max_diff_length - 3] + "...",
             diff_len=diff_length,
             stars=f"{utils.format_number(float(diff['difficulty_rating']), 2)}\u2605",
             pp=f"{int(diff.get('pp', '0'))}pp",
-            drain="{}:{:02}".format(*divmod(int(diff["hit_length"] / (diff["new_bpm"] / diff["bpm"])), 60)))
+            drain=f"{length[0]}:{length[1]:02}")
         )
     m.append("```")
     return "".join(m)
@@ -1203,6 +1204,7 @@ async def format_beatmap_info(diff: dict, mods: str):
     m = [f"```elm\n{'Difficulty': <{diff_length}}  Drain  BPM  Passrate"]
 
     diff_name = diff["version"]
+    length = divmod(int(diff["hit_length"] / (diff["new_bpm"] / diff["bpm"])), 60)
     pass_rate = "Not passed"
     if not diff["passcount"] == 0 and not diff["playcount"] == 0:
         pass_rate = f"{(diff['passcount'] / diff['playcount']) * 100:.2f}%"
@@ -1216,7 +1218,7 @@ async def format_beatmap_info(diff: dict, mods: str):
               diff_len=diff_length,
               stars=f"{utils.format_number(float(diff['difficulty_rating']), 2)}\u2605",
               pp=f"{int(diff.get('pp', '0'))}pp",
-              drain="{}:{:02}".format(*divmod(int(diff["hit_length"] / (diff["new_bpm"] / diff["bpm"])), 60)),
+              drain=f"{length[0]}:{length[1]:02}",
               passrate=pass_rate,
               od=utils.format_number(float(diff["accuracy"]), 1),
               ar=utils.format_number(float(diff["ar"]), 1),
@@ -1626,9 +1628,10 @@ async def osu(message: discord.Message, *options):
     user_id = osu_config.data["profiles"][str(member.id)]
     mode = get_mode(str(member.id)) if mode is None else mode
 
+    member_rgb = member.color.to_rgb()
     # Set the signature color to that of the role color
     color = "pink" if member.color == discord.Color.default() \
-        else "#{0:02x}{1:02x}{2:02x}".format(*member.color.to_rgb())
+        else f"#{member_rgb[0]:02x}{member_rgb[1]:02x}{member_rgb[2]:02x}"
 
     # Calculate whether the header color should be black or white depending on the background color.
     # Stupidly, the API doesn't accept True/False. It only looks for the &darkheaders keyword.

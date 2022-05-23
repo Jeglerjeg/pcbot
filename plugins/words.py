@@ -10,7 +10,7 @@ client = plugins.client  # type: bot.Client
 
 
 def load_wordlist(filename: str):
-    with open("plugins/wordlib/SimpleWordlists/Thesaurus-" + filename + ".txt") as f:
+    with open("plugins/wordlib/SimpleWordlists/Thesaurus-" + filename + ".txt", encoding="utf-8") as f:
         return {k: v.split(",") for k, v in [line.split("|") for line in f.readlines()]}
 
 
@@ -24,8 +24,8 @@ async def antonym(message: discord.Message, phrase: Annotate.CleanContent):
 
     if phrase not in antonyms:
         matches = get_close_matches(phrase, antonyms.keys(), n=5, cutoff=0.6)
-        await client.say(message, "Found no antonyms for {}. Did you mean {}".format(phrase, ", ".join(
-            "`" + match + "`" for match in matches)))
+        await client.say(message, f'Found no antonyms for {phrase}. '
+                                  f'Did you mean {", ".join("`" + match + "`" for match in matches)}')
         return
 
     await client.say(message, ", ".join(s.strip(" \n") for s in antonyms[phrase]))
@@ -37,8 +37,8 @@ async def synonym(message: discord.Message, phrase: Annotate.CleanContent):
 
     if phrase not in synonyms:
         matches = get_close_matches(phrase, synonyms.keys(), n=5, cutoff=0.6)
-        await client.say(message, "Found no synonym for {}. Did you mean {}".format(phrase, ", ".join(
-            "`" + match + "`" for match in matches)))
+        await client.say(message, f'Found no antonyms for {phrase}. '
+                                  f'Did you mean {", ".join("`" + match + "`" for match in matches)}')
         return
 
     await client.say(message, ", ".join(s.strip(" \n") for s in synonyms[phrase]))
