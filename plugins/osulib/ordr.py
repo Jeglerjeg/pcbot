@@ -142,7 +142,7 @@ async def render_done_json(data: json):
     render_id = data["renderID"]
     video_url = data["videoUrl"]
     if render_id in requested_renders:
-        await requested_renders[render_id]["message"].edit(video_url)
+        await requested_renders[render_id]["message"].edit(content=video_url)
         requested_renders.pop(render_id)
 
 
@@ -151,7 +151,7 @@ async def render_failed_json(data: json):
     render_id = data["renderID"]
     error_message = data["errorMessage"]
     if render_id in requested_renders:
-        await requested_renders[render_id]["message"].edit(error_message)
+        await requested_renders[render_id]["message"].edit(content=error_message)
         requested_renders.pop(render_id)
 
 
@@ -162,7 +162,7 @@ async def render_progress_json(data: json):
     renderer = data["renderer"]
     if render_id in requested_renders:
         if (datetime.utcnow() - requested_renders[render_id]["edited"]).total_seconds() > 5:
-            await requested_renders[render_id]["message"].edit("{}\nRendered by: {}".format(progress, renderer))
+            await requested_renders[render_id]["message"].edit(content=f"{progress}\nRendered by: {renderer}")
             requested_renders[render_id]["edited"] = datetime.utcnow()
 
 
