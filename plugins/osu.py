@@ -296,186 +296,78 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     return "".join(text)
 
 
+def format_score_statistics(osu_score: dict, beatmap: dict, mode: api.GameMode):
+    """" Returns formatted score statistics for each mode. """
+    sign = "!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-")
+    acc = f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%"
+    count300 = osu_score["statistics"]["count_300"]
+    count100 = osu_score["statistics"]["count_100"]
+    count50 = osu_score["statistics"]["count_50"]
+    countmiss = osu_score["statistics"]["count_miss"]
+    count_geki = osu_score["statistics"]["count_geki"]
+    count_katu = osu_score["statistics"]["count_katu"]
+    maxcombo = osu_score["max_combo"]
+    max_combo = f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None else ""
+    if mode is api.GameMode.osu:
+        return "  acc     300s  100s  50s  miss  combo\n" \
+              f'{sign} {acc:<8}{count300:<6}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}'
+    if mode is api.GameMode.taiko:
+        return "  acc     great  good  miss  combo\n" \
+              f"{sign} {acc:<8}{count300:<7}{count100:<6}{countmiss:<6}{maxcombo}{max_combo}"
+    if mode is api.GameMode.mania:
+        return "  acc     max   300s  200s  100s  50s  miss\n" \
+              f"{sign} {acc:<8}{count_geki:<6}{count300:<6}{count_katu:<6}{count100:<6}{count50:<5}{countmiss:<6}"
+    return "  acc     fruits ticks drpmiss miss combo\n" \
+           f"{sign} {acc:<8}{count300:<7}{count100:<6}{count_katu:<8}{countmiss:<5}{maxcombo}{max_combo}"
+
+
+def format_score_info(osu_score: dict, beatmap: dict, rank: int = None):
+    """ Return formatted beatmap information. """
+    beatmap_url = get_beatmap_url(osu_score["beatmap"]["id"], osu_score["mode"])
+    modslist = Mods.format_mods(osu_score["mods"])
+    pp = utils.format_number(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"]
+    ranked_score = f'{osu_score["score"]:,}' if osu_score["score"] else ""
+    stars = utils.format_number(float(beatmap["difficulty_rating"]), 2)
+    scoreboard_rank = f"#{rank} " if rank else ""
+    failed = "(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else ""
+    artist = osu_score["beatmapset"]["artist"].replace("_", r"\_") if bool("beatmapset" in osu_score) else \
+        beatmap["beatmapset"]["artist"].replace("_", r"\_")
+    title = osu_score["beatmapset"]["title"].replace("_", r"\_") if bool("beatmapset" in osu_score) else \
+        beatmap["beatmapset"]["title"].replace("_", r"\_")
+    i = ("*" if "*" not in osu_score["beatmapset"]["artist"] + osu_score["beatmapset"]["title"] else "") if \
+        bool("beatmapset" in osu_score) else \
+        ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else "")
+    return f'[{i}{artist} - {title} [{beatmap["version"]}]{i}]({beatmap_url})\n' \
+           f'**{pp}pp {stars}\u2605, {osu_score["rank"]} {scoreboard_rank}{failed}+{modslist} {ranked_score}**'
+
+
+def get_beatmap_url(beatmap_id: int, mode: str):
+    """ Return the beatmap's url. """
+    return f"{host}beatmaps/{beatmap_id}?mode={mode}"
+
+
 async def format_new_score(mode: api.GameMode, osu_score: dict, beatmap: dict, rank: int = None,
                            member: discord.Member = None):
     """ Format any score. There should be a member name/mention in front of this string. """
-    if mode is api.GameMode.osu:
-        return (
-            "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-            "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
-            "```diff\n"
-            "  acc     300s  100s  50s  miss  combo\n"
-            "{sign} {acc:<8}{count300:<6}{count100:<6}{count50:<5}{countmiss:<6}{maxcombo}{max_combo}```"
-            "{live}"
-        ).format(
-            host=host,
-            beatmap_id=osu_score["beatmap"]["id"],
-            beatmapset_id=beatmap["beatmapset_id"],
-            mode=osu_score["mode"],
-            sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
-            modslist=Mods.format_mods(osu_score["mods"]),
-            acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
-            pp=utils.format_number(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"],
-            rank=osu_score["rank"],
-            score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
-            count300=osu_score["statistics"]["count_300"],
-            count100=osu_score["statistics"]["count_100"],
-            count50=osu_score["statistics"]["count_50"],
-            countmiss=osu_score["statistics"]["count_miss"],
-            artist=osu_score["beatmapset"]["artist"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
-            beatmap["beatmapset"]["artist"].replace("_", r"\_"),
-            title=osu_score["beatmapset"]["title"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
-            beatmap["beatmapset"]["title"].replace("_", r"\_"),
-            i=("*" if "*" not in osu_score["beatmapset"]["artist"] + osu_score["beatmapset"]["title"] else "") if
-            bool("beatmapset" in osu_score) else
-            ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
-            # Escaping asterisk doesn't work in italics
-            version=beatmap["version"],
-            stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
-            maxcombo=osu_score["max_combo"],
-            max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
-            else "",
-            scoreboard_rank=f"#{rank} " if rank else "",
-            failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
-            live=await format_stream(member, osu_score, beatmap) if member else "",
-        )
-
-    if mode is api.GameMode.taiko:
-        return (
-            "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-            "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
-            "```diff\n"
-            "  acc     great  good  miss  combo\n"
-            "{sign} {acc:<8}{count300:<7}{count100:<6}{countmiss:<6}{maxcombo}{max_combo}```"
-            "{live}"
-        ).format(
-            host=host,
-            beatmap_id=osu_score["beatmap"]["id"],
-            beatmapset_id=beatmap["beatmapset_id"],
-            mode=osu_score["mode"],
-            sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
-            modslist=Mods.format_mods(osu_score["mods"]),
-            acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
-            pp=utils.format_number(osu_score["pp"], 2),
-            rank=osu_score["rank"],
-            score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
-            count300=osu_score["statistics"]["count_300"],
-            count100=osu_score["statistics"]["count_100"],
-            countmiss=osu_score["statistics"]["count_miss"],
-            artist=osu_score["beatmapset"]["artist"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
-            beatmap["beatmapset"]["artist"].replace("_", r"\_"),
-            title=osu_score["beatmapset"]["title"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
-            beatmap["beatmapset"]["title"].replace("_", r"\_"),
-            i=("*" if "*" not in osu_score["beatmapset"]["artist"] + osu_score["beatmapset"]["title"] else "") if
-            bool("beatmapset" in osu_score) else
-            ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
-            # Escaping asterisk doesn't work in italics
-            version=beatmap["version"],
-            stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
-            maxcombo=osu_score["max_combo"],
-            max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
-            else "",
-            scoreboard_rank=f"#{rank} " if rank else "",
-            failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
-            live=await format_stream(member, osu_score, beatmap) if member else "",
-        )
-
-    if mode is api.GameMode.mania:
-        return (
-            "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-            "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
-            "```diff\n"
-            "  acc     max   300s  200s  100s  50s  miss\n"
-            "{sign} {acc:<8}{countmax:<6}{count300:<6}{count200:<6}{count100:<6}{count50:<5}{countmiss:<6}```"
-            "{live}"
-        ).format(
-            host=host,
-            beatmap_id=osu_score["beatmap"]["id"],
-            beatmapset_id=beatmap["beatmapset_id"],
-            mode=osu_score["mode"],
-            sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
-            modslist=Mods.format_mods(osu_score["mods"]),
-            acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
-            pp=utils.format_number(osu_score["pp"], 2),
-            rank=osu_score["rank"],
-            score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
-            countmax=osu_score["statistics"]["count_geki"],
-            count300=osu_score["statistics"]["count_300"],
-            count200=osu_score["statistics"]["count_katu"],
-            count100=osu_score["statistics"]["count_100"],
-            count50=osu_score["statistics"]["count_50"],
-            countmiss=osu_score["statistics"]["count_miss"],
-            artist=osu_score["beatmapset"]["artist"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
-            beatmap["beatmapset"]["artist"].replace("_", r"\_"),
-            title=osu_score["beatmapset"]["title"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
-            beatmap["beatmapset"]["title"].replace("_", r"\_"),
-            i=("*" if "*" not in osu_score["beatmapset"]["artist"] + osu_score["beatmapset"]["title"] else "") if
-            bool("beatmapset" in osu_score) else
-            ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
-            # Escaping asterisk doesn't work in italics
-            version=beatmap["version"],
-            stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
-            scoreboard_rank=f"#{rank} " if rank else "",
-            failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
-            live=await format_stream(member, osu_score, beatmap) if member else "",
-        )
-
-    if mode is api.GameMode.fruits:
-        return (
-            "[{i}{artist} - {title} [{version}]{i}]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
-            "**{pp}pp {stars}\u2605, {rank} {scoreboard_rank}{failed}+{modslist} {score}**"
-            "```diff\n"
-            "  acc     fruits ticks drpmiss miss combo\n"
-            "{sign} {acc:<8}{count300:<7}{count100:<6}{countdrpmiss:<8}{countmiss:<5}{maxcombo}{max_combo}```"
-            "{live}"
-        ).format(
-            host=host,
-            beatmap_id=osu_score["beatmap"]["id"],
-            beatmapset_id=beatmap["beatmapset_id"],
-            mode=osu_score["mode"],
-            sign="!" if osu_score["accuracy"] == 1 else ("+" if osu_score["perfect"] and osu_score["passed"] else "-"),
-            modslist=Mods.format_mods(osu_score["mods"]),
-            acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
-            pp=utils.format_number(osu_score["pp"], 2),
-            rank=osu_score["rank"],
-            score=f'{osu_score["score"]:,}' if osu_score["score"] else "",
-            count300=osu_score["statistics"]["count_300"],
-            count100=osu_score["statistics"]["count_100"],
-            countdrpmiss=osu_score["statistics"]["count_katu"],
-            countmiss=osu_score["statistics"]["count_miss"],
-            artist=osu_score["beatmapset"]["artist"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
-            beatmap["beatmapset"]["artist"].replace("_", r"\_"),
-            title=osu_score["beatmapset"]["title"].replace("_", r"\_") if bool("beatmapset" in osu_score) else
-            beatmap["beatmapset"]["title"].replace("_", r"\_"),
-            i=("*" if "*" not in osu_score["beatmapset"]["artist"] + osu_score["beatmapset"]["title"] else "") if
-            bool("beatmapset" in osu_score) else
-            ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else ""),
-            # Escaping asterisk doesn't work in italics
-            version=beatmap["version"],
-            stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
-            maxcombo=osu_score["max_combo"],
-            max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
-            else "",
-            scoreboard_rank=f"#{rank} " if rank else "",
-            failed="(Failed) " if osu_score["passed"] is False and osu_score["rank"] != "F" else "",
-            live=await format_stream(member, osu_score, beatmap) if member else "",
-        )
+    return (
+        f"{format_score_info(osu_score, beatmap, rank)}"
+        "```diff\n"
+        f"{format_score_statistics(osu_score, beatmap, mode)}```"
+        f"{await format_stream(member, osu_score, beatmap) if member else ''}"
+    )
 
 
 async def format_minimal_score(osu_score: dict, beatmap: dict, rank: int, member: discord.Member):
     """ Format any osu! score with minimal content.
     There should be a member name/mention in front of this string. """
     return (
-        "[*{artist} - {title} [{version}]*]({host}beatmapsets/{beatmapset_id}/#{mode}/{beatmap_id})\n"
+        "[*{artist} - {title} [{version}]*]({url})\n"
         "**{pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
-        host=host,
-        beatmapset_id=beatmap["beatmapset_id"],
-        mode=osu_score["mode"],
+        url=get_beatmap_url(osu_score["beatmap"]["id"], osu_score["mode"]),
         mods=Mods.format_mods(osu_score["mods"]),
         acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
-        beatmap_id=osu_score["beatmap"]["id"],
         artist=beatmap["beatmapset"]["artist"].replace("*", r"\*").replace("_", r"\_"),
         title=beatmap["beatmapset"]["title"].replace("*", r"\*").replace("_", r"\_"),
         version=beatmap["version"],
