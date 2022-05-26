@@ -2221,7 +2221,7 @@ async def maps(message: discord.Message, *channels: discord.TextChannel):
 @osu.command(owner=True)
 async def debug(message: discord.Message):
     """ Display some debug info. """
-    client_time = f"<t:{int(client.time_started.replace(tzinfo=timezone.utc).timestamp())}:F>"
+    client_time = f"<t:{int(client.time_started.timestamp())}:F>"
     member_list = [f"`{d['member'].name}`" for d in osu_tracking.values() if "member" in d and is_playing(d["member"])]
     await client.say(message, "Sent `{}` requests since the bot started ({}).\n"
                               "Sent an average of `{}` requests per minute. \n"
@@ -2231,8 +2231,8 @@ async def debug(message: discord.Message):
                               "Total members tracked: `{}`".format(
                                api.requests_sent, client_time,
                                utils.format_number(api.requests_sent /
-                                                   ((datetime.utcnow() - client.time_started).total_seconds() / 60.0),
-                                                   2)
+                                                   ((discord.utils.utcnow() -
+                                                     client.time_started).total_seconds() / 60.0), 2)
                                if api.requests_sent > 0 else 0,
                                time_elapsed,
                                f"<t:{int(previous_update.timestamp())}:F>"
