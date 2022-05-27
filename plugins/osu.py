@@ -87,7 +87,7 @@ use_mentions_in_scores = osu_config.data.get("use_mentions_in_scores", True)
 notify_empty_scores = osu_config.data.get("notify_empty_scores", False)
 cache_user_profiles = osu_config.data.get("cache_user_profiles", True)
 
-max_diff_length = 23  # The maximum amount of characters in a beatmap difficulty
+max_diff_length = 22  # The maximum amount of characters in a beatmap difficulty
 
 asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
                                                       osu_config.data.get("client_secret")), client.loop)
