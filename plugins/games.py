@@ -23,6 +23,13 @@ client = plugins.client  # type: bot.Client
 started = []
 
 
+def format_join_message(game: str, players: int, participants: list):
+    participant_list = "\n".join(participant.display_name for participant in participants)
+    return f"**A game of {game} has started!**\n" \
+           f"To participate, press the join button! {len(participants)}/{players} joined!\n" \
+           f"Participants:\n{participant_list}"
+
+
 class Game:
     name = "Unnamed Game"
     minimum_participants = 1
@@ -37,42 +44,14 @@ class Game:
 
     async def on_start(self):
         """ Notify the channel that the game has been initialized. """
-        m = f"**{self.message.author.display_name}** has started a game of {self.name}! " \
-            f"To participate, say `I`! **{self.num} players needed.**"
-        await client.say(self.message, m)
-
-    async def get_participants(self):
-        """ Wait for input and get all participants. """
-        for i in range(self.num):
-
-            def check(m):
-                return m.channel == self.channel and m.content.lower().strip() == "i" \
-                       and m.author not in self.participants
-
-            # Wait with a timeout of 2 minutes and check each message with check(m)
-            try:
-                reply = await client.wait_for_message(timeout=120, check=check)
-            except asyncio.TimeoutError:
-                reply = None
-
-            if reply:  # A user replied with a valid check
-                asyncio.ensure_future(
-                    client.say(self.message,
-                               f"{reply.author.mention} has entered! `{i + 1}/{self.num}`. Type `I` to join!")
-                )
-                self.participants.append(reply.author)
-
-                # Remove the message if bot has permissions
-                if self.channel.permissions_for(self.member).manage_messages:
-                    asyncio.ensure_future(client.delete_message(reply))
-            else:
-                # At this point we got no reply in time and thus, gathering participants failed
-                await client.say(self.message, f"**The { self.name} game failed to gather {self.num} participants.**")
-                started.pop(started.index(self.channel.id))
-
-                return False
-
-        return True
+        view = Join(game=self, game_name=self.name, players=self.num)
+        embed = discord.Embed(description=format_join_message(self.name, self.num, self.participants))
+        original_message = await self.channel.send(embed=embed, view=view)
+        await view.wait()
+        await original_message.edit(view=view.clear_items())
+        if len(self.participants) < self.num:
+            await self.channel.send(content=f"**The { self.name} game failed to gather {self.num} participants.**")
+            started.pop(started.index(self.channel.id))
 
     async def prepare(self):
         """ Prepare anything needed before starting the game. """
@@ -83,14 +62,36 @@ class Game:
     async def start(self):
         """ Run the entire game's cycle. """
         await self.on_start()
-        valid = await self.get_participants()
 
-        if valid:
+        if len(self.participants) >= self.num:
             await asyncio.sleep(1)
             await self.prepare()
             await self.game()
 
             del started[started.index(self.channel.id)]
+
+
+class Join(discord.ui.View):
+    def __init__(self, game: Game, game_name: str, players: int):
+        super().__init__()
+        self.participants = []
+        self.game_name = game_name
+        self.game = game
+        self.players = players
+        self.timeout = 30
+
+    @discord.ui.button(label='Join', style=discord.ButtonStyle.green)
+    async def join(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user not in self.participants:
+            self.participants.append(interaction.user)
+            self.game.participants.append(interaction.user)
+            await interaction.response.send_message('Successfully joined the game.', ephemeral=True)
+            embed = discord.Embed(description=format_join_message(self.game_name, self.players, self.participants))
+            await interaction.message.edit(embed=embed)
+            if len(self.participants) >= self.players:
+                self.stop()
+        else:
+            await interaction.response.send_message("You've already joined the game.", ephemeral=True)
 
 
 class Roulette(Game):
