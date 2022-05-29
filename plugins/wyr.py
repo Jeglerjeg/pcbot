@@ -40,7 +40,7 @@ class ChoiceButton(discord.ui.View):
         embed.description = embed.description + "\n" + response
         await message.edit(embed=embed)
 
-    @discord.ui.button(label='1', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="1", style=discord.ButtonStyle.green)
     async def first_choice(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user not in self.replied:
             await self.mark_answer(0, interaction.user, interaction.message)
@@ -48,7 +48,7 @@ class ChoiceButton(discord.ui.View):
         else:
             await interaction.response.send_message('You have already made a choice', ephemeral=True)
 
-    @discord.ui.button(label='2', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="2", style=discord.ButtonStyle.red)
     async def second_choice(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user not in self.replied:
             await self.mark_answer(1, interaction.user, interaction.message)
@@ -87,7 +87,8 @@ async def wouldyourather(message: discord.Message, opt: options = None):
         choices = question["choices"]
 
         view = ChoiceButton(question, choices)
-        embed = discord.Embed(description=f"Would you rather **{choices[0]}** or **{choices[1]}**?\n\n\n")
+        embed = discord.Embed(description=
+                              f"Would you rather \U0001f7e2 **{choices[0]}** or \U0001f534 **{choices[1]}**?\n\n\n")
         original_message = await message.channel.send(embed=embed, view=view)
 
         await view.wait()
