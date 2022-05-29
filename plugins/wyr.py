@@ -12,10 +12,49 @@ from pcbot import Config
 
 client = plugins.client  # type: bot.Client
 
-db = Config("would-you-rather", data=dict(timeout=10, responses=["**{name}** would **{choice}**!"], questions=[]),
+db = Config("would-you-rather", data=dict(timeout=30, responses=["**{name}** would **{choice}**!"], questions=[]),
             pretty=True)
 command_pattern = re.compile(r"(.+)(?:\s+or|\s*,)\s+([^?]+)\?*")
 sessions = set()  # All running would you rather's are in this set
+
+
+class ChoiceButton(discord.ui.View):
+    def __init__(self, question: dict, choices: list):
+        super().__init__()
+        self.question = question
+        self.choices = choices
+        self.replied = []
+        self.timeout = db.data["timeout"]
+
+    async def mark_answer(self, choice: int, user: discord.User, message: discord.Message):
+        # Register that this author has replied
+        self.replied.append(user)
+
+        # Update the answers in the DB
+        # We don't care about multiples, just the amount (yes it will probably be biased)
+        self.question["answers"][choice] += 1
+
+        response = random.choice(db.data["responses"]).format(name=user.display_name, NAME=user.display_name.upper(),
+                                                              choice=self.choices[choice])
+        embed = message.embeds[0]
+        embed.description = embed.description + "\n" + response
+        await message.edit(embed=embed)
+
+    @discord.ui.button(label='1', style=discord.ButtonStyle.blurple)
+    async def first_choice(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user not in self.replied:
+            await self.mark_answer(0, interaction.user, interaction.message)
+            await interaction.response.send_message('Your choice has been saved.', ephemeral=True)
+        else:
+            await interaction.response.send_message('You have already made a choice', ephemeral=True)
+
+    @discord.ui.button(label='2', style=discord.ButtonStyle.blurple)
+    async def second_choice(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user not in self.replied:
+            await self.mark_answer(1, interaction.user, interaction.message)
+            await interaction.response.send_message('Your choice has been saved.', ephemeral=True)
+        else:
+            await interaction.response.send_message('You have already made a choice.', ephemeral=True)
 
 
 @plugins.argument("{open}option ...{close} or/, {open}other option ...{close}[?]", allow_spaces=True)
@@ -26,28 +65,6 @@ async def options(arg):
     assert not match.group(1).lower() == match.group(2).lower(), "**The choices cannot be the same.**"
 
     return match.group(1), match.group(2)
-
-
-def get_choice(choices: list, choice: str):
-    """ Get the chosen option. This accept 1 and 2 as numbers. """
-    if choice == "1":
-        return 0
-
-    if choice == "2":
-        return 1
-
-    choices = list(map(str.lower, choices))
-    words = list(map(str.split, choices))
-
-    # Go through all words in the given message, and find any words unique to a choice
-    for word in choice.lower().split():
-        if word in words[0] and word not in words[1]:
-            return 0
-        if word in words[1] and word not in words[0]:
-            return 1
-
-    # Invalid choice
-    return None
 
 
 @plugins.command(aliases="wyr rather either")
@@ -68,38 +85,13 @@ async def wouldyourather(message: discord.Message, opt: options = None):
 
         question = random.choice(db.data["questions"])
         choices = question["choices"]
-        await client.say(message, f"Would you rather **{choices[0]}** or **{choices[1]}**?")
 
-        timeout = db.data["timeout"]
-        replied = []
+        view = ChoiceButton(question, choices)
+        embed = discord.Embed(description=f"Would you rather **{choices[0]}** or **{choices[1]}**?\n\n\n")
+        original_message = await message.channel.send(embed=embed, view=view)
 
-        # Wait for replies from anyone in the channel
-        while True:
-            def check(m):
-                return m.channel == message.channel and m.author not in replied
-
-            try:
-                reply = await client.wait_for_message(timeout=timeout, check=check)
-            # Break on timeout
-            except asyncio.TimeoutError:
-                break
-
-            # Check if the choice is valid
-            choice = get_choice(choices, reply.content)
-            if choice is None:
-                continue
-
-            # Register that this author has replied
-            replied.append(reply.author)
-
-            # Update the answers in the DB
-            # We don't care about multiples, just the amount (yes it will probably be biased)
-            question["answers"][choice] += 1
-
-            name = reply.author.display_name
-            response = random.choice(db.data["responses"]).format(name=name, NAME=name.upper(),
-                                                                  choice=choices[choice])
-            await client.say(message, response)
+        await view.wait()
+        await original_message.edit(view=None)
 
         # Say the total tallies
         await client.say(message, f'A total of {question["answers"][0]} would **{choices[0]}**, '
