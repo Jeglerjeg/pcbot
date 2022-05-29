@@ -12,7 +12,7 @@ from pcbot import Config
 
 client = plugins.client  # type: bot.Client
 
-db = Config("would-you-rather", data=dict(timeout=30, responses=["**{name}** would **{choice}**!"], questions=[]),
+db = Config("would-you-rather", data=dict(timeout=10, responses=["**{name}** would **{choice}**!"], questions=[]),
             pretty=True)
 command_pattern = re.compile(r"(.+)(?:\s+or|\s*,)\s+([^?]+)\?*")
 sessions = set()  # All running would you rather's are in this set
