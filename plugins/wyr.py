@@ -18,12 +18,19 @@ command_pattern = re.compile(r"(.+)(?:\s+or|\s*,)\s+([^?]+)\?*")
 sessions = set()  # All running would you rather's are in this set
 
 
+def format_choice_message(choices: list, responses: list):
+    formatted_responses = "\n".join(responses)
+    return f"Would you rather \U0001f7e2 **{choices[0]}** or \U0001f534 **{choices[1]}**?\n\n" \
+           f"{formatted_responses}"
+
+
 class ChoiceButton(discord.ui.View):
     def __init__(self, question: dict, choices: list):
         super().__init__()
         self.question = question
         self.choices = choices
         self.replied = []
+        self.responses = []
         self.timeout = db.data["timeout"]
 
     async def mark_answer(self, choice: int, user: discord.User, message: discord.Message):
@@ -34,10 +41,11 @@ class ChoiceButton(discord.ui.View):
         # We don't care about multiples, just the amount (yes it will probably be biased)
         self.question["answers"][choice] += 1
 
-        response = random.choice(db.data["responses"]).format(name=user.display_name, NAME=user.display_name.upper(),
-                                                              choice=self.choices[choice])
+        self.responses.append(random.choice(db.data["responses"]).format(name=user.display_name,
+                                                                         NAME=user.display_name.upper(),
+                                                                         choice=self.choices[choice]))
         embed = message.embeds[0]
-        embed.description = embed.description + "\n" + response
+        embed.description = format_choice_message(self.choices, self.responses)
         await message.edit(embed=embed)
 
     @discord.ui.button(label="1", style=discord.ButtonStyle.green)
@@ -87,8 +95,7 @@ async def wouldyourather(message: discord.Message, opt: options = None):
         choices = question["choices"]
 
         view = ChoiceButton(question, choices)
-        embed = discord.Embed(description=
-                              f"Would you rather \U0001f7e2 **{choices[0]}** or \U0001f534 **{choices[1]}**?\n\n\n")
+        embed = discord.Embed(description=format_choice_message(choices, []))
         original_message = await message.channel.send(embed=embed, view=view)
 
         await view.wait()
