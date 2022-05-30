@@ -1,6 +1,5 @@
 """ Would you rather? This plugin includes would you rather functionality
 """
-import asyncio
 import random
 import re
 
@@ -15,13 +14,18 @@ client = plugins.client  # type: bot.Client
 db = Config("would-you-rather", data=dict(timeout=10, responses=["**{name}** would **{choice}**!"], questions=[]),
             pretty=True)
 command_pattern = re.compile(r"(.+)(?:\s+or|\s*,)\s+([^?]+)\?*")
-sessions = set()  # All running would you rather's are in this set
 
 
-def format_choice_message(choices: list, responses: list):
+def format_choice_result(question: dict, choices: list):
+    return f'A total of {question["answers"][0]} would **{choices[0]}**, ' \
+           f'while {question["answers"][1]} would **{choices[1]}**!'
+
+
+def format_choice_message(question: dict, choices: list, responses: list, result: bool = False):
     formatted_responses = "\n".join(responses)
     return f"Would you rather \U0001f7e2 **{choices[0]}** or \U0001f534 **{choices[1]}**?\n\n" \
-           f"{formatted_responses}"
+           f"{formatted_responses}" + \
+           (f"\n\n{format_choice_result(question, choices)}" if result else "")
 
 
 class ChoiceButton(discord.ui.View):
@@ -45,7 +49,7 @@ class ChoiceButton(discord.ui.View):
                                                                          NAME=user.display_name.upper(),
                                                                          choice=self.choices[choice]))
         embed = message.embeds[0]
-        embed.description = format_choice_message(self.choices, self.responses)
+        embed.description = format_choice_message(self.question, self.choices, self.responses)
         await message.edit(embed=embed)
 
     @discord.ui.button(label="1", style=discord.ButtonStyle.green)
@@ -86,26 +90,21 @@ async def wouldyourather(message: discord.Message, opt: options = None):
     Asking the bot: `!wouldyourather`"""
     # If there are no options, the bot will ask the questions (if there are any to choose from)
     if opt is None:
-        assert message.channel.id not in sessions, "**A would you rather session is already in progress.**"
-        sessions.add(message.channel.id)
-
         assert db.data["questions"], "**There are ZERO questions saved. Ask me one!**"
 
         question = random.choice(db.data["questions"])
         choices = question["choices"]
 
         view = ChoiceButton(question, choices)
-        embed = discord.Embed(description=format_choice_message(choices, []))
+        embed = discord.Embed(description=format_choice_message(question, choices, []))
         original_message = await message.channel.send(embed=embed, view=view)
 
         await view.wait()
-        await original_message.edit(view=None)
-
         # Say the total tallies
-        await client.say(message, f'A total of {question["answers"][0]} would **{choices[0]}**, '
-                                  f'while {question["answers"][1]} would **{choices[1]}**!')
+        embed = discord.Embed(description=format_choice_message(view.question, choices, view.responses, result=True))
+        await original_message.edit(embed=embed, view=None)
+
         await db.asyncsave()
-        sessions.remove(message.channel.id)
 
     # Otherwise, the member asked a question to the bot
     else:
