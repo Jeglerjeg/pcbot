@@ -4,11 +4,15 @@
 
 import logging
 import os
+import traceback
 from collections import namedtuple
+from datetime import datetime, timezone
+from operator import itemgetter
 
-from pcbot import utils
-from . import api
-from .args import parse as parse_options
+from pcbot import utils, Config
+from plugins.osulib import enums, api
+from plugins.osulib.args import parse as parse_options
+from plugins.osulib.utils import misc_utils, score_utils
 
 try:
     import rosu_pp_py
@@ -22,6 +26,7 @@ PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs o
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars")
 
 cache_path = "plugins/osulib/mapcache"
+no_choke_cache = {}
 
 
 async def is_osu_file(url: str):
@@ -97,7 +102,7 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False):
     return beatmap_path
 
 
-async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_osu_cache: bool = False,
+async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore_osu_cache: bool = False,
                        failed: bool = False, potential: bool = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
@@ -116,9 +121,9 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     args = parse_options(*options)
 
     # Calculate the mod bitmask and apply settings if needed
-    if args.mods and api.Mods.NC in args.mods:
-        args.mods.remove(api.Mods.NC)
-        args.mods.append(api.Mods.DT)
+    if args.mods and enums.Mods.NC in args.mods:
+        args.mods.remove(enums.Mods.NC)
+        args.mods.append(enums.Mods.DT)
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
     calculator = rosu_pp_py.Calculator(beatmap_path)
@@ -135,7 +140,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
         score_params.clockRate = args.clock_rate
 
     # If the pp arg is given, return using the closest pp function
-    if args.pp is not None and mode is api.GameMode.osu:
+    if args.pp is not None and mode is enums.GameMode.osu:
         return await find_closest_pp(calculator, score_params, args)
 
     # Calculate the pp
@@ -148,15 +153,15 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
             score_params.acc = args.potential_acc
         [potential_pp_info] = calculator.calculate(score_params)
         total_stars = potential_pp_info.stars
-        if mode is api.GameMode.osu:
+        if mode is enums.GameMode.osu:
             max_pp = potential_pp_info.pp
 
     # Calculate actual stars and pp
     score_params = get_score_params(score_params, args)
     [pp_info] = calculator.calculate(score_params)
-    if mode is api.GameMode.osu:
+    if mode is enums.GameMode.osu:
         max_combo = pp_info.maxCombo
-    elif mode is api.GameMode.taiko or mode is api.GameMode.fruits:
+    elif mode is enums.GameMode.taiko or mode is enums.GameMode.fruits:
         max_combo = pp_info.maxCombo
 
     pp = pp_info.pp
@@ -235,3 +240,215 @@ async def find_closest_pp(calculator, score_params, args):
     closest_pp = min([previous_pp.pp, current_pp.pp], key=lambda v: abs(args.pp - v))
     acc = acc if closest_pp == current_pp.pp else acc + dec
     return ClosestPPStats(round(acc, 2), closest_pp, totalstars)
+
+
+def get_beatmap_sr(score_pp: PPStats, beatmap: dict, mods: str):
+    """ Change beatmap SR if using SR adjusting mods. """
+    difficulty_rating = score_pp.stars if (mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF", "RX")
+                                           or not beatmap["convert"]) and score_pp else beatmap["difficulty_rating"]
+    return difficulty_rating
+
+
+def calculate_total_user_pp(osu_scores: list, member_id: str, osu_tracking: dict):
+    """ Calculates the user's total PP. """
+    total_pp = 0
+    for i, osu_score in enumerate(osu_scores):
+        total_pp += osu_score["pp"] * (0.95 ** i)
+    total_pp_without_bonus_pp = 0
+    for osu_score in osu_tracking[member_id]["scores"]["score_list"]:
+        total_pp_without_bonus_pp += osu_score["weight"]["pp"]
+    bonus_pp = osu_tracking[member_id]["new"]["statistics"]["pp"] - total_pp_without_bonus_pp
+    return total_pp + bonus_pp
+
+
+async def get_score_pp(osu_score: dict, mode: enums.GameMode, beatmap: dict = None):
+    """ Return PP for a given score. """
+    mods = enums.Mods.format_mods(osu_score["mods"])
+    score_pp = None
+    if beatmap and beatmap["convert"]:
+        return score_pp
+    if mode is enums.GameMode.osu:
+        try:
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
+                                          ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                    or beatmap["status"] == "approved") if beatmap
+                                          else False, potential=not osu_score["perfect"] or not osu_score["passed"],
+                                          failed=not osu_score["passed"],
+                                          *"{modslist}{acc:.2%} {potential_acc:.2%}pot {c300}x300 {c100}x100 {c50}x50 "
+                                           "{countmiss}m {maxcombo}x {objects}objects"
+                                          .format(acc=misc_utils.calculate_acc(mode, osu_score),
+                                                  potential_acc=misc_utils.calculate_acc(mode, osu_score,
+                                                                                         exclude_misses=True),
+                                                  c300=osu_score["statistics"]["count_300"],
+                                                  c100=osu_score["statistics"]["count_100"],
+                                                  c50=osu_score["statistics"]["count_50"],
+                                                  modslist="".join(["+", mods, " "]) if mods != "Nomod" else "",
+                                                  countmiss=osu_score["statistics"]["count_miss"],
+                                                  maxcombo=osu_score["max_combo"],
+                                                  objects=osu_score["statistics"]["count_300"] +
+                                                  osu_score["statistics"]["count_100"] +
+                                                  osu_score["statistics"]["count_50"] +
+                                                  osu_score["statistics"]["count_miss"]).split())
+        except Exception:
+            logging.error(traceback.format_exc())
+
+    elif mode is enums.GameMode.taiko:
+        try:
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
+                                          ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                    or beatmap["status"] == "approved") if beatmap
+                                          else False,
+                                          *"{modslist}{acc:.2%} {c300}x300 {c100}x100 "
+                                           "{countmiss}m {maxcombo}x {objects}objects"
+                                          .format(acc=misc_utils.calculate_acc(mode, osu_score),
+                                                  c300=osu_score["statistics"]["count_300"],
+                                                  c100=osu_score["statistics"]["count_100"],
+                                                  modslist="".join(["+", mods, " "]) if mods != "Nomod" else "",
+                                                  countmiss=osu_score["statistics"]["count_miss"],
+                                                  maxcombo=osu_score["max_combo"],
+                                                  objects=osu_score["statistics"]["count_300"] +
+                                                  osu_score["statistics"]["count_100"] +
+                                                  osu_score["statistics"]["count_miss"]).split())
+        except Exception:
+            logging.error(traceback.format_exc())
+
+    elif mode is enums.GameMode.mania:
+        try:
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
+                                          ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                    or beatmap["status"] == "approved") if beatmap
+                                          else False,
+                                          *"{modslist} {score}score {objects}objects"
+                                          .format(modslist="".join(["+", mods, " "]) if mods != "Nomod" else "",
+                                                  score=osu_score["score"],
+                                                  objects=osu_score["statistics"]["count_300"] +
+                                                  osu_score["statistics"]["count_geki"] +
+                                                  osu_score["statistics"]["count_katu"] +
+                                                  osu_score["statistics"]["count_100"] +
+                                                  osu_score["statistics"]["count_miss"]).split())
+        except Exception:
+            logging.error(traceback.format_exc())
+
+    elif mode is enums.GameMode.fruits:
+        try:
+            score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
+                                          ignore_osu_cache=not bool(beatmap["status"] == "ranked"
+                                                                    or beatmap["status"] == "approved") if beatmap
+                                          else False,
+                                          *"{modslist}{c300}x300 {c100}x100 {c50}x50 {dropmiss}dropmiss "
+                                           "{countmiss}m {maxcombo}x"
+                                          .format(c300=osu_score["statistics"]["count_300"],
+                                                  c100=osu_score["statistics"]["count_100"],
+                                                  c50=osu_score["statistics"]["count_50"],
+                                                  dropmiss=osu_score["statistics"]["count_katu"],
+                                                  modslist="".join(["+", mods, " "]) if mods != "Nomod" else "",
+                                                  countmiss=osu_score["statistics"]["count_miss"],
+                                                  maxcombo=osu_score["max_combo"]).split())
+        except Exception:
+            logging.error(traceback.format_exc())
+    return score_pp
+
+
+async def calculate_pp_for_beatmapset(beatmapset: dict, osu_config: Config, ignore_osu_cache: bool = False,
+                                      mods: str = "+Nomod"):
+    """ Calculates the pp for every difficulty in the given mapset, added
+    to a "pp" key in the difficulty's dict. """
+    # Init the cache of this mapset if it has not been created
+    set_id = str(beatmapset["id"])
+    if set_id not in osu_config.data["map_cache"]:
+        osu_config.data["map_cache"][set_id] = {}
+
+    if not ignore_osu_cache:
+        ignore_osu_cache = not bool(beatmapset["status"] == "ranked" or beatmapset["status"] == "approved")
+
+    cached_mapset = osu_config.data["map_cache"][set_id]
+
+    for diff in beatmapset["beatmaps"]:
+        map_id = str(diff["id"])
+
+        if ignore_osu_cache:
+            # If the diff is cached and unchanged, use the cached pp
+            if map_id in cached_mapset and mods in cached_mapset[map_id]:
+                if diff["checksum"] == cached_mapset[map_id]["md5"]:
+                    diff["pp"] = cached_mapset[map_id][mods]["pp"]
+                    diff["difficulty_rating"] = cached_mapset[map_id][mods]["stars"]
+                    diff["ar"] = cached_mapset[map_id][mods]["ar"]
+                    diff["cs"] = cached_mapset[map_id][mods]["cs"]
+                    diff["accuracy"] = cached_mapset[map_id][mods]["od"]
+                    diff["drain"] = cached_mapset[map_id][mods]["hp"]
+                    diff["new_bpm"] = cached_mapset[map_id][mods]["new_bpm"]
+                    continue
+
+                # If it was changed, add an asterisk to the beatmap name (this is a really stupid place to do this)
+                diff["version"] = "".join(["*", diff["version"]])
+
+        # If the diff is not cached, or was changed, calculate the pp and update the cache
+        try:
+            pp_stats = await calculate_pp(int(map_id), mods, mode=enums.GameMode.get_mode(diff["mode"]),
+                                          ignore_osu_cache=ignore_osu_cache)
+        except ValueError:
+            logging.error(traceback.format_exc())
+            continue
+
+        diff["pp"] = pp_stats.pp
+        diff["difficulty_rating"] = pp_stats.stars
+        diff["ar"] = pp_stats.ar
+        diff["cs"] = pp_stats.cs
+        diff["accuracy"] = pp_stats.od
+        diff["drain"] = pp_stats.hp
+        diff["new_bpm"] = pp_stats.bpm
+
+        if ignore_osu_cache:
+            # Cache the difficulty
+            if map_id in cached_mapset:
+                if diff["checksum"] != cached_mapset[map_id]["md5"]:
+                    osu_config.data["map_cache"][set_id][map_id] = {
+                        "md5": diff["checksum"]
+                    }
+            else:
+                osu_config.data["map_cache"][set_id][map_id] = {
+                    "md5": diff["checksum"]
+                }
+            if mods not in osu_config.data["map_cache"][set_id][map_id]:
+                osu_config.data["map_cache"][set_id][map_id][mods] = {}
+            osu_config.data["map_cache"][set_id][map_id][mods]["pp"] = pp_stats.pp
+            osu_config.data["map_cache"][set_id][map_id][mods]["stars"] = pp_stats.stars
+            osu_config.data["map_cache"][set_id][map_id][mods]["ar"] = pp_stats.ar
+            osu_config.data["map_cache"][set_id][map_id][mods]["cs"] = pp_stats.cs
+            osu_config.data["map_cache"][set_id][map_id][mods]["od"] = pp_stats.od
+            osu_config.data["map_cache"][set_id][map_id][mods]["hp"] = pp_stats.hp
+            osu_config.data["map_cache"][set_id][map_id][mods]["new_bpm"] = pp_stats.bpm
+    if ignore_osu_cache:
+        await osu_config.data.asyncsave()
+
+
+async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
+    """ Calculates and returns a new list of unchoked plays. """
+    mode = enums.GameMode.osu
+    no_choke_list = []
+    if member_id not in no_choke_cache or (member_id in no_choke_cache and no_choke_cache[member_id]["time_updated"]
+                                           < datetime.fromisoformat(osu_scores["time_updated"])):
+        for osu_score in osu_scores["score_list"]:
+            if osu_score["perfect"]:
+                continue
+            full_combo_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
+            score_pp = await get_score_pp(osu_score, mode)
+            if (score_pp.max_pp - osu_score["pp"]) > 10:
+                osu_score["new_pp"] = f"""{utils.format_number(osu_score["pp"], 2)} => {utils.format_number(
+                    score_pp.max_pp, 2)}"""
+                osu_score["pp"] = score_pp.max_pp
+                osu_score["perfect"] = True
+                osu_score["accuracy"] = full_combo_acc
+                osu_score["max_combo"] = score_pp.max_combo
+                osu_score["statistics"]["count_miss"] = 0
+                osu_score["rank"] = score_utils.get_no_choke_scorerank(osu_score["mods"], full_combo_acc)
+                osu_score["score"] = None
+                no_choke_list.append(osu_score)
+        no_choke_list.sort(key=itemgetter("pp"), reverse=True)
+        for i, osu_score in enumerate(no_choke_list):
+            osu_score["pos"] = i + 1
+        no_choke_cache[member_id] = dict(score_list=no_choke_list, time_updated=datetime.now(tz=timezone.utc))
+        no_chokes = no_choke_cache[member_id]
+    else:
+        no_chokes = no_choke_cache[member_id]
+    return no_chokes

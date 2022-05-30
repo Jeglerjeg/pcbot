@@ -3,7 +3,7 @@
 import re
 from collections import namedtuple
 
-from .api import Mods
+from plugins.osulib.enums import Mods
 
 Argument = namedtuple("Argument", "pattern kwarg_pattern type default")
 mods_names = re.compile(r"\w{2}")

@@ -4,15 +4,15 @@
     request functions.
 """
 import asyncio
-from datetime import datetime
 import json
 import logging
 import os
 import re
 from collections import namedtuple
-from enum import Enum
+from datetime import datetime
 
 from pcbot import utils
+from plugins.osulib import enums
 
 api_url = "https://osu.ppy.sh/api/v2/"
 access_token = ""
@@ -22,13 +22,6 @@ mapcache_path = "plugins/osulib/mapdatacache"
 setcache_path = "plugins/osulib/setdatacache"
 
 replay_path = os.path.join("plugins/osulib/", "replay.osr")
-
-mode_names = {
-    "osu": ["standard", "osu", "std", "osu!"],
-    "taiko": ["taiko", "osu!taiko"],
-    "fruits": ["catch", "ctb", "fruits", "osu!catch"],
-    "mania": ["mania", "keys", "osu!mania"]
-}
 
 
 async def set_oauth_client(b: str, s: str):
@@ -57,93 +50,6 @@ async def get_access_token(client_id, client_secret):
     access_token = result["access_token"]
     await asyncio.sleep(result["expires_in"])
     await get_access_token(client_id, client_secret)
-
-
-class GameMode(Enum):
-    """ Enum for gamemodes. """
-    osu = 0
-    taiko = 1
-    fruits = 2
-    mania = 3
-
-    @classmethod
-    def get_mode(cls, mode: str):
-        """ Return the mode with the specified string. """
-        for mode_name, names in mode_names.items():
-            for name in names:
-                if name.lower().startswith(mode.lower()):
-                    return GameMode.__members__[mode_name]
-
-        return None
-
-
-class Mods(Enum):
-    """ Enum for displaying mods. """
-    NF = 0
-    EZ = 1
-    TD = 2
-    HD = 3
-    HR = 4
-    SD = 5
-    DT = 6
-    RX = 7
-    HT = 8
-    NC = 9
-    FL = 10
-    AU = 11
-    SO = 12
-    AP = 13
-    PF = 14
-    Key4 = 15
-    Key5 = 16
-    Key6 = 17
-    Key7 = 18
-    Key8 = 19
-    FI = 20
-    RD = 21
-    Cinema = 22
-    Key9 = 24
-    KeyCoop = 25
-    Key1 = 26
-    Key3 = 27
-    Key2 = 28
-    ScoreV2 = 29
-    LastMod = 30
-    KeyMod = Key4 | Key5 | Key6 | Key7 | Key8
-    FreeModAllowed = NF | EZ | HD | HR | SD | FL | FI | RX | AP | SO | KeyMod  # ¯\_(ツ)_/¯
-    ScoreIncreaseMods = HD | HR | DT | FL | FI
-
-    def __new__(cls, num):
-        """ Convert the given value to 2^num. """
-        obj = object.__new__(cls)
-        obj._value_ = 2 ** num
-        return obj
-
-    @classmethod
-    def list_mods(cls, bitwise: int):
-        """ Return a list of mod enums from the given bitwise (enabled_mods in the osu! API) """
-        bin_str = str(bin(bitwise))[2:]
-        bin_list = [int(d) for d in bin_str[::-1]]
-        mods_bin = (pow(2, i) for i, d in enumerate(bin_list) if d == 1)
-        mods = [cls(mod) for mod in mods_bin]
-
-        # Manual checks for multiples
-        if Mods.DT in mods and Mods.NC in mods:
-            mods.remove(Mods.DT)
-
-        return mods
-
-    @classmethod
-    def format_mods(cls, mods):
-        """ Return a string with the mods in a sorted format, such as DTHD.
-
-        mods is either a bitwise or a list of mod enums.
-        """
-        if isinstance(mods, int):
-            mods = cls.list_mods(mods)
-        assert isinstance(mods, list)
-
-        return "".join((mod for mod in mods) if mods else ["Nomod"])
 
 
 def def_section(api_name: str, first_element: bool = False):
@@ -363,7 +269,7 @@ def parse_beatmap_url(url: str):
         # There might be some gamemode info in the url
         mode = None
         if match_v1.group("mode") is not None:
-            mode = GameMode(int(match_v1.group("mode")))
+            mode = enums.GameMode(int(match_v1.group("mode")))
 
         if match_v1.group("type") == "b":
             return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v1.group("id"), gamemode=mode)
@@ -377,7 +283,7 @@ def parse_beatmap_url(url: str):
                                   gamemode=None)
         return BeatmapURLInfo(beatmapset_id=match_v2_beatmapset.group("beatmapset_id"),
                               beatmap_id=match_v2_beatmapset.group("beatmap_id"),
-                              gamemode=GameMode.get_mode(match_v2_beatmapset.group("mode")))
+                              gamemode=enums.GameMode.get_mode(match_v2_beatmapset.group("mode")))
 
     match_v2_beatmap = beatmap_url_pattern_v2.match(url)
     if match_v2_beatmap:
@@ -385,7 +291,7 @@ def parse_beatmap_url(url: str):
             return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"), gamemode=None)
 
         return BeatmapURLInfo(beatmapset_id=None, beatmap_id=match_v2_beatmap.group("beatmap_id"),
-                              gamemode=GameMode.get_mode((match_v2_beatmap.group("mode"))))
+                              gamemode=enums.GameMode.get_mode((match_v2_beatmap.group("mode"))))
 
     raise SyntaxError("The given URL is invalid.")
 
