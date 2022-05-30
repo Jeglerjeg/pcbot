@@ -34,6 +34,13 @@ def check_recent_questions(question: dict, channel: discord.TextChannel):
     return True
 
 
+def check_duplicate_question(choices: list):
+    for question in db.data["questions"]:
+        if sorted(question["choices"]) == choices:
+            return False
+    return True
+
+
 def format_choice_result(question: dict, choices: list):
     return f'A total of {question["answers"][0]} would **{choices[0]}**, ' \
            f'while {question["answers"][1]} would **{choices[1]}**!'
@@ -128,6 +135,8 @@ async def wouldyourather(message: discord.Message, opt: options = None):
 
     # Otherwise, the member asked a question to the bot
     else:
+        assert check_duplicate_question(sorted(opt)), "This question already exists!"
+
         db.data["questions"].append(dict(
             choices=list(opt),
             answers=[0, 0]
