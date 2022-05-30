@@ -25,8 +25,7 @@ started = []
 
 def format_join_message(game: str, players: int, participants: list):
     participant_list = "\n".join(participant.display_name for participant in participants)
-    return f"**A game of {game} has started!**\n" \
-           f"To participate, press the join button! {len(participants)}/{players} joined!\n" \
+    return f"To participate, press the join button! {len(participants)}/{players} joined!\n" \
            f"Participants:\n{participant_list}"
 
 
@@ -44,14 +43,17 @@ class Game:
 
     async def on_start(self):
         """ Notify the channel that the game has been initialized. """
-        view = Join(game=self, game_name=self.name, players=self.num)
-        embed = discord.Embed(description=format_join_message(self.name, self.num, self.participants))
+        embed = discord.Embed(title=f"**A game of {self.name} has started!**\n",
+                              colour=discord.Colour.green(),
+                              description=format_join_message(self.name, self.num, self.participants))
+        view = Join(game=self, game_name=self.name, players=self.num, embed=embed)
         original_message = await self.channel.send(embed=embed, view=view)
         await view.wait()
-        await original_message.edit(view=view.clear_items())
         if len(self.participants) < self.num:
-            await self.channel.send(content=f"**The { self.name} game failed to gather {self.num} participants.**")
+            view.embed.colour = discord.Colour.red()
+            view.embed.description += f"\n\n**The {self.name} game failed to gather {self.num} participants.**"
             started.pop(started.index(self.channel.id))
+        await original_message.edit(embed=view.embed, view=None)
 
     async def prepare(self):
         """ Prepare anything needed before starting the game. """
@@ -72,9 +74,10 @@ class Game:
 
 
 class Join(discord.ui.View):
-    def __init__(self, game: Game, game_name: str, players: int):
+    def __init__(self, game: Game, game_name: str, players: int, embed: discord.Embed):
         super().__init__()
         self.participants = []
+        self.embed = embed
         self.game_name = game_name
         self.game = game
         self.players = players
@@ -86,8 +89,8 @@ class Join(discord.ui.View):
             self.participants.append(interaction.user)
             self.game.participants.append(interaction.user)
             await interaction.response.defer()
-            embed = discord.Embed(description=format_join_message(self.game_name, self.players, self.participants))
-            await interaction.message.edit(embed=embed)
+            self.embed.description = format_join_message(self.game_name, self.players, self.participants)
+            await interaction.message.edit(embed=self.embed)
             if len(self.participants) >= self.players:
                 self.stop()
         else:
