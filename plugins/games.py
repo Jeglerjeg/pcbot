@@ -85,7 +85,7 @@ class Join(discord.ui.View):
         if interaction.user not in self.participants:
             self.participants.append(interaction.user)
             self.game.participants.append(interaction.user)
-            await interaction.response.send_message('Successfully joined the game.', ephemeral=True)
+            await interaction.response.defer()
             embed = discord.Embed(description=format_join_message(self.game_name, self.players, self.participants))
             await interaction.message.edit(embed=embed)
             if len(self.participants) >= self.players:

@@ -56,7 +56,7 @@ class ChoiceButton(discord.ui.View):
     async def first_choice(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user not in self.replied:
             await self.mark_answer(0, interaction.user, interaction.message)
-            await interaction.response.send_message('Your choice has been saved.', ephemeral=True)
+            await interaction.response.defer()
         else:
             await interaction.response.send_message('You have already made a choice', ephemeral=True)
 
@@ -64,7 +64,7 @@ class ChoiceButton(discord.ui.View):
     async def second_choice(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user not in self.replied:
             await self.mark_answer(1, interaction.user, interaction.message)
-            await interaction.response.send_message('Your choice has been saved.', ephemeral=True)
+            await interaction.response.defer()
         else:
             await interaction.response.send_message('You have already made a choice.', ephemeral=True)
 
