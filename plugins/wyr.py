@@ -15,6 +15,24 @@ db = Config("would-you-rather", data=dict(timeout=10, responses=["**{name}** wou
             pretty=True)
 command_pattern = re.compile(r"(.+)(?:\s+or|\s*,)\s+([^?]+)\?*")
 
+recently_asked = {}
+
+
+def add_recent_question(question: dict, channel: discord.TextChannel):
+    if channel.id not in recently_asked:
+        recently_asked[channel.id] = []
+    recently_asked[channel.id].append(question)
+    if len(recently_asked[channel.id]) > 10:
+        recently_asked[channel.id].pop(0)
+
+
+def check_recent_questions(question: dict, channel: discord.TextChannel):
+    if channel.id not in recently_asked:
+        return True
+    if question in recently_asked[channel.id]:
+        return False
+    return True
+
 
 def format_choice_result(question: dict, choices: list):
     return f'A total of {question["answers"][0]} would **{choices[0]}**, ' \
@@ -91,8 +109,10 @@ async def wouldyourather(message: discord.Message, opt: options = None):
     # If there are no options, the bot will ask the questions (if there are any to choose from)
     if opt is None:
         assert db.data["questions"], "**There are ZERO questions saved. Ask me one!**"
-
         question = random.choice(db.data["questions"])
+        while not len(db.data["questions"]) <= 10 and not check_recent_questions(question, message.channel):
+            question = random.choice(db.data["questions"])
+        add_recent_question(question, message.channel)
         choices = question["choices"]
 
         view = ChoiceButton(question, choices)
