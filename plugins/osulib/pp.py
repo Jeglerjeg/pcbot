@@ -163,7 +163,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: api.GameMode, ignore_o
     total_stars = total_stars if failed else pp_info.stars
     partial_stars = pp_info.stars
     ar = pp_info.ar
-    cs = pp_info.od
+    cs = pp_info.cs
     od = pp_info.od
     hp = pp_info.hp
     bpm = pp_info.bpm
