@@ -226,7 +226,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     osu_config.data["profiles"][str(message.author.id)] = str(user_id)
     osu_config.data["mode"][str(message.author.id)] = mode.value
     osu_config.data["primary_guild"][str(message.author.id)] = str(message.guild.id)
-    await osu_config.data.asyncsave()
+    await osu_config.asyncsave()
     await client.say(message, f"Set your osu! profile to `{osu_user['username']}`.")
 
 
@@ -234,7 +234,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 async def wipe_tracking(message: discord.Message, member: discord.Member = None):
     """ Wipe all tracked members or just the specified member, as well as the map cache in osu.json. """
     osu_config.data["map_cache"] = {}
-    await osu_config.data.asyncsave()
+    await osu_config.asyncsave()
     if member:
         if str(member.id) in osu_tracking:
             osu_tracking[str(member.id)]["schedule_wipe"] = True
@@ -268,7 +268,7 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
 
     # Unlink the given member (usually the message author)
     del osu_config.data["profiles"][str(member.id)]
-    await osu_config.data.asyncsave()
+    await osu_config.asyncsave()
     await client.say(message, f"Unlinked **{member.name}'s** osu! profile.")
 
 
@@ -290,7 +290,7 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
         f"**Your pp in {mode_name} is less than the required {minimum_pp_required}pp.**"
 
     osu_config.data["mode"][str(message.author.id)] = mode.value
-    await osu_config.data.asyncsave()
+    await osu_config.asyncsave()
 
     # Clear the scores when changing mode
     if str(message.author.id) in osu_tracking:
@@ -319,7 +319,7 @@ async def leaderboard_notifications(message: discord.Message, notify_setting: st
     else:
         await client.say(message, "Invalid setting selected. Valid settings are on and off.")
 
-    await osu_config.data.asyncsave()
+    await osu_config.asyncsave()
 
 
 @osu.command()
@@ -363,7 +363,7 @@ async def notify(message: discord.Message, mode: enums.UpdateModes.get_mode):
     assert str(message.author.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(message.author)
 
     osu_config.data["update_mode"][str(message.author.id)] = mode.name
-    await osu_config.data.asyncsave()
+    await osu_config.asyncsave()
 
     # Clear the scores when disabling mode
     if str(message.author.id) in osu_tracking and mode == enums.UpdateModes.Disabled:
@@ -772,7 +772,7 @@ async def config_scores(message: discord.Message, *channels: discord.TextChannel
     """ Set which channels to post scores to. """
     await misc_utils.init_guild_config(message.guild)
     osu_config.data["guild"][str(message.guild.id)]["score-channels"] = list(str(c.id) for c in channels)
-    await osu_config.data.asyncsave()
+    await osu_config.asyncsave()
     await client.say(message, f"**Notifying scores in**: {utils.format_objects(*channels, sep=' ') or 'no channels'}")
 
 
@@ -781,7 +781,7 @@ async def maps(message: discord.Message, *channels: discord.TextChannel):
     """ Set which channels to post map updates to. """
     await misc_utils.init_guild_config(message.guild)
     osu_config.data["guild"][str(message.guild.id)]["map-channels"] = list(c.id for c in channels)
-    await osu_config.data.asyncsave()
+    await osu_config.asyncsave()
     await client.say(message, f"**Notifying map updates in**: "
                               f"{utils.format_objects(*channels, sep=' ') or 'no channels'}")
 

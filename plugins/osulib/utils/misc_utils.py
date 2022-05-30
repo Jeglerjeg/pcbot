@@ -74,4 +74,4 @@ async def init_guild_config(guild: discord.Guild):
     """ Initializes the config when it's not already set. """
     if str(guild.id) not in osu_config.data["guild"]:
         osu_config.data["guild"][str(guild.id)] = {}
-        await osu_config.data.asyncsave()
+        await osu_config.asyncsave()

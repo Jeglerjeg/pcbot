@@ -419,7 +419,7 @@ async def calculate_pp_for_beatmapset(beatmapset: dict, osu_config: Config, igno
             osu_config.data["map_cache"][set_id][map_id][mods]["hp"] = pp_stats.hp
             osu_config.data["map_cache"][set_id][map_id][mods]["new_bpm"] = pp_stats.bpm
     if ignore_osu_cache:
-        await osu_config.data.asyncsave()
+        await osu_config.asyncsave()
 
 
 async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
