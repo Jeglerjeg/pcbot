@@ -83,7 +83,7 @@ class ChoiceButton(discord.ui.View):
             await self.mark_answer(0, interaction.user, interaction.message)
             await interaction.response.defer()
         else:
-            await interaction.response.send_message('You have already made a choice', ephemeral=True)
+            await interaction.response.send_message('You have already made a choice.', ephemeral=True)
 
     @discord.ui.button(label="2", style=discord.ButtonStyle.red)
     async def second_choice(self, interaction: discord.Interaction, button: discord.ui.Button):
