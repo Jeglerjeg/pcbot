@@ -70,7 +70,7 @@ class ChoiceButton(discord.ui.View):
         # We don't care about multiples, just the amount (yes it will probably be biased)
         self.question["answers"][choice] += 1
 
-        self.responses.append(random.choice(db.data["responses"]).format(name=user.display_name,
+        self.responses.append(random.choice(db.data["responses"]).format(name=user.mention,
                                                                          NAME=user.display_name.upper(),
                                                                          choice=self.choices[choice]))
         embed = message.embeds[0]

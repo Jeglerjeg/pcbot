@@ -23,8 +23,8 @@ client = plugins.client  # type: bot.Client
 started = []
 
 
-def format_join_message(game: str, players: int, participants: list):
-    participant_list = "\n".join(participant.display_name for participant in participants)
+def format_join_message(players: int, participants: list):
+    participant_list = "\n".join(participant.mention for participant in participants)
     return f"To participate, press the join button! {len(participants)}/{players} joined!\n" \
            f"Participants:\n{participant_list}"
 
@@ -45,7 +45,7 @@ class Game:
         """ Notify the channel that the game has been initialized. """
         embed = discord.Embed(title=f"**A game of {self.name} has started!**\n",
                               colour=discord.Colour.green(),
-                              description=format_join_message(self.name, self.num, self.participants))
+                              description=format_join_message(self.num, self.participants))
         view = Join(game=self, game_name=self.name, players=self.num, embed=embed)
         original_message = await self.channel.send(embed=embed, view=view)
         await view.wait()
@@ -89,7 +89,7 @@ class Join(discord.ui.View):
             self.participants.append(interaction.user)
             self.game.participants.append(interaction.user)
             await interaction.response.defer()
-            self.embed.description = format_join_message(self.game_name, self.players, self.participants)
+            self.embed.description = format_join_message(self.players, self.participants)
             await interaction.message.edit(embed=self.embed)
             if len(self.participants) >= self.players:
                 self.stop()
