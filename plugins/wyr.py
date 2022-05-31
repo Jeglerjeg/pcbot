@@ -22,7 +22,7 @@ def add_recent_question(question: dict, channel: discord.TextChannel):
     if channel.id not in recently_asked:
         recently_asked[channel.id] = []
     recently_asked[channel.id].append(question)
-    if len(recently_asked[channel.id]) > 10:
+    if len(recently_asked[channel.id]) > len(db.data["questions"])/2:
         recently_asked[channel.id].pop(0)
 
 
@@ -117,7 +117,7 @@ async def wouldyourather(message: discord.Message, opt: options = None):
     if opt is None:
         assert db.data["questions"], "**There are ZERO questions saved. Ask me one!**"
         question = random.choice(db.data["questions"])
-        while not len(db.data["questions"]) <= 10 and not check_recent_questions(question, message.channel):
+        while not check_recent_questions(question, message.channel):
             question = random.choice(db.data["questions"])
         add_recent_question(question, message.channel)
         choices = question["choices"]
