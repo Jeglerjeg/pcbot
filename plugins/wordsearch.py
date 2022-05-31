@@ -146,9 +146,11 @@ async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, w
 
         # Compare the words
         if guessed_word > word:
-            m = f"{reply.author.mention} `{guessed_word}` is *after* in the dictionary. {format_hint(hint)}"
+            m = f"{reply.author.mention} `{guessed_word}` is *after* the word " \
+                f"being searched in the dictionary. {format_hint(hint)}"
         elif guessed_word < word:
-            m = f"{reply.author.mention} `{guessed_word}` is *before* in the dictionary. {format_hint(hint)}"
+            m = f"{reply.author.mention} `{guessed_word}` is *before* the word " \
+                f"being searched in the dictionary. {format_hint(hint)}"
         else:
             m = ""
 
