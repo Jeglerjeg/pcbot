@@ -114,7 +114,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     # Find the timestamp of where the play would have started without pausing the game
     score_created = datetime.fromisoformat(osu_score["created_at"])
     vod_created = vod.created_at
-    beatmap_length = int(beatmap["total_length"])
+    beatmap_length = int(beatmap["hit_length"])
 
     # Return if the stream was started after the score was set
     if vod_created > score_created:
