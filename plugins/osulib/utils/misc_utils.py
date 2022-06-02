@@ -1,7 +1,8 @@
 import discord
 
 from plugins.osulib import enums
-from plugins.osulib.constants import timestamp_pattern, osu_config
+from plugins.osulib.constants import timestamp_pattern
+from plugins.osulib.config import osu_config
 
 
 def get_diff(old: dict, new: dict, value: str, statistics=False):

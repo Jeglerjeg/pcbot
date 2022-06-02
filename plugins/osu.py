@@ -33,9 +33,10 @@ import plugins
 from pcbot import utils, Annotate
 from plugins.osulib import api, pp, ordr, enums
 from plugins.osulib.tracking import osu_tracking, osu_profile_cache, update_user_data, notify_pp, notify_recent_events
-from plugins.osulib.constants import osu_config, update_interval, cache_user_profiles, minimum_pp_required, host
+from plugins.osulib.constants import update_interval, cache_user_profiles, minimum_pp_required, host
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
+from plugins.osulib.config import osu_config
 
 client = plugins.client  # type: bot.Client
 

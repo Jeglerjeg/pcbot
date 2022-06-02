@@ -11,11 +11,12 @@ import bot
 import plugins
 from pcbot import Config
 from plugins.osulib import api, enums, pp
-from plugins.osulib.constants import osu_config, cache_user_profiles, not_playing_skip, pp_threshold, \
+from plugins.osulib.constants import cache_user_profiles, not_playing_skip, pp_threshold, \
     event_repeat_interval, notify_empty_scores, score_request_limit, use_mentions_in_scores
 from plugins.osulib.enums import UpdateModes, Mods
 from plugins.osulib.formatting import embed_format, score_format, misc_format, beatmap_format
 from plugins.osulib.utils import user_utils, score_utils, misc_utils
+from plugins.osulib.config import osu_config
 
 osu_profile_cache = Config("osu_profile_cache", data={})
 osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Stores tracked osu! users

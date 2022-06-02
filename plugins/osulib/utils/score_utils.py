@@ -8,8 +8,9 @@ import aiohttp
 
 from pcbot import Config
 from plugins.osulib import enums, api
-from plugins.osulib.constants import score_request_limit, cache_user_profiles, osu_config
+from plugins.osulib.constants import score_request_limit, cache_user_profiles
 from plugins.osulib.utils import user_utils
+from plugins.osulib.config import osu_config
 
 
 def get_sorted_scores(osu_scores: list, list_type: str):
