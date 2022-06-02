@@ -59,7 +59,7 @@ async def on_ready():
         logging.warning("osu! functionality is unavailable until a "
                         "client ID and client secret is provided (config/osu.json)")
     else:
-        await api.set_oauth_client(osu_config.data.get("client_id"), osu_config.data.get("client_secret"))
+        await api.get_access_token(osu_config.data.get("client_id"), osu_config.data.get("client_secret"))
         api_available = True
 
     while not client.loop.is_closed() and api_available:

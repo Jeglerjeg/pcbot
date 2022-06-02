@@ -24,17 +24,7 @@ setcache_path = "plugins/osulib/setdatacache"
 replay_path = os.path.join("plugins/osulib/", "replay.osr")
 
 
-async def set_oauth_client(b: str, s: str):
-    """ Set the osu! API key. This simplifies every API function as they
-    can exclude the "k" parameter.
-    """
-
-    client_id = b
-    client_secret = s
-    await get_access_token(client_id, client_secret)
-
-
-async def get_access_token(client_id, client_secret):
+async def get_access_token(client_id: str, client_secret: str):
     """ Retrieves access token from API and refreshes token after it expires. """
     params = {
         "grant_type": "client_credentials",
@@ -56,6 +46,8 @@ def def_section(api_name: str, first_element: bool = False):
     """ Add a section using a template to simplify adding API functions. """
 
     async def template(url=api_url, request_tries: int = 1, **params):
+        if not access_token:
+            return None
         global requests_sent
 
         # Add the API key
