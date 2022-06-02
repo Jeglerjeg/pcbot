@@ -565,5 +565,8 @@ def split(text: str, maxsplit: int = -1):
 
 def format_number(number: float, precision: int):
     """ Removes trailing zeroes from floating point numbers. """
-    formatted_number = float(f'{round(number, precision)}'.rstrip('.'))
+    if isinstance(number, float):
+        formatted_number = float(f'{round(number, precision)}'.rstrip('0').rstrip('.'))
+    else:
+        formatted_number = number
     return formatted_number if not formatted_number % 1 == 0 else int(formatted_number)
