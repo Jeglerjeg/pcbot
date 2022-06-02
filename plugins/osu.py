@@ -43,14 +43,12 @@ client = plugins.client  # type: bot.Client
 last_rendered = {}  # Saves when the member last rendered a replay
 time_elapsed = 0  # The registered time it takes to process all information between updates (changes each update)
 previous_update = None  # The time osu user data was last updated. None until first update has run
-asyncio.run_coroutine_threadsafe(api.set_oauth_client(osu_config.data.get("client_id"),
-                                                      osu_config.data.get("client_secret")), client.loop)
 
 
 async def on_ready():
     """ Handle every event. """
     global time_elapsed, previous_update
-    no_key = False
+    api_available = False
 
     await client.wait_until_ready()
     await ordr.establish_ws_connection()
@@ -60,9 +58,11 @@ async def on_ready():
             osu_config.data["client_id"] == "change to your client ID":
         logging.warning("osu! functionality is unavailable until a "
                         "client ID and client secret is provided (config/osu.json)")
-        no_key = True
+    else:
+        await api.set_oauth_client(osu_config.data.get("client_id"), osu_config.data.get("client_secret"))
+        api_available = True
 
-    while not client.loop.is_closed() and not no_key:
+    while not client.loop.is_closed() and api_available:
         try:
             await asyncio.sleep(float(update_interval))
             started = datetime.now()
