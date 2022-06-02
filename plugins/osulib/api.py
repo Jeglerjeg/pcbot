@@ -26,7 +26,10 @@ replay_path = os.path.join("plugins/osulib/", "replay.osr")
 
 
 async def refresh_access_token(client_id, client_secret):
-    await asyncio.sleep((expires - datetime.now(tz=timezone.utc)).total_seconds())
+    try:
+        await asyncio.sleep((expires - datetime.now(tz=timezone.utc)).total_seconds())
+    except asyncio.CancelledError:
+        return
     await get_access_token(client_id, client_secret)
     await refresh_access_token(client_id, client_secret)
 
