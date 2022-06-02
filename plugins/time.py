@@ -225,8 +225,8 @@ async def handle_countdown_reminders():
         # Find in how many seconds the countdown will finish
         seconds = (cd["dt"].diff(pendulum.now(cd["tz"])).in_seconds())
 
-        # If the next reminder is in longer than a month, don't bother waiting,
-        if seconds > 60 * 60 * 24 * 30:
+        # If the next reminder is in longer than half a year, don't bother waiting,
+        if seconds > 60 * 60 * 24 * 180:
             return
 
         # In case of multiple countdowns at once, set a threshold at -10 seconds
@@ -237,9 +237,9 @@ async def handle_countdown_reminders():
             continue
         seconds = max(seconds, 0)
 
-        await wait_for_reminder(cd, seconds)
+        client.loop.create_task(wait_for_reminder(cd, seconds))
 
 
 async def on_ready():
     """ Start a task for startup countdowns. """
-    client.loop.create_task(handle_countdown_reminders())
+    await handle_countdown_reminders()
