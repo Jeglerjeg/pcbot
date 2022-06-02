@@ -60,6 +60,8 @@ async def on_ready():
                         "client ID and client secret is provided (config/osu.json)")
     else:
         await api.get_access_token(osu_config.data.get("client_id"), osu_config.data.get("client_secret"))
+        client.loop.create_task(api.refresh_access_token(osu_config.data.get("client_id"),
+                                                         osu_config.data.get("client_secret")))
         api_available = True
 
     while not client.loop.is_closed() and api_available:

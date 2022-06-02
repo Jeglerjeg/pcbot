@@ -9,19 +9,26 @@ import logging
 import os
 import re
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from pcbot import utils
 from plugins.osulib import enums
 
 api_url = "https://osu.ppy.sh/api/v2/"
 access_token = ""
+expires = datetime.now(tz=timezone.utc)
 requests_sent = 0
 
 mapcache_path = "plugins/osulib/mapdatacache"
 setcache_path = "plugins/osulib/setdatacache"
 
 replay_path = os.path.join("plugins/osulib/", "replay.osr")
+
+
+async def refresh_access_token(client_id, client_secret):
+    await asyncio.sleep((expires - datetime.now(tz=timezone.utc)).total_seconds())
+    await get_access_token(client_id, client_secret)
+    await refresh_access_token(client_id, client_secret)
 
 
 async def get_access_token(client_id: str, client_secret: str):
@@ -38,8 +45,10 @@ async def get_access_token(client_id: str, client_secret: str):
     requests_sent += 1
     global access_token
     access_token = result["access_token"]
-    await asyncio.sleep(result["expires_in"])
-    await get_access_token(client_id, client_secret)
+    dt = datetime.now(tz=timezone.utc)
+    td = timedelta(seconds=result["expires_in"])
+    global expires
+    expires = dt + td
 
 
 def def_section(api_name: str, first_element: bool = False):
