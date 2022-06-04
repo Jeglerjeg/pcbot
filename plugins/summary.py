@@ -56,6 +56,7 @@ on_fail = "**I was unable to construct a summary, {0.author.name}.**"
 
 summary_options = Config("summary_options", data=dict(no_bot=False, no_self=False, persistent_channels=[]), pretty=True)
 summary_data = Config("summary_data", data=dict(channels={}))
+summary_data_changed = False
 
 
 def to_persistent(message: discord.Message):
@@ -430,11 +431,28 @@ async def on_message(message: discord.Message):
         stored_messages[str(message.channel.id)].append(to_persistent(message))
 
     # Store to persistent if enabled for this channel
-    if str(message.channel.id) in summary_options.data["persistent_channels"]:
+    if str(message.channel.id) in summary_options.data["persistent_channels"] and message.content:
         if str(message.channel.id) not in summary_data.data["channels"]:
             summary_data.data["channels"][str(message.channel.id)] = []
         summary_data.data["channels"][str(message.channel.id)].append(to_persistent(message))
+        global summary_data_changed
+        summary_data_changed = True
+
+
+async def save_persistent_messages():
+    try:
+        await asyncio.sleep(60)
+    except asyncio.CancelledError:
+        summary_data.save()
+        return
+    global summary_data_changed
+    if summary_data_changed:
         await summary_data.asyncsave()
+        summary_data_changed = False
+
+
+async def on_ready():
+    client.loop.create_task(save_persistent_messages())
 
 
 @summary.command(owner=True)
