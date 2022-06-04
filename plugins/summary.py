@@ -449,6 +449,7 @@ async def save_persistent_messages():
     if summary_data_changed:
         await summary_data.asyncsave()
         summary_data_changed = False
+    await save_persistent_messages()
 
 
 async def on_ready():
