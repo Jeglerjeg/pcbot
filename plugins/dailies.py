@@ -13,6 +13,8 @@ client = plugins.client  # type: bot.Client
 
 words_path = pathlib.Path("plugins/wordlib/")
 
+usable_emotes = []
+
 with open(words_path / "SimpleWordlists" / "Wordlist-Nouns-Common-Audited-Len-3-6.txt", encoding="utf-8") as f:
     nouns = f.read().split("\n")
 
@@ -100,8 +102,11 @@ async def meotey(message: discord.Message, member: discord.Member = Annotate.Sel
     if m is None:
         await client.send_message(message.channel, "**Found no such member.**")
         return
+    global usable_emotes
+    if not usable_emotes:
+        usable_emotes = [emote for emote in client.emojis if emote.is_usable()]
     random.seed(seed_for_member(member, date))
-    random_emote = str(random.choice(client.emojis))
+    random_emote = str(random.choice(usable_emotes))
     recipient = "Your" if m == message.author else f"{m.display_name}'s"
     await client.send_message(message.channel, f"__**{recipient}** emoji of the day__")
     await client.send_message(message.channel, random_emote)
