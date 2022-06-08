@@ -440,16 +440,16 @@ async def on_message(message: discord.Message):
 
 
 async def save_persistent_messages():
-    try:
-        await asyncio.sleep(60)
-    except asyncio.CancelledError:
-        summary_data.save()
-        return
-    global summary_data_changed
-    if summary_data_changed:
-        await summary_data.asyncsave()
-        summary_data_changed = False
-    await save_persistent_messages()
+    while not client.is_closed():
+        try:
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            summary_data.save()
+            return
+        global summary_data_changed
+        if summary_data_changed:
+            await summary_data.asyncsave()
+            summary_data_changed = False
 
 
 async def on_ready():
