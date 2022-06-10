@@ -11,8 +11,12 @@ import re
 from collections import namedtuple
 from datetime import datetime, timezone, timedelta
 
+import bot
+import plugins
 from pcbot import utils
 from plugins.osulib import enums
+
+client = plugins.client  # type: bot.Client
 
 api_url = "https://osu.ppy.sh/api/v2/"
 access_token = ""
@@ -26,12 +30,12 @@ replay_path = os.path.join("plugins/osulib/", "replay.osr")
 
 
 async def refresh_access_token(client_id, client_secret):
-    try:
-        await asyncio.sleep((expires - datetime.now(tz=timezone.utc)).total_seconds())
-    except asyncio.CancelledError:
-        return
-    await get_access_token(client_id, client_secret)
-    await refresh_access_token(client_id, client_secret)
+    while not client.is_closed():
+        try:
+            await asyncio.sleep((expires - datetime.now(tz=timezone.utc)).total_seconds())
+        except asyncio.CancelledError:
+            return
+        await get_access_token(client_id, client_secret)
 
 
 async def get_access_token(client_id: str, client_secret: str):
