@@ -30,12 +30,18 @@ async def retrieve_user_proile(profile: str, mode: enums.GameMode, timestamp: st
     if not user_data:
         return None
     user_data["time_updated"] = timestamp
-    del user_data["monthly_playcounts"]
-    del user_data["page"]
-    del user_data["replays_watched_counts"]
-    del user_data["user_achievements"]
-    del user_data["rankHistory"]
-    del user_data["rank_history"]
+    if "monthly_playcounts" in user_data:
+        del user_data["monthly_playcounts"]
+    if "page" in user_data:
+        del user_data["page"]
+    if "replays_watched_counts" in user_data:
+        del user_data["replays_watched_counts"]
+    if "user_achievements" in user_data:
+        del user_data["user_achievements"]
+    if "rankHistory" in user_data:
+        del user_data["rankHistory"]
+    if "rank_history" in user_data:
+        del user_data["rank_history"]
     return user_data
 
 
