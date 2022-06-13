@@ -18,7 +18,7 @@ osu_config = Config("osu", pretty=True, data=dict(
     primary_guild={},  # Member's primary guild; defines where they should be mentioned: member_id: guild_id
     map_cache={},  # Cache for map events, primarily used for calculating and caching pp of the difficulties
     score_update_delay=5,  # Seconds to wait to retry get_new_score if new score is not found
-    user_update_delay=2,  # Seconds to wait after updating user data (for ratelimiting purposes)
+    ratelimit=60,  # Amount of API requests allowed per minute
     leaderboard={},  # A list of users that have turned on/off leaderboard notifications
     opt_in_leaderboard=True,  # Whether or not leaderboard notifications should be opt-in
     notify_empty_scores=False,  # Whether or not to notify pp gain when a score isn't found (only if pp mode is off)

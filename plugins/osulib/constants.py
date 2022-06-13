@@ -13,6 +13,7 @@ use_mentions_in_scores = config.osu_config.data.get("use_mentions_in_scores", Tr
 notify_empty_scores = config.osu_config.data.get("notify_empty_scores", False)
 cache_user_profiles = config.osu_config.data.get("cache_user_profiles", True)
 event_repeat_interval = config.osu_config.data.get("map_event_repeat_interval", 6)
+ratelimit = config.osu_config.data.get("ratelimit", 60)
 timestamp_pattern = re.compile(r"(\d+:\d+:\d+\s(\([\d,]+\))?\s*)-")
 rank_regex = re.compile(r"#\d+")
 mode_names = {

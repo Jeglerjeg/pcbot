@@ -8,13 +8,19 @@ import json
 import logging
 import os
 import re
+try:
+    import pyrate_limiter
+except ImportError:
+    pyrate_limiter = None
+    logging.info("pyrate_limiter is not installed, osu api functionality is unavailable.")
 from collections import namedtuple
 from datetime import datetime, timezone, timedelta
 
 import bot
 import plugins
 from pcbot import utils
-from plugins.osulib import enums
+from plugins.osulib import enums, caching
+from plugins.osulib.constants import ratelimit
 
 client = plugins.client  # type: bot.Client
 
@@ -23,10 +29,11 @@ access_token = ""
 expires = datetime.now(tz=timezone.utc)
 requests_sent = 0
 
-mapcache_path = "plugins/osulib/mapdatacache"
-setcache_path = "plugins/osulib/setdatacache"
-
-replay_path = os.path.join("plugins/osulib/", "replay.osr")
+if pyrate_limiter:
+    hourly_rate = pyrate_limiter.RequestRate(ratelimit, pyrate_limiter.Duration.MINUTE)  # Amount of requests per minute
+    limiter = pyrate_limiter.Limiter(hourly_rate)
+else:
+    limiter = None
 
 
 async def refresh_access_token(client_id, client_secret):
@@ -60,38 +67,39 @@ async def get_access_token(client_id: str, client_secret: str):
 
 def def_section(api_name: str, first_element: bool = False):
     """ Add a section using a template to simplify adding API functions. """
-
     async def template(url=api_url, request_tries: int = 1, **params):
+        if not limiter:
+            return None
         if not access_token:
             return None
-        global requests_sent
+        with limiter.ratelimit("osu", delay=True):
+            # Add the API key
+            headers = {
+                "Authorization": "Bearer " + access_token
+            }
 
-        # Add the API key
-        headers = {
-            "Authorization": "Bearer " + access_token
-        }
+            # Download using a URL of the given API function name
+            for i in range(request_tries):
+                try:
+                    response = await utils.download_json(url + api_name, headers=headers, **params)
 
-        # Download using a URL of the given API function name
-        for i in range(request_tries):
-            try:
-                response = await utils.download_json(url + api_name, headers=headers, **params)
+                except ValueError as e:
+                    logging.warning("ValueError Calling %s: %s", url + api_name, e)
+                else:
+                    global requests_sent
+                    requests_sent += 1
 
-            except ValueError as e:
-                logging.warning("ValueError Calling %s: %s", url + api_name, e)
+                    if response is not None:
+                        break
             else:
-                requests_sent += 1
+                return None
 
-                if response is not None:
-                    break
-        else:
-            return None
+            # Unless we want to extract the first element, return the entire object (usually a list)
+            if not first_element:
+                return response
 
-        # Unless we want to extract the first element, return the entire object (usually a list)
-        if not first_element:
-            return response
-
-        # If the returned value should be the first element, see if we can cut it
-        return response[0] if len(response) > 0 else None
+            # If the returned value should be the first element, see if we can cut it
+            return response[0] if len(response) > 0 else None
 
     # Set the correct name of the function and add simple docstring
     template.__name__ = api_name
@@ -99,85 +107,14 @@ def def_section(api_name: str, first_element: bool = False):
     return template
 
 
-def cache_beatmapset(beatmap: dict, map_id: int):
-    """ Saves beatmapsets to cache. """
-    beatmapset_path = os.path.join(setcache_path, str(map_id) + ".json")
-
-    if not os.path.exists(setcache_path):
-        os.makedirs(setcache_path)
-
-    if not os.path.exists(mapcache_path):
-        os.makedirs(mapcache_path)
-
-    beatmapset = beatmap.copy()
-    beatmap["time_cached"] = datetime.utcnow().isoformat()
-    with open(beatmapset_path, "w", encoding="utf-8") as file:
-        json.dump(beatmap, file)
-    del beatmapset["beatmaps"]
-    del beatmapset["converts"]
-    for diff in beatmap["beatmaps"]:
-        beatmap_path = os.path.join(mapcache_path, str(diff["id"]) + "-" + str(diff["mode"]) + ".json")
-        diff["time_cached"] = datetime.utcnow().isoformat()
-        diff["beatmapset"] = beatmapset
-        with open(beatmap_path, "w", encoding="utf-8") as f:
-            json.dump(diff, f)
-    if beatmap["converts"]:
-        for convert in beatmap["converts"]:
-            convert_path = os.path.join(mapcache_path, str(convert["id"]) + "-" + str(convert["mode"]) + ".json")
-            convert["time_cached"] = datetime.utcnow().isoformat()
-            convert["beatmapset"] = beatmapset
-            with open(convert_path, "w", encoding="utf-8") as fp:
-                json.dump(convert, fp)
-
-
-def retrieve_cache(map_id: int, map_type: str, mode: str = None):
-    """ Retrieves beatmap or beatmapset cache from memory or file if it exists """
-    # Check if cache should be validated for beatmap or beatmapset
-    result = None
-    if map_type == "set":
-        if not os.path.exists(setcache_path):
-            os.makedirs(setcache_path)
-        beatmap_path = os.path.join(setcache_path, str(map_id) + ".json")
-    else:
-        if not os.path.exists(mapcache_path):
-            os.makedirs(mapcache_path)
-        beatmap_path = os.path.join(mapcache_path, str(map_id) + "-" + mode + ".json")
-    if os.path.isfile(beatmap_path):
-        with open(beatmap_path, encoding="utf-8") as fp:
-            result = json.load(fp)
-    return result
-
-
-def validate_cache(beatmap: dict):
-    """ Check if the map cache is still valid. """
-    if beatmap is None:
-        return False
-    valid_result = True
-    cached_time = datetime.fromisoformat(beatmap["time_cached"])
-    time_now = datetime.utcnow()
-    previous_sr_update = datetime(2021, 8, 5)
-    diff = time_now - cached_time
-    if cached_time < previous_sr_update:
-        valid_result = False
-    elif beatmap["status"] == "loved":
-        if diff.days > 30:
-            valid_result = False
-    elif beatmap["status"] == "pending" or beatmap["status"] == "graveyard" or beatmap["status"] == "wip" \
-            or beatmap["status"] == "qualified":
-        if diff.days > 7:
-            valid_result = False
-
-    return valid_result
-
-
 # Define all osu! API requests using the template
 async def beatmap_lookup(params, map_id, mode):
     """ Looks up a beatmap unless cache exists"""
-    result = retrieve_cache(map_id, "map", mode)
-    valid_result = validate_cache(result)
+    result = caching.retrieve_cache(map_id, "map", mode)
+    valid_result = caching.validate_cache(result)
     if not valid_result:
         await beatmapset_lookup(params=params)
-        result = retrieve_cache(map_id, "map", mode)
+        result = caching.retrieve_cache(map_id, "map", mode)
     return result
 
 
@@ -185,7 +122,7 @@ async def beatmapset_lookup(params):
     """ Looks up a beatmapset using a beatmap ID"""
     request = def_section("beatmapsets/lookup")
     result = await request(**params)
-    cache_beatmapset(result, result["id"])
+    caching.cache_beatmapset(result, result["id"])
     return result
 
 
@@ -236,14 +173,14 @@ async def get_user_beatmap_scores(beatmap_id, user_id, params=None):
 
 async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     """ Returns a beatmapset using beatmapset ID"""
-    result = retrieve_cache(beatmapset_id, "set")
-    valid_result = validate_cache(result)
+    result = caching.retrieve_cache(beatmapset_id, "set")
+    valid_result = caching.validate_cache(result)
     if not valid_result or force_redownload:
         request = def_section(f"beatmapsets/{beatmapset_id}")
         result = await request()
-        cache_beatmapset(result, result["id"])
+        caching.cache_beatmapset(result, result["id"])
     else:
-        beatmapset_path = os.path.join(setcache_path, str(beatmapset_id) + ".json")
+        beatmapset_path = os.path.join(caching.setcache_path, str(beatmapset_id) + ".json")
         with open(beatmapset_path, encoding="utf-8") as fp:
             result = json.load(fp)
     return result

@@ -134,7 +134,6 @@ async def update_user_data(member_id: str, profile: str):
     osu_tracking[member_id]["new"]["events"] = user_recent
     if cache_user_profiles:
         osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
-    await asyncio.sleep(osu_config.data["user_update_delay"])
 
 
 async def notify_recent_events(member_id: str, data: dict):
