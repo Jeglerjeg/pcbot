@@ -72,7 +72,7 @@ def def_section(api_name: str, first_element: bool = False):
             return None
         if not access_token:
             return None
-        with limiter.ratelimit("osu", delay=True):
+        async with limiter.ratelimit("osu", delay=True):
             # Add the API key
             headers = {
                 "Authorization": "Bearer " + access_token
