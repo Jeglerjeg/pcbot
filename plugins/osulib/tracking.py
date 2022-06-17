@@ -102,7 +102,7 @@ async def update_user_data(member_id: str, profile: str):
         params = {
             "limit": 20
         }
-        if bool(user_utils.get_leaderboard_update_status(member_id) or user_utils.get_beatmap_update_status(member_id)):
+        if user_utils.get_leaderboard_update_status(member_id) or user_utils.get_beatmap_update_status(member_id):
             user_data["events"] = await api.get_user_recent_activity(profile, params=params)
 
         # User is already tracked
