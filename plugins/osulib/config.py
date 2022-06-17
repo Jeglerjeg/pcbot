@@ -19,8 +19,10 @@ osu_config = Config("osu", pretty=True, data=dict(
     map_cache={},  # Cache for map events, primarily used for calculating and caching pp of the difficulties
     score_update_delay=5,  # Seconds to wait to retry get_new_score if new score is not found
     ratelimit=60,  # Amount of API requests allowed per minute
-    leaderboard={},  # A list of users that have turned on/off leaderboard notifications
+    leaderboard={},  # A list of users that have manually turned on/off leaderboard notifications
+    beatmap_updates={},  # A list of users that have manually turned on/off beatmap update notifications
     opt_in_leaderboard=True,  # Whether or not leaderboard notifications should be opt-in
+    opt_in_beatmaps=False,  # Whether or not beatmap update notifications should be opt-in
     notify_empty_scores=False,  # Whether or not to notify pp gain when a score isn't found (only if pp mode is off)
     cache_user_profiles=True,  # Whether or not to cache user profiles when the bot turns off
 ))

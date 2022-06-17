@@ -305,26 +305,6 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
     await client.say(message, f"Set your gamemode to **{mode_name}**.")
 
 
-@osu.command(usage="<on/off>")
-async def leaderboard_notifications(message: discord.Message, notify_setting: str):
-    """ When leaderboard updates are enabled, the bot will post your top50 scores on maps unless
-    it's in your top100 PP scores. """
-    member = message.author
-    # Make sure the member is assigned
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
-
-    if notify_setting.lower() == "on":
-        osu_config.data["leaderboard"][str(member.id)] = True
-        await client.say(message, "Enabled leaderboard updates.")
-    elif notify_setting.lower() == "off":
-        osu_config.data["leaderboard"][str(member.id)] = False
-        await client.say(message, "Disabled leaderboard updates.")
-    else:
-        await client.say(message, "Invalid setting selected. Valid settings are on and off.")
-
-    await osu_config.asyncsave()
-
-
 @osu.command()
 async def info(message: discord.Message, member: discord.Member = Annotate.Self):
     """ Display configuration info. """
@@ -350,6 +330,8 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     e.add_field(name="Playing osu!", value="YES" if user_utils.is_playing(member) else "NO")
     e.add_field(name="Notifying leaderboard scores", value="YES"
                 if user_utils.get_leaderboard_update_status(str(member.id)) else "NO")
+    e.add_field(name="Notifying beatmap updates", value="YES"
+                if user_utils.get_beatmap_update_status(str(member.id)) else "NO")
 
     await client.send_message(message.channel, embed=e)
 
@@ -763,6 +745,50 @@ async def top(message: discord.Message, *options):
 
 plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 osu.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
+
+
+@osu.command()
+async def tracking(message: discord.Message, _: utils.placeholder):
+    """ Manage what types of osu events are tracked. """
+
+
+@tracking.command(usage="<on/off>")
+async def beatmap_updates(message: discord.Message, notify_setting: str):
+    """ When beatmap updates are enabled, the bot will post updates to your beatmaps. """
+    member = message.author
+    # Make sure the member is assigned
+    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+
+    if notify_setting.lower() == "on":
+        osu_config.data["beatmap_updates"][str(member.id)] = True
+        await client.say(message, "Enabled leaderboard updates.")
+    elif notify_setting.lower() == "off":
+        osu_config.data["beatmap_updates"][str(member.id)] = False
+        await client.say(message, "Disabled leaderboard updates.")
+    else:
+        await client.say(message, "Invalid setting selected. Valid settings are on and off.")
+
+    await osu_config.asyncsave()
+
+
+@tracking.command(usage="<on/off>")
+async def leaderboard_scores(message: discord.Message, notify_setting: str):
+    """ When leaderboard updates are enabled, the bot will post your top50 scores on maps unless
+    it's in your top100 PP scores. """
+    member = message.author
+    # Make sure the member is assigned
+    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+
+    if notify_setting.lower() == "on":
+        osu_config.data["leaderboard"][str(member.id)] = True
+        await client.say(message, "Enabled leaderboard updates.")
+    elif notify_setting.lower() == "off":
+        osu_config.data["leaderboard"][str(member.id)] = False
+        await client.say(message, "Disabled leaderboard updates.")
+    else:
+        await client.say(message, "Invalid setting selected. Valid settings are on and off.")
+
+    await osu_config.asyncsave()
 
 
 @osu.command(aliases="configure cfg")

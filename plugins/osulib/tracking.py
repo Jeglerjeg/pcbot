@@ -102,7 +102,8 @@ async def update_user_data(member_id: str, profile: str):
         params = {
             "limit": 20
         }
-        user_recent = await api.get_user_recent_activity(profile, params=params)
+        if bool(user_utils.get_leaderboard_update_status(member_id) or user_utils.get_beatmap_update_status(member_id)):
+            user_data["events"] = await api.get_user_recent_activity(profile, params=params)
 
         # User is already tracked
         if "scores" not in osu_tracking[member_id]:
@@ -122,7 +123,7 @@ async def update_user_data(member_id: str, profile: str):
     except Exception:
         logging.error(traceback.format_exc())
         return
-    if user_recent is None or user_data is None:
+    if user_data is None:
         logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
     # Update the "new" data
@@ -131,7 +132,6 @@ async def update_user_data(member_id: str, profile: str):
         osu_tracking[member_id]["old"] = osu_tracking[member_id]["new"]
 
     osu_tracking[member_id]["new"] = user_data
-    osu_tracking[member_id]["new"]["events"] = user_recent
     if cache_user_profiles:
         osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
 

@@ -66,6 +66,14 @@ def get_leaderboard_update_status(member_id: str):
     return not bool(osu_config.data["opt_in_leaderboard"])
 
 
+def get_beatmap_update_status(member_id: str):
+    """ Return whether or not the user should have leaderboard scores posted automatically. """
+    if member_id in osu_config.data["beatmap_updates"]:
+        return osu_config.data["beatmap_updates"][member_id]
+
+    return not bool(osu_config.data["opt_in_beatmaps"])
+
+
 def get_primary_guild(member_id: str):
     """ Return the primary guild for a member or None. """
     return osu_config.data["primary_guild"].get(member_id, None)
