@@ -107,7 +107,8 @@ async def update_user_data(member_id: str, profile: str):
             if recent_events is not None:
                 user_data["events"] = recent_events
             else:
-                user_data["events"] = []
+                logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
+                return
         else:
             user_data["events"] = []
         # User is already tracked
