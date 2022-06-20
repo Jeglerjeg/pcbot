@@ -103,7 +103,9 @@ async def update_user_data(member_id: str, profile: str):
             "limit": 20
         }
         if user_utils.get_leaderboard_update_status(member_id) or user_utils.get_beatmap_update_status(member_id):
-            user_data["events"] = await api.get_user_recent_activity(profile, params=params)
+            recent_events = await api.get_user_recent_activity(profile, params=params)
+            if recent_events:
+                user_data["events"] = recent_events
 
         # User is already tracked
         if "scores" not in osu_tracking[member_id]:
