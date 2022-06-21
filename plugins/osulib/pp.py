@@ -440,6 +440,8 @@ async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
                 osu_score["perfect"] = True
                 osu_score["accuracy"] = full_combo_acc
                 osu_score["max_combo"] = score_pp.max_combo
+                osu_score["statistics"]["count_300"] = osu_score["statistics"]["count_300"] +\
+                    osu_score["statistics"]["count_miss"]
                 osu_score["statistics"]["count_miss"] = 0
                 osu_score["rank"] = score_utils.get_no_choke_scorerank(osu_score["mods"], full_combo_acc)
                 osu_score["score"] = None
