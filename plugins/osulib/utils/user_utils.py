@@ -110,3 +110,16 @@ async def has_enough_pp(user: str, mode: enums.GameMode, **params):
     params are just like api.get_user. """
     osu_user = await api.get_user(user, mode, params=params)
     return osu_user["statistics"]["pp"] >= minimum_pp_required
+
+
+def user_exists(member: discord.Member, member_id: str, profile: str):
+    """ Check if the bot can see a member, and that the member exists in config files. """
+    return (member is None or member_id not in osu_config.data["profiles"]
+            or profile not in osu_config.data["profiles"][member_id])
+
+
+def user_unlinked_during_iteration(member_id: str, data: dict):
+    """ Check if the member was unlinked after iteration started. """
+    return (member_id in data and data[member_id]["new"]
+            and "id" in data[member_id]["new"]
+            and str(data[member_id]["new"]["id"]) not in osu_config.data["profiles"][member_id])

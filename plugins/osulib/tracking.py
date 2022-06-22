@@ -53,14 +53,9 @@ async def update_user_data(member_id: str, profile: str):
     if user_utils.get_update_mode(member_id) is enums.UpdateModes.Disabled:
         return
 
-    # Check if bot can see member and that profile exists on file (might have been unlinked or changed during iteration)
     member = discord.utils.get(client.get_all_members(), id=int(member_id))
-    if member is None or member_id not in osu_config.data["profiles"] \
-            or profile not in osu_config.data["profiles"][member_id] or (member_id in osu_tracking and
-                                                                         osu_tracking[member_id]["new"] and
-                                                                         "id" in osu_tracking[member_id]["new"] and
-                                                                         str(osu_tracking[member_id]["new"]["id"])
-                                                                         not in osu_config.data["profiles"][member_id]):
+    if user_utils.user_exists(member, member_id, profile)\
+            or user_utils.user_unlinked_during_iteration(member_id, osu_tracking):
         if member_id in osu_tracking:
             del osu_tracking[member_id]
         if member_id in osu_profile_cache.data:
