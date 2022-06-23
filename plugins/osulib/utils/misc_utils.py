@@ -1,7 +1,7 @@
 import discord
 
 from plugins.osulib import enums
-from plugins.osulib.constants import timestamp_pattern
+from plugins.osulib.constants import timestamp_pattern, pp_threshold
 from plugins.osulib.config import osu_config
 
 
@@ -76,3 +76,34 @@ async def init_guild_config(guild: discord.Guild):
     if str(guild.id) not in osu_config.data["guild"]:
         osu_config.data["guild"][str(guild.id)] = {}
         await osu_config.asyncsave()
+
+
+def check_for_pp_difference(data: dict):
+    """ Check if user has gained enough PP to notify a score. """
+    if "old" not in data:
+        return False
+
+    # Get the difference in pp since the old data
+    old, new = data["old"], data["new"]
+    pp_diff = get_diff(old, new, "pp", statistics=True)
+
+    # If the difference is too small or nothing, move on
+    if pp_threshold > pp_diff > -pp_threshold:
+        return False
+
+    return True
+
+
+def check_for_new_recent_events(data: dict):
+    """ Check if the user has any new recent events. """
+    if "old" not in data or not data["old"]:
+        return False
+
+    # Get the old and the new events
+    old, new = data["old"]["events"], data["new"]["events"]
+
+    # If nothing has changed, move on to the next member
+    if old == new:
+        return False
+
+    return True

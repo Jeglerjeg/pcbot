@@ -76,13 +76,11 @@ async def on_ready():
                     data = osu_tracking[str(member_id)]
                     # Next, check for any differences in pp between the "old" and the "new" subsections
                     # and notify any guilds
-                    # NOTE: This used to also be ensure_future before adding the potential pp check.
-                    # The reason for this change is to ensure downloading and running the .osu files won't happen twice
-                    # at the same time, which would cause problems retrieving the correct potential pp.
-                    await notify_pp(str(member_id), data)
+                    if misc_utils.check_for_pp_difference(data):
+                        client.loop.create_task(notify_pp(str(member_id), data))
                     # Check for any differences in the users' events and post about map updates
-                    # NOTE: the same applies to this now. These can't be concurrent as they also calculate pp.
-                    await notify_recent_events(str(member_id), data)
+                    if misc_utils.check_for_new_recent_events(data):
+                        client.loop.create_task(notify_recent_events(str(member_id), data))
             if cache_user_profiles:
                 await osu_profile_cache.asyncsave()
         except aiohttp.ClientOSError:

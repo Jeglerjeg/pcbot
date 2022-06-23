@@ -104,13 +104,12 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
             new_scores.append(dict(osu_score, diff=diff))
 
     # Save the updated score list, and if there are new scores, update time_updated
-    osu_tracking[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
-    if cache_user_profiles:
-        osu_profile_cache.data[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
-        await osu_profile_cache.asyncsave()
     if new_scores:
         osu_tracking[member_id]["scores"]["time_updated"] = fetched_scores["time_updated"]
         if cache_user_profiles:
             osu_profile_cache.data[member_id]["scores"]["time_updated"] = fetched_scores["time_updated"]
-            await osu_profile_cache.asyncsave()
+    osu_tracking[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
+    if cache_user_profiles:
+        osu_profile_cache.data[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
+        await osu_profile_cache.asyncsave()
     return new_scores

@@ -11,8 +11,8 @@ import bot
 import plugins
 from pcbot import Config
 from plugins.osulib import api, enums, pp
-from plugins.osulib.constants import cache_user_profiles, not_playing_skip, pp_threshold, \
-    event_repeat_interval, notify_empty_scores, score_request_limit, use_mentions_in_scores
+from plugins.osulib.constants import cache_user_profiles, not_playing_skip, event_repeat_interval, notify_empty_scores,\
+    score_request_limit, use_mentions_in_scores
 from plugins.osulib.enums import UpdateModes, Mods
 from plugins.osulib.formatting import embed_format, score_format, misc_format, beatmap_format
 from plugins.osulib.utils import user_utils, score_utils, misc_utils
@@ -139,16 +139,8 @@ async def update_user_data(member_id: str, profile: str):
 
 async def notify_recent_events(member_id: str, data: dict):
     """ Notify any map updates, such as update, resurrect and qualified. """
-    # Only update when there is a difference
-    if "old" not in data:
-        return
 
-    # Get the old and the new events
     old, new = data["old"]["events"], data["new"]["events"]
-
-    # If nothing has changed, move on to the next member
-    if old == new:
-        return
 
     # Get the new events
     events = []
@@ -313,17 +305,8 @@ async def notify_recent_events(member_id: str, data: dict):
 
 async def notify_pp(member_id: str, data: dict):
     """ Notify any differences in pp and post the scores + rank/pp gained. """
-    # Only update pp when there is actually a difference
-    if "old" not in data:
-        return
 
-    # Get the difference in pp since the old data
     old, new = data["old"], data["new"]
-    pp_diff = misc_utils.get_diff(old, new, "pp", statistics=True)
-
-    # If the difference is too small or nothing, move on
-    if pp_threshold > pp_diff > -pp_threshold:
-        return
 
     member = data["member"]
     mode = user_utils.get_mode(member_id)
