@@ -51,8 +51,6 @@ def is_playing(member: discord.Member):
     for activity in member.activities:
         if activity is not None and activity.name is not None:
             if "osu!" in activity.name.lower():
-                if activity.details == "AFK":
-                    return False
                 return True
             if activity == discord.ActivityType.streaming and "osu!" in activity.game.lower():
                 return True
