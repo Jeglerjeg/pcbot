@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 import discord
@@ -14,7 +15,7 @@ except ImportError:
 
 
 class PaginatedScoreList(discord.ui.View):
-    def __init__(self, osu_scores: list, mode: enums.GameMode, pages: int, embed: discord.Embed):
+    def __init__(self, osu_scores: list, mode: enums.GameMode, pages: int, embed: discord.Embed, nochoke: bool = False):
         super().__init__(timeout=15)
         self.osu_scores = osu_scores
         self.page = 1
@@ -22,10 +23,12 @@ class PaginatedScoreList(discord.ui.View):
         self.mode = mode
         self.pages = pages
         self.embed = embed
+        self.nochoke = nochoke
 
     async def update_message(self, message: discord.Message):
         embed = message.embeds[0]
-        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset)
+        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset,
+                                                           nochoke=self.nochoke)
         embed.set_footer(text=f"Page {self.page} of {self.pages}")
         self.embed = embed
         await message.edit(embed=embed)
@@ -200,7 +203,7 @@ def format_completion_rate(osu_score: dict, pp_stats: pp.PPStats):
 
 
 async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list, limit: int, no_time: bool = False,
-                                   offset: int = 0):
+                                   offset: int = 0, nochoke: bool = False):
     """ Return a list of formatted scores along with time since the score was set. """
     m = []
     for i, osu_score in enumerate(osu_scores):
@@ -213,11 +216,18 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list, limit
         }
         mods = enums.Mods.format_mods(osu_score["mods"])
         beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
-        score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
-        if score_pp is not None:
-            beatmap["difficulty_rating"] = pp.get_beatmap_sr(score_pp, beatmap, mods)
-        if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
-            beatmap["max_combo"] = score_pp.max_combo
+        if not nochoke:
+            score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
+            if score_pp is not None:
+                beatmap["difficulty_rating"] = pp.get_beatmap_sr(score_pp, beatmap, mods)
+            if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
+                beatmap["max_combo"] = score_pp.max_combo
+            # Add potential pp to the score
+            potential_string = format_potential_pp(score_pp, osu_score)
+        else:
+            beatmap["difficulty_rating"] = osu_score["beatmap"]["difficulty_rating"]
+            beatmap["max_combo"] = osu_score["max_combo"]
+            potential_string = ""
 
         # Add time since play to the score
         score_datetime = datetime.fromisoformat(osu_score["created_at"])
@@ -226,9 +236,6 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list, limit
         # Add score position to the score
         pos = f"{osu_score['pos']}." if "diff" not in osu_score else \
             f"{osu_score['pos']}. ({utils.format_number(osu_score['diff'], 2):+}pp)"
-
-        # Add potential pp to the score
-        potential_string = format_potential_pp(score_pp, osu_score)
 
         m.append("".join([f"{pos}\n", await format_new_score(mode, osu_score, beatmap),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
