@@ -16,7 +16,7 @@ except ImportError:
 
 class PaginatedScoreList(discord.ui.View):
     def __init__(self, osu_scores: list, mode: enums.GameMode, pages: int, embed: discord.Embed, nochoke: bool = False):
-        super().__init__(timeout=15)
+        super().__init__(timeout=30)
         self.osu_scores = osu_scores
         self.page = 1
         self.offset = 0
