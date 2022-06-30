@@ -13,6 +13,50 @@ except ImportError:
     pendulum = None
 
 
+class PaginatedScoreList(discord.ui.View):
+    def __init__(self, osu_scores: list, mode: enums.GameMode, pages: int):
+        super().__init__()
+        self.osu_scores = osu_scores
+        self.page = 1
+        self.offset = 0
+        self.mode = mode
+        self.pages = pages
+
+    @discord.ui.button(label="<", style=discord.ButtonStyle.blurple)
+    async def last_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        if self.page == 1:
+            return
+        self.page -= 1
+        self.offset -= 5
+        embed = interaction.message.embeds[0]
+        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset)
+        embed.set_footer(text=f"Page {self.page} of {self.pages}")
+        await interaction.message.edit(embed=embed)
+
+    @discord.ui.button(label=">", style=discord.ButtonStyle.blurple)
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        if self.page == self.pages:
+            return
+        self.page += 1
+        self.offset += 5
+        embed = interaction.message.embeds[0]
+        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset)
+        embed.set_footer(text=f"Page {self.page} of {self.pages}")
+        await interaction.message.edit(embed=embed)
+
+    @discord.ui.button(label="⭯", style=discord.ButtonStyle.blurple)
+    async def reset(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.page = 1
+        self.offset = 0
+        embed = interaction.message.embeds[0]
+        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset)
+        embed.set_footer(text=f"Page {self.page} of {self.pages}")
+        await interaction.message.edit(embed=embed)
+
+
 def format_potential_pp(score_pp: pp.PPStats, osu_score: dict):
     """ Formats potential PP for scores. """
     if score_pp is not None and score_pp.max_pp is not None and (osu_score["pp"] / score_pp.max_pp) * 100 < 99\
@@ -156,11 +200,14 @@ def format_completion_rate(osu_score: dict, pp_stats: pp.PPStats):
     return completion_rate
 
 
-async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list, limit: int, no_time: bool = False):
+async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list, limit: int, no_time: bool = False,
+                                   offset: int = 0):
     """ Return a list of formatted scores along with time since the score was set. """
     m = []
     for i, osu_score in enumerate(osu_scores):
-        if i > limit - 1:
+        if i < offset:
+            continue
+        if i > (limit + offset) - 1:
             break
         params = {
             "beatmap_id": osu_score["beatmap"]["id"]

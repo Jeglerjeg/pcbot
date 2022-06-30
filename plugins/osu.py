@@ -735,10 +735,13 @@ async def top(message: discord.Message, *options):
         author_text = osu_tracking[str(member.id)]["new"]["username"]
     sorted_scores = score_utils.get_sorted_scores(osu_scores["score_list"], list_type)
     m = await score_format.get_formatted_score_list(mode, sorted_scores, 5)
+    view = score_format.PaginatedScoreList(osu_scores["score_list"], mode,
+                                           score_utils.count_score_pages(osu_scores["score_list"], 5))
     e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
                                              osu_tracking[str(member.id)]["new"]["avatar_url"],
                                              osu_tracking[str(member.id)]["new"]["avatar_url"])
-    await client.send_message(message.channel, embed=e)
+    e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(osu_scores['score_list'], 5)}")
+    await client.send_message(message.channel, embed=e, view=view)
 
 
 plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)

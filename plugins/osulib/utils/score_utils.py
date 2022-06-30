@@ -113,3 +113,11 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
         osu_profile_cache.data[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
         await osu_profile_cache.asyncsave()
     return new_scores
+
+
+def count_score_pages(osu_scores: list, scores_per_page: int):
+    pages = 0
+    for i, osu_score in enumerate(osu_scores):
+        if i % scores_per_page == 0:
+            pages += 1
+    return pages
