@@ -14,13 +14,14 @@ except ImportError:
 
 
 class PaginatedScoreList(discord.ui.View):
-    def __init__(self, osu_scores: list, mode: enums.GameMode, pages: int):
-        super().__init__()
+    def __init__(self, osu_scores: list, mode: enums.GameMode, pages: int, embed: discord.Embed):
+        super().__init__(timeout=15)
         self.osu_scores = osu_scores
         self.page = 1
         self.offset = 0
         self.mode = mode
         self.pages = pages
+        self.embed = embed
 
     @discord.ui.button(label="<", style=discord.ButtonStyle.blurple)
     async def last_page(self, interaction: discord.Interaction, button: discord.ui.Button):

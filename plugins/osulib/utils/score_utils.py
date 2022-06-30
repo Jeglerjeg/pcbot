@@ -116,8 +116,4 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
 
 
 def count_score_pages(osu_scores: list, scores_per_page: int):
-    pages = 0
-    for i, osu_score in enumerate(osu_scores):
-        if i % scores_per_page == 0:
-            pages += 1
-    return pages
+    return len([osu_scores[i:i+scores_per_page] for i in range(0, len(osu_scores), scores_per_page)])
