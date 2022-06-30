@@ -23,6 +23,13 @@ class PaginatedScoreList(discord.ui.View):
         self.pages = pages
         self.embed = embed
 
+    async def update_message(self, message: discord.Message):
+        embed = message.embeds[0]
+        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset)
+        embed.set_footer(text=f"Page {self.page} of {self.pages}")
+        self.embed = embed
+        await message.edit(embed=embed)
+
     @discord.ui.button(label="<", style=discord.ButtonStyle.blurple)
     async def last_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
@@ -30,10 +37,7 @@ class PaginatedScoreList(discord.ui.View):
             return
         self.page -= 1
         self.offset -= 5
-        embed = interaction.message.embeds[0]
-        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset)
-        embed.set_footer(text=f"Page {self.page} of {self.pages}")
-        await interaction.message.edit(embed=embed)
+        await self.update_message(interaction.message)
 
     @discord.ui.button(label=">", style=discord.ButtonStyle.blurple)
     async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -42,20 +46,14 @@ class PaginatedScoreList(discord.ui.View):
             return
         self.page += 1
         self.offset += 5
-        embed = interaction.message.embeds[0]
-        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset)
-        embed.set_footer(text=f"Page {self.page} of {self.pages}")
-        await interaction.message.edit(embed=embed)
+        await self.update_message(interaction.message)
 
     @discord.ui.button(label="⭯", style=discord.ButtonStyle.blurple)
     async def reset(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.page = 1
         self.offset = 0
-        embed = interaction.message.embeds[0]
-        embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset)
-        embed.set_footer(text=f"Page {self.page} of {self.pages}")
-        await interaction.message.edit(embed=embed)
+        await self.update_message(interaction.message)
 
 
 def format_potential_pp(score_pp: pp.PPStats, osu_score: dict):
