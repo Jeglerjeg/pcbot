@@ -7,7 +7,7 @@ from plugins.osulib.config import osu_config
 
 def get_diff(old: dict, new: dict, value: str, statistics=False):
     """ Get the difference between old and new osu! user data. """
-    if not new or not old or not new["statistics"] or not old["statistics"]:
+    if not new or not old or "statistics" not in new or not "statistics" not in old:
         return 0.0
     if statistics:
         new_value = float(new["statistics"][value]) if new["statistics"][value] else 0.0
