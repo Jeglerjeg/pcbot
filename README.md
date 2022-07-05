@@ -18,7 +18,7 @@ Python 3.8.0
 The next step is installing [discord.py](https://github.com/Rapptz/discord.py):
 
 ```
-pip install git+https://github.com/Rapptz/discord.py.git@77baa06a99b00b50d24398714bce40fcda1fa0c2
+pip install git+https://github.com/Rapptz/discord.py.git@9fe19dcc6923e4b6133bdedafb33658bf37c9ab7
 ```
 
 To get voice support, you can optionally install PyNaCl:

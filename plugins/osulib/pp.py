@@ -135,7 +135,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
         calculator.set_hp(args.hp)
     if args.cs:
         calculator.set_cs(args.cs)
-    score_params = rosu_pp_py.ScoreParams(mods=mods_bitmask)
+    score_params = rosu_pp_py.ScoreParams(mods=mods_bitmask, mode=get_rosu_pp_mode(mode))
     if args.clock_rate:
         score_params.clockRate = args.clock_rate
 
@@ -173,6 +173,17 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     hp = pp_info.hp
     bpm = pp_info.bpm
     return PPStats(pp, total_stars, partial_stars, max_pp, max_combo, ar, cs, od, hp, bpm)
+
+
+def get_rosu_pp_mode(mode: enums.GameMode):
+    if mode is enums.GameMode.osu:
+        return rosu_pp_py.GameMode.Osu
+    if mode is enums.GameMode.taiko:
+        return rosu_pp_py.GameMode.Taiko
+    if mode is enums.GameMode.mania:
+        return rosu_pp_py.GameMode.Mania
+    else:
+        return rosu_pp_py.GameMode.Catch
 
 
 def get_score_params(score_params: rosu_pp_py.ScoreParams, args):
@@ -265,8 +276,6 @@ async def get_score_pp(osu_score: dict, mode: enums.GameMode, beatmap: dict = No
     """ Return PP for a given score. """
     mods = enums.Mods.format_mods(osu_score["mods"])
     score_pp = None
-    if beatmap and beatmap["convert"]:
-        return score_pp
     if mode is enums.GameMode.osu:
         try:
             score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
