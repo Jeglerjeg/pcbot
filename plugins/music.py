@@ -132,6 +132,16 @@ class VoiceState:
         if self.voice.is_playing():
             self.voice.stop()
 
+    def resume(self):
+        """ Resume the currently paused song. """
+        if self.voice.is_paused():
+            self.voice.resume()
+
+    def pause(self):
+        """ Pause the currently playing song"""
+        if self.voice.is_playing():
+            self.voice.pause()
+
     def format_playing(self):
         if self.voice.is_playing():
             return format_song(self.current, url=True)
@@ -361,6 +371,28 @@ async def playing(message: discord.Message):
     embed.description = "Playing:\n" + state.format_playing()
 
     await client.send_message(message.channel, embed=embed)
+
+
+@music.command()
+async def pause(message: discord.Message):
+    """ Pause the currently playing song. """
+    assert_connected(message.author)
+    state = voice_states[message.guild]
+    assert state.voice.is_playing(), "**There is no song currently playing.**"
+
+    state.pause()
+    await client.say(message, content="Paused the currently playing song.")
+
+
+@music.command()
+async def resume(message: discord.Message):
+    """ Resume the currently paused song. """
+    assert_connected(message.author)
+    state = voice_states[message.guild]
+    assert state.voice.is_paused(), "**There is no song currently paused.**"
+
+    state.resume()
+    await client.say(message, content="Resumed the paused song.")
 
 
 @music.command(aliases="q l list")
