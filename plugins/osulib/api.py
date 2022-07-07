@@ -21,6 +21,7 @@ import plugins
 from pcbot import utils
 from plugins.osulib import enums, caching
 from plugins.osulib.constants import ratelimit
+from plugins.osulib.utils.score_utils import add_missing_hit_values
 
 client = plugins.client  # type: bot.Client
 
@@ -75,7 +76,8 @@ def def_section(api_name: str, first_element: bool = False):
         async with limiter.ratelimit("osu", delay=True):
             # Add the API key
             headers = {
-                "Authorization": "Bearer " + access_token
+                "Authorization": "Bearer " + access_token,
+                "x-api-version": "20220706"
             }
 
             # Download using a URL of the given API function name
@@ -142,9 +144,18 @@ async def get_user_scores(user_id, score_type, params=None):
     """ Returns a user's best, recent or #1 scores. """
     request = def_section(f"users/{user_id}/scores/{score_type}")
     if params:
-        return await request(**params)
-
-    return await request("")
+        result = await request(**params)
+    else:
+        result = await request()
+    if "{'error': None}" in str(result):
+        result = None
+    else:
+        new_result = []
+        for osu_score in result:
+            osu_score = add_missing_hit_values(osu_score)
+            new_result.append(osu_score)
+        result = new_result
+    return result
 
 
 async def get_user_beatmap_score(beatmap_id, user_id, params=None):
@@ -156,6 +167,8 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
         result = await request()
     if "{'error': None}" in str(result):
         result = None
+    else:
+        result["score"] = add_missing_hit_values(result["score"])
     return result
 
 
@@ -168,6 +181,12 @@ async def get_user_beatmap_scores(beatmap_id, user_id, params=None):
         result = await request()
     if "{'error': None}" in str(result):
         result = None
+    else:
+        new_scores = []
+        for osu_score in result["scores"]:
+            osu_score = add_missing_hit_values(osu_score)
+            new_scores.append(osu_score)
+        result["scores"] = new_scores
     return result
 
 
@@ -352,7 +371,7 @@ def rank_from_events(events: dict, beatmap_id: str, score):
         if event["type"] == "rank":
             beatmap_url = "https://osu.ppy.sh" + event["beatmap"]["url"]
             beatmap_info = parse_beatmap_url(beatmap_url)
-            time_diff = datetime.fromisoformat(score["created_at"]) - datetime.fromisoformat(event["created_at"])
+            time_diff = datetime.fromisoformat(score["ended_at"]) - datetime.fromisoformat(event["created_at"])
             if (beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == score["rank"]) and \
                     (time_diff.total_seconds() < 60):
                 return event["rank"]

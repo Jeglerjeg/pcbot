@@ -94,7 +94,6 @@ parser.add("od", r"od([0-9.]+)", arg_type=float)
 parser.add("hp", r"hp([0-9.]+)", arg_type=float)
 parser.add("clock_rate", r"([0-9.]+)\*", arg_type=float)
 
-parser.add("hits", r"(\d+)hits", arg_type=int)
 parser.add("pp", r"([0-9.]+)pp", arg_type=float)
 
 

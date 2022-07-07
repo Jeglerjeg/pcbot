@@ -112,7 +112,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     vod = vod_request[0]
 
     # Find the timestamp of where the play would have started without pausing the game
-    score_created = datetime.fromisoformat(osu_score["created_at"])
+    score_created = datetime.fromisoformat(osu_score["ended_at"])
     vod_created = vod.created_at
     beatmap_length = int(beatmap["hit_length"])
 
@@ -122,7 +122,7 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
         return "".join(text)
 
     # Convert beatmap length when speed mods are enabled
-    mods = osu_score["mods"]
+    mods = enums.Mods.format_mods(osu_score["mods"])
     if "DT" in mods or "NC" in mods:
         beatmap_length /= 1.5
     elif "HT" in mods:

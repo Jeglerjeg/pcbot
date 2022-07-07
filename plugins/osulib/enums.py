@@ -88,7 +88,7 @@ class Mods(Enum):
             mods = cls.list_mods(mods)
         assert isinstance(mods, list)
 
-        return "".join((mod for mod in mods) if mods else ["Nomod"])
+        return "".join((mod["acronym"] for mod in mods) if mods else ["Nomod"])
 
 
 class GameMode(Enum):

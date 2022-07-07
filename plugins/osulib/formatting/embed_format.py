@@ -2,7 +2,7 @@ import discord
 
 from plugins.osulib import enums, pp, api
 from plugins.osulib.formatting import score_format
-from plugins.osulib.utils import user_utils
+from plugins.osulib.utils import user_utils, score_utils
 
 
 def get_embed_from_template(description: str, color: discord.Colour, author_text: str, author_url: str,
@@ -61,16 +61,14 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
                                     else beatmap["beatmapset"]["covers"]["list@2x"],
                                     time=time_string,
                                     potential_string=score_format.format_potential_pp(
-                                        score_pp if score_pp is not None and not bool(osu_score["perfect"]
-                                                                                      and osu_score["passed"])
-                                        else None,
-                                        osu_score),
+                                        score_pp if score_pp is not None else None,
+                                        osu_score) if score_utils.calculate_potential_pp(osu_score, mode) else "",
                                     completion_rate=score_format.format_completion_rate(osu_score,
                                                                                         score_pp if
                                                                                         score_pp is not None
                                                                                         and not
                                                                                         bool(
-                                                                                            osu_score["perfect"]
+                                                                                            osu_score["legacy_perfect"]
                                                                                             and
                                                                                             osu_score["passed"]
                                                                                         )

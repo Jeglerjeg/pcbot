@@ -389,7 +389,8 @@ async def notify_pp(member_id: str, data: dict):
         primary_guild = user_utils.get_primary_guild(str(member.id))
         is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
         potential_string = score_format.format_potential_pp(score_pp if score_pp is not None
-                                                            and not bool(osu_score["perfect"] and osu_score["passed"])
+                                                            and not bool(osu_score["legacy_perfect"]
+                                                                         and osu_score["passed"])
                                                             else None,
                                                             osu_score)
         embed = embed_format.get_embed_from_template("".join(m), member.color, author_text,

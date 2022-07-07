@@ -1,7 +1,7 @@
 import discord
 
 from pcbot import utils
-from plugins.osulib import api
+from plugins.osulib import api, enums
 from plugins.osulib.constants import host
 
 
@@ -24,6 +24,6 @@ async def find_beatmap_info(channel: discord.TextChannel):
     return beatmap_info
 
 
-def get_beatmap_url(beatmap_id: int, mode: str):
+def get_beatmap_url(beatmap_id: int, mode: enums.GameMode):
     """ Return the beatmap's url. """
-    return f"{host}beatmaps/{beatmap_id}?mode={mode}"
+    return f"{host}beatmaps/{beatmap_id}?mode={mode.name}"

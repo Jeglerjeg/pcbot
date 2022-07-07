@@ -9,16 +9,16 @@ import aiohttp
 from pcbot import Config
 from plugins.osulib import enums, api
 from plugins.osulib.constants import score_request_limit, cache_user_profiles
-from plugins.osulib.utils import user_utils
+from plugins.osulib.utils import user_utils, misc_utils
 from plugins.osulib.config import osu_config
 
 
 def get_sorted_scores(osu_scores: list, list_type: str):
     """ Sort scores by newest or oldest scores. """
     if list_type == "oldest":
-        sorted_scores = sorted(osu_scores, key=itemgetter("created_at"))
+        sorted_scores = sorted(osu_scores, key=itemgetter("ended_at"))
     elif list_type == "newest":
-        sorted_scores = sorted(osu_scores, key=itemgetter("created_at"), reverse=True)
+        sorted_scores = sorted(osu_scores, key=itemgetter("ended_at"), reverse=True)
     elif list_type == "acc":
         sorted_scores = sorted(osu_scores, key=itemgetter("accuracy"), reverse=True)
     elif list_type == "combo":
@@ -50,6 +50,7 @@ async def retrieve_osu_scores(profile: str, mode: enums.GameMode, timestamp: str
 
 def get_no_choke_scorerank(mods: list, acc: float):
     """ Get the scorerank of an unchoked play. """
+    mods = [mod["acronym"] for mod in mods]
     if ("HD" in mods or "FL" in mods) and acc == 1:
         scorerank = "XH"
     elif "HD" in mods or "FL" in mods:
@@ -59,6 +60,81 @@ def get_no_choke_scorerank(mods: list, acc: float):
     else:
         scorerank = "S"
     return scorerank
+
+
+def add_missing_hit_values(osu_score: dict):
+    if "perfect" not in osu_score["statistics"]:
+        osu_score["statistics"]["perfect"] = 0
+    if "great" not in osu_score["statistics"]:
+        osu_score["statistics"]["great"] = 0
+    if "good" not in osu_score["statistics"]:
+        osu_score["statistics"]["good"] = 0
+    if "ok" not in osu_score["statistics"]:
+        osu_score["statistics"]["ok"] = 0
+    if "meh" not in osu_score["statistics"]:
+        osu_score["statistics"]["meh"] = 0
+    if "miss" not in osu_score["statistics"]:
+        osu_score["statistics"]["miss"] = 0
+    if "large_tick_hit" not in osu_score["statistics"]:
+        osu_score["statistics"]["large_tick_hit"] = 0
+    if "large_tick_miss" not in osu_score["statistics"]:
+        osu_score["statistics"]["large_tick_miss"] = 0
+    if "small_tick_hit" not in osu_score["statistics"]:
+        osu_score["statistics"]["small_tick_hit"] = 0
+    if "small_tick_miss" not in osu_score["statistics"]:
+        osu_score["statistics"]["small_tick_miss"] = 0
+    return osu_score
+
+
+def get_score_object_count(osu_score: dict):
+    mode = enums.GameMode(osu_score["ruleset_id"])
+    perfect = osu_score["statistics"]["perfect"]
+    great = osu_score["statistics"]["great"]
+    good = osu_score["statistics"]["good"]
+    ok = osu_score["statistics"]["ok"]
+    meh = osu_score["statistics"]["meh"]
+    miss = osu_score["statistics"]["miss"]
+    if mode is enums.GameMode.osu:
+        objects = great + ok + meh + miss
+    elif mode is enums.GameMode.taiko:
+        objects = great + ok + miss
+    elif mode is enums.GameMode.mania:
+        objects = perfect + great + good + ok + meh + miss
+    else:
+        objects = 0
+    return objects
+
+
+def process_score_args(osu_score):
+    formatted_mods = f"+{enums.Mods.format_mods(osu_score['mods'])}"
+    mode = enums.GameMode(osu_score["ruleset_id"])
+    great = osu_score["statistics"]["great"]
+    ok = osu_score["statistics"]["ok"]
+    miss = osu_score["statistics"]["miss"]
+    acc = osu_score["accuracy"]
+
+    if mode is enums.GameMode.osu:
+        potential_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
+        meh = osu_score["statistics"]["meh"]
+        args_list = (f"{formatted_mods} {acc:.2%} {potential_acc:.2%}pot {great}x300 {ok}x100 {meh}x50 "
+                     f"{miss}m {osu_score['max_combo']}x {get_score_object_count(osu_score)}objects").split()
+    elif mode is enums.GameMode.taiko:
+        args_list = (f"{formatted_mods} {acc:.2%} {great}x300 {ok}x100 "
+                     f"{miss}m {osu_score['max_combo']}x {get_score_object_count(osu_score)}objects").split()
+    elif mode is enums.GameMode.mania:
+        score = osu_score["total_score"]
+        args_list = f"{formatted_mods} {score}score {get_score_object_count(osu_score)}objects".split()
+    else:
+        large_tick_hit = osu_score["statistics"]["large_tick_hit"]
+        small_tick_hit = osu_score["statistics"]["small_tick_hit"]
+        small_tick_miss = osu_score["statistics"]["small_tick_miss"]
+        args_list = (f"{formatted_mods} {great}x300 {large_tick_hit}x100 {small_tick_hit}x50 {small_tick_miss}dropmiss "
+                     f"{miss}m {osu_score['max_combo']}x").split()
+    return args_list
+
+
+def calculate_potential_pp(osu_score: dict, mode: enums.GameMode):
+    return mode == enums.GameMode.osu and (not osu_score["legacy_perfect"] or not osu_score["passed"])
 
 
 async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: Config):
@@ -87,7 +163,7 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
         if datetime.fromisoformat(osu_tracking[member_id]["scores"]["time_updated"]) <\
-                datetime.fromisoformat(osu_score["created_at"]):
+                datetime.fromisoformat(osu_score["ended_at"]):
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,
