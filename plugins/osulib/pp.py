@@ -269,7 +269,6 @@ async def get_score_pp(osu_score: dict, mode: enums.GameMode, beatmap: dict = No
                                       failed=not osu_score["passed"], *score_utils.process_score_args(osu_score))
     except Exception:
         logging.error(traceback.format_exc())
-    logging.info(score_pp)
     return score_pp
 
 
