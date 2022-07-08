@@ -55,7 +55,7 @@ def format_choice_message(question: dict, choices: list, responses: list, result
 
 class ChoiceButton(discord.ui.View):
     def __init__(self, question: dict, choices: list):
-        super().__init__(self, timeout=db.data["timeout"])
+        super().__init__(timeout=db.data["timeout"])
         self.question = question
         self.choices = choices
         self.replied = []
