@@ -5,16 +5,13 @@ from plugins.osulib.constants import timestamp_pattern, pp_threshold
 from plugins.osulib.config import osu_config
 
 
-def get_diff(old: dict, new: dict, value: str, statistics=False):
+def get_diff(old: dict, new: dict, value: str):
     """ Get the difference between old and new osu! user data. """
-    if not new or not old or "statistics" not in new or not "statistics" not in old:
+    if not new or not old or "statistics" not in new or "statistics" not in old:
         return 0.0
-    if statistics:
-        new_value = float(new["statistics"][value]) if new["statistics"][value] else 0.0
-        old_value = float(old["statistics"][value]) if old["statistics"][value] else 0.0
-    else:
-        new_value = float(new[value]) if new[value] else 0.0
-        old_value = float(old[value]) if old[value] else 0.0
+
+    new_value = float(new["statistics"][value]) if new["statistics"][value] else 0.0
+    old_value = float(old["statistics"][value]) if old["statistics"][value] else 0.0
 
     return new_value - old_value
 
@@ -87,7 +84,7 @@ def check_for_pp_difference(data: dict):
 
     # Get the difference in pp since the old data
     old, new = data["old"], data["new"]
-    pp_diff = get_diff(old, new, "pp", statistics=True)
+    pp_diff = get_diff(old, new, "pp")
 
     # If the difference is too small or nothing, move on
     if pp_threshold > pp_diff > -pp_threshold:

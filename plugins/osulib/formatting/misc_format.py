@@ -49,11 +49,11 @@ def format_user_diff(mode: enums.GameMode, data_old: dict, data_new: dict):
     pp_rank = int(data_new["statistics"]["global_rank"]) if data_new["statistics"]["global_rank"] else 0
     pp_country_rank = int(data_new["statistics"]["country_rank"]) if data_new["statistics"]["country_rank"] else 0
     iso = data_new["country"]["code"]
-    rank = -int(misc_utils.get_diff(data_old, data_new, "global_rank", statistics=True))
-    country_rank = -int(misc_utils.get_diff(data_old, data_new, "country_rank", statistics=True))
-    accuracy = misc_utils.get_diff(data_old, data_new, "hit_accuracy", statistics=True)
-    pp_diff = misc_utils.get_diff(data_old, data_new, "pp", statistics=True)
-    ranked_score = misc_utils.get_diff(data_old, data_new, "ranked_score", statistics=True)
+    rank = -int(misc_utils.get_diff(data_old, data_new, "global_rank"))
+    country_rank = -int(misc_utils.get_diff(data_old, data_new, "country_rank"))
+    accuracy = misc_utils.get_diff(data_old, data_new, "hit_accuracy")
+    pp_diff = misc_utils.get_diff(data_old, data_new, "pp")
+    ranked_score = misc_utils.get_diff(data_old, data_new, "ranked_score")
     rankings_url = f"{host}rankings/osu/performance"
 
     # Find the performance page number of the respective ranks
