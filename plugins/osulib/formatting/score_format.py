@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 import discord
@@ -128,8 +127,8 @@ def format_score_statistics(osu_score: dict, beatmap: dict, mode: enums.GameMode
 
 def format_score_info(osu_score: dict, beatmap: dict, rank: int = None):
     """ Return formatted beatmap information. """
-    beatmap_url = beatmap_utils.get_beatmap_url(osu_score["beatmap"]["id"], enums.GameMode(osu_score["ruleset_id"]))
-    modslist = enums.Mods.format_mods(osu_score["mods"])
+    beatmap_url = beatmap_utils.get_beatmap_url(beatmap["id"], enums.GameMode(osu_score["ruleset_id"]))
+    modslist = enums.Mods.format_mods(osu_score["mods"], score_display=True)
     score_pp = utils.format_number(osu_score["pp"], 2) if "new_pp" not in osu_score else osu_score["new_pp"]
     ranked_score = f'{osu_score["total_score"]:,}' if "total_score" in osu_score else ""
     stars = utils.format_number(float(beatmap["difficulty_rating"]), 2)
@@ -166,7 +165,7 @@ async def format_minimal_score(osu_score: dict, beatmap: dict, rank: int, member
         "{live}"
     ).format(
         url=beatmap_utils.get_beatmap_url(osu_score["beatmap"]["id"], enums.GameMode(osu_score["ruleset_id"])),
-        mods=enums.Mods.format_mods(osu_score["mods"]),
+        mods=enums.Mods.format_mods(osu_score["mods"], score_display=True),
         acc=f"{utils.format_number(osu_score['accuracy'] * 100, 2)}%",
         artist=beatmap["beatmapset"]["artist"].replace("*", r"\*").replace("_", r"\_"),
         title=beatmap["beatmapset"]["title"].replace("*", r"\*").replace("_", r"\_"),
@@ -194,8 +193,8 @@ def format_completion_rate(osu_score: dict, pp_stats: pp.PPStats):
     return completion_rate
 
 
-async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list, limit: int, no_time: bool = False,
-                                   offset: int = 0, nochoke: bool = False):
+async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list, limit: int, beatmap_id: int = None,
+                                   no_time: bool = False, offset: int = 0, nochoke: bool = False):
     """ Return a list of formatted scores along with time since the score was set. """
     m = []
     for i, osu_score in enumerate(osu_scores):
@@ -204,14 +203,17 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list, limit
         if i > (limit + offset) - 1:
             break
         params = {
-            "beatmap_id": osu_score["beatmap"]["id"]
+            "beatmap_id": beatmap_id if beatmap_id else osu_score["beatmap_id"]
         }
         mods = enums.Mods.format_mods(osu_score["mods"])
-        beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
+        beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_id if beatmap_id else osu_score["beatmap_id"],
+                                            mode=mode.name))
         if not nochoke:
             score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
             if score_pp is not None:
                 beatmap["difficulty_rating"] = pp.get_beatmap_sr(score_pp, beatmap, mods)
+                if osu_score["pp"] is None or osu_score["pp"] == 0:
+                    osu_score["pp"] = score_pp.pp
             if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
                 beatmap["max_combo"] = score_pp.max_combo
             # Add potential pp to the score

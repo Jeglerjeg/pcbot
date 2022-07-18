@@ -105,7 +105,7 @@ def get_score_object_count(osu_score: dict):
     return objects
 
 
-def process_score_args(osu_score):
+def process_score_args(osu_score: dict):
     formatted_mods = f"+{enums.Mods.format_mods(osu_score['mods'])}"
     mode = enums.GameMode(osu_score["ruleset_id"])
     great = osu_score["statistics"]["great"]
@@ -130,11 +130,40 @@ def process_score_args(osu_score):
         small_tick_miss = osu_score["statistics"]["small_tick_miss"]
         args_list = (f"{formatted_mods} {great}x300 {large_tick_hit}x100 {small_tick_hit}x50 {small_tick_miss}dropmiss "
                      f"{miss}m {osu_score['max_combo']}x").split()
-    return args_list
+    return args_list + process_mod_settings(osu_score)
+
+
+def process_mod_settings(osu_score: dict):
+    """ Adds args for all difficulty adjusting mod settings in a score. """
+    args = []
+    for mod in osu_score["mods"]:
+        if mod["acronym"] == "DT" or mod["acronym"] == "NC" or mod["acronym"] == "HT" or mod["acronym"] == "DC":
+            if "speed_change" in mod["settings"]:
+                args.append(f'{mod["settings"]["speed_change"]}*')
+            elif mod["acronym"] == "DT" or mod["acronym"] == "NC":
+                args.append("1.5*")
+            else:
+                args.append("0.75*")
+        if mod["acronym"] == "DA":
+            if "circle_size" in mod["settings"]:
+                args.append(f'cs{mod["settings"]["circle_size"]}')
+            if "approach_rate" in mod["settings"]:
+                args.append(f'ar{mod["settings"]["approach_rate"]}')
+            if "drain_rate" in mod["settings"]:
+                args.append(f'hp{mod["settings"]["drain_rate"]}')
+            if "overall_difficulty" in mod["settings"]:
+                args.append(f'od{mod["settings"]["overall_difficulty"]}')
+    return args
 
 
 def calculate_potential_pp(osu_score: dict, mode: enums.GameMode):
     return mode == enums.GameMode.osu and (not osu_score["legacy_perfect"] or not osu_score["passed"])
+
+
+def add_score_position(osu_scores: list):
+    for i, osu_score in enumerate(osu_scores):
+        osu_score["pos"] = i + 1
+    return osu_scores
 
 
 async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: Config):

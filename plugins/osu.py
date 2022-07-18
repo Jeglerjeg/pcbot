@@ -594,6 +594,7 @@ async def scores(message: discord.Message, *options):
             return
 
     user_id = osu_config.data["profiles"][str(member.id)]
+    beatmap_id = beatmap_info.beatmap_id
     mode = user_utils.get_mode(str(member.id))
     params = {
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
@@ -602,9 +603,9 @@ async def scores(message: discord.Message, *options):
     assert fetched_osu_scores["scores"], f"Found no scores by **{member.name}**."
 
     params = {
-        "beatmap_id": beatmap_info.beatmap_id,
+        "beatmap_id": beatmap_id,
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id,
+    beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_id,
                                         mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
     if mods:
         modslist = wrap(mods, 2)
@@ -616,32 +617,25 @@ async def scores(message: discord.Message, *options):
             await client.send_message(message.channel, content=f"Found no scores with +{mods} by **{member.name}**")
             return
 
-        # Add a beatmap ID and user to the score so formatting will work properly.
-        matching_score["beatmap"] = {}
-        matching_score["beatmap"]["id"] = beatmap_info.beatmap_id
+        # Add user to the score so formatting will work properly.
         matching_score["user"] = osu_tracking[str(member.id)]["new"]
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
                                                               if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
-        # Add a beatmap ID and user to the score so formatting will work properly.
-        osu_score["beatmap"] = {}
-        osu_score["beatmap"]["id"] = beatmap_info.beatmap_id
+        # Add user to the score so formatting will work properly.
         osu_score["user"] = osu_tracking[str(member.id)]["new"]
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
                                                               if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
     else:
         osu_score_list = fetched_osu_scores["scores"]
-        sorted_scores = score_utils.get_sorted_scores(osu_score_list, "pp")
-        # Add a beatmap ID and position to the scores so formatting the score list will work properly.
-        for i, osu_score in enumerate(osu_score_list):
-            osu_score["pos"] = i + 1
-            osu_score["beatmap"] = {}
-            osu_score["beatmap"]["id"] = beatmap_info.beatmap_id
+        # Add position to the scores so formatting the score list will work properly.
+        sorted_scores = score_utils.add_score_position(score_utils.get_sorted_scores(osu_score_list, "pp"))
         embed = embed_format.get_embed_from_template(await score_format.get_formatted_score_list(mode,
-                                                                                                 sorted_scores, 5),
+                                                                                                 sorted_scores, 5,
+                                                                                                 beatmap_id),
                                                      member.color,
                                                      osu_tracking[str(member.id)]["new"]["username"],
                                                      user_utils.get_user_url(str(member.id)),

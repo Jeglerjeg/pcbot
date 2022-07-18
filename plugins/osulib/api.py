@@ -172,7 +172,7 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
     return result
 
 
-async def get_user_beatmap_scores(beatmap_id, user_id, params=None):
+async def get_user_beatmap_scores(beatmap_id: int, user_id: int, params=None):
     """ Returns all of a user's scores on a beatmap. """
     request = def_section(f"beatmaps/{beatmap_id}/scores/users/{user_id}/all")
     if params:
@@ -182,11 +182,8 @@ async def get_user_beatmap_scores(beatmap_id, user_id, params=None):
     if "{'error': None}" in str(result):
         result = None
     else:
-        new_scores = []
         for osu_score in result["scores"]:
             osu_score = add_missing_hit_values(osu_score)
-            new_scores.append(osu_score)
-        result["scores"] = new_scores
     return result
 
 

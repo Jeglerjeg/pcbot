@@ -31,7 +31,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
     score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
     mods = enums.Mods.format_mods(osu_score["mods"])
 
-    if score_pp is not None and osu_score["pp"] is None:
+    if score_pp is not None and (osu_score["pp"] is None or osu_score["pp"] == 0):
         osu_score["pp"] = score_pp.pp
     elif osu_score["pp"] is None:
         osu_score["pp"] = 0
@@ -44,7 +44,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: dict, be
     if scoreboard_rank is False and str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)] \
             and osu_tracking[str(member.id)]["new"]["events"]:
         scoreboard_rank = api.rank_from_events(osu_tracking[str(member.id)]["new"]["events"],
-                                               str(osu_score["beatmap"]["id"]), osu_score)
+                                               str(beatmap["id"]), osu_score)
 
     time_string = ""
     if time:

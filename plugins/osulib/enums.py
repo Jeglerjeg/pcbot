@@ -1,6 +1,8 @@
+import copy
 from enum import Enum
 
 from plugins.osulib.constants import mode_names
+from pcbot import utils
 
 
 class UpdateModes(Enum):
@@ -54,9 +56,6 @@ class Mods(Enum):
     Key2 = 28
     ScoreV2 = 29
     LastMod = 30
-    KeyMod = Key4 | Key5 | Key6 | Key7 | Key8
-    FreeModAllowed = NF | EZ | HD | HR | SD | FL | FI | RX | AP | SO | KeyMod  # ¯\_(ツ)_/¯
-    ScoreIncreaseMods = HD | HR | DT | FL | FI
 
     def __new__(cls, num):
         """ Convert the given value to 2^num. """
@@ -78,8 +77,33 @@ class Mods(Enum):
 
         return mods
 
+    @staticmethod
+    def format_mod_settings(mods: list):
+        """ Add mod settings to the acronym for formatting purposes"""
+        for mod in mods:
+            settings = []
+            if mod["acronym"] == "DT" or mod["acronym"] == "NC" or mod["acronym"] == "HT" or mod["acronym"] == "DC":
+                if "speed_change" in mod["settings"]:
+                    settings.append(f'{utils.format_number(mod["settings"]["speed_change"], 2)}x')
+                elif mod["acronym"] == "DT" or mod["acronym"] == "NC":
+                    settings.append("1.5x")
+                else:
+                    settings.append("0.75x")
+            if mod["acronym"] == "DA":
+                if "circle_size" in mod["settings"]:
+                    settings.append(f'CS{utils.format_number(mod["settings"]["circle_size"], 2)}')
+                if "approach_rate" in mod["settings"]:
+                    settings.append(f'AR{utils.format_number(mod["settings"]["approach_rate"], 2)}')
+                if "drain_rate" in mod["settings"]:
+                    settings.append(f'HP{utils.format_number(mod["settings"]["drain_rate"], 2)}')
+                if "overall_difficulty" in mod["settings"]:
+                    settings.append(f'OD{utils.format_number(mod["settings"]["overall_difficulty"], 2)}')
+            if settings:
+                mod["acronym"] = f'{mod["acronym"]}({",".join(settings)})'
+        return mods
+
     @classmethod
-    def format_mods(cls, mods):
+    def format_mods(cls, mods, score_display: bool = False):
         """ Return a string with the mods in a sorted format, such as DTHD.
 
         mods is either a bitwise or a list of mod enums.
@@ -87,6 +111,10 @@ class Mods(Enum):
         if isinstance(mods, int):
             mods = cls.list_mods(mods)
         assert isinstance(mods, list)
+
+        if score_display:
+            mods = cls.format_mod_settings(copy.deepcopy(mods))
+            return ",".join((mod["acronym"] for mod in mods) if mods else ["Nomod"])
 
         return "".join((mod["acronym"] for mod in mods) if mods else ["Nomod"])
 

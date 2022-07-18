@@ -121,9 +121,11 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     args = parse_options(*options)
 
     # Calculate the mod bitmask and apply settings if needed
-    if args.mods and enums.Mods.NC in args.mods:
-        args.mods.remove(enums.Mods.NC)
-        args.mods.append(enums.Mods.DT)
+    if args.mods:
+        for mod in args.mods:
+            if mod is enums.Mods.NC or mod is enums.Mods.DT or enums.Mods.HT:
+                args.mods.remove(mod)
+
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
     calculator = rosu_pp_py.Calculator(beatmap_path)
@@ -261,7 +263,7 @@ async def get_score_pp(osu_score: dict, mode: enums.GameMode, beatmap: dict = No
     """ Return PP for a given score. """
     score_pp = None
     try:
-        score_pp = await calculate_pp(int(osu_score["beatmap"]["id"]), mode=mode,
+        score_pp = await calculate_pp(beatmap["id"] if beatmap else osu_score["beatmap"]["id"], mode=mode,
                                       ignore_osu_cache=not bool(beatmap["status"] == "ranked"
                                                                 or beatmap["status"] == "approved") if beatmap
                                       else False,
