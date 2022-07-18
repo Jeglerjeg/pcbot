@@ -538,7 +538,7 @@ async def score(message: discord.Message, *options):
     osu_score = osu_scores["score"]
     if mods:
         mod_list = wrap(mods, 2)
-        osu_score["mods"] = [{"acronym": mod} for mod in mod_list]
+        osu_score["mods"] = [{"acronym": mod, "settings": {}} for mod in mod_list]
         osu_score["pp"] = None
         osu_score["score"] = None
         scoreboard_rank = None

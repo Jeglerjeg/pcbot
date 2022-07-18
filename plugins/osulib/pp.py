@@ -121,10 +121,6 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     args = parse_options(*options)
 
     # Calculate the mod bitmask and apply settings if needed
-    if args.mods:
-        for mod in args.mods:
-            if mod is enums.Mods.NC or mod is enums.Mods.DT or enums.Mods.HT:
-                args.mods.remove(mod)
 
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
