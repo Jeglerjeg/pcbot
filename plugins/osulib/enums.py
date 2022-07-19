@@ -85,10 +85,6 @@ class Mods(Enum):
             if mod["acronym"] == "DT" or mod["acronym"] == "NC" or mod["acronym"] == "HT" or mod["acronym"] == "DC":
                 if "speed_change" in mod["settings"]:
                     settings.append(f'{utils.format_number(mod["settings"]["speed_change"], 2)}x')
-                elif mod["acronym"] == "DT" or mod["acronym"] == "NC":
-                    settings.append("1.5x")
-                else:
-                    settings.append("0.75x")
             if mod["acronym"] == "DA":
                 if "circle_size" in mod["settings"]:
                     settings.append(f'CS{utils.format_number(mod["settings"]["circle_size"], 2)}')
