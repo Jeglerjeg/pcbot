@@ -93,7 +93,9 @@ async def update_user_data(member_id: str, profile: str):
     mode = user_utils.get_mode(member_id)
     try:
         user_data = await user_utils.retrieve_user_proile(profile, mode, current_time)
-
+        if user_data is None:
+            logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
+            return
         params = {
             "limit": 20
         }
@@ -123,9 +125,6 @@ async def update_user_data(member_id: str, profile: str):
         return
     except Exception:
         logging.error(traceback.format_exc())
-        return
-    if user_data is None:
-        logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
         return
     # Update the "new" data
     if "new" in osu_tracking[member_id]:
