@@ -188,11 +188,12 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
         return None
     if fetched_scores is None:
         return None
+
+    old_score_ids = [osu_score["best_id"] for osu_score in osu_tracking[member_id]["scores"]["score_list"]]
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
-        if datetime.fromisoformat(osu_tracking[member_id]["scores"]["time_updated"]) <\
-                datetime.fromisoformat(osu_score["ended_at"]):
+        if osu_score["best_id"] not in old_score_ids:
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,
