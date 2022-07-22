@@ -120,8 +120,8 @@ def format_score_statistics(osu_score: dict, beatmap: dict, mode: enums.GameMode
     if mode is enums.GameMode.mania:
         return "  acc     max   300s  200s  100s  50s  miss\n" \
               f"{sign} {acc:<8}{perfect:<6}{great:<6}{good:<6}{ok:<6}{meh:<5}{miss:<6}"
-    return "  acc     fruits ticks drpmiss miss combo\n" \
-           f"{sign} {acc:<8}{great:<7}{large_tick_hit:<6}{small_tick_miss:<8}{miss+large_tick_miss:<5}{maxcombo}" \
+    return "  acc     fruits ticks drpm miss combo\n" \
+           f"{sign} {acc:<8}{great:<7}{large_tick_hit:<6}{small_tick_miss:<5}{miss+large_tick_miss:<5}{maxcombo}" \
            f"{max_combo}"
 
 
