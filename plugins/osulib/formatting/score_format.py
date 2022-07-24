@@ -112,16 +112,16 @@ def format_score_statistics(osu_score: dict, beatmap: dict, mode: enums.GameMode
     maxcombo = osu_score["max_combo"]
     max_combo = f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None else ""
     if mode is enums.GameMode.osu:
-        return "  acc     300s  100s  50s  miss  combo\n" \
-              f'{sign} {acc:<8}{great:<6}{ok:<6}{meh:<5}{miss:<6}{maxcombo}{max_combo}'
+        return "  acc    300s  100s  50s  miss  combo\n" \
+              f'{sign} {acc:<7}{great:<6}{ok:<6}{meh:<5}{miss:<6}{maxcombo}{max_combo}'
     if mode is enums.GameMode.taiko:
-        return "  acc     great  good  miss  combo\n" \
-              f"{sign} {acc:<8}{great:<7}{ok:<6}{miss:<6}{maxcombo}{max_combo}"
+        return "  acc    great  good  miss  combo\n" \
+              f"{sign} {acc:<7}{great:<7}{ok:<6}{miss:<6}{maxcombo}{max_combo}"
     if mode is enums.GameMode.mania:
-        return "  acc     max   300s  200s  100s  50s  miss\n" \
-              f"{sign} {acc:<8}{perfect:<6}{great:<6}{good:<6}{ok:<6}{meh:<5}{miss:<6}"
-    return "  acc     fruits ticks drpm miss combo\n" \
-           f"{sign} {acc:<8}{great:<7}{large_tick_hit:<6}{small_tick_miss:<5}{miss+large_tick_miss:<5}{maxcombo}" \
+        return "  acc    max   300s  200s  100s  50s  miss\n" \
+              f"{sign} {acc:<7}{perfect:<6}{great:<6}{good:<6}{ok:<6}{meh:<5}{miss:<6}"
+    return "  acc    fruits ticks drpm miss combo\n" \
+           f"{sign} {acc:<7}{great:<7}{large_tick_hit:<6}{small_tick_miss:<5}{miss+large_tick_miss:<5}{maxcombo}" \
            f"{max_combo}"
 
 
