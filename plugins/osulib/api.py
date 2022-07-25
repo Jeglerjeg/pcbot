@@ -147,7 +147,7 @@ async def get_user_scores(user_id, score_type, params=None):
         result = await request(**params)
     else:
         result = await request()
-    if "{'error': None}" in str(result):
+    if "{'error': None}" in str(result) or result is None:
         result = None
     else:
         new_result = []
@@ -179,7 +179,7 @@ async def get_user_beatmap_scores(beatmap_id: int, user_id: int, params=None):
         result = await request(**params)
     else:
         result = await request()
-    if "{'error': None}" in str(result):
+    if "{'error': None}" in str(result) or result is None:
         result = None
     else:
         for osu_score in result["scores"]:
