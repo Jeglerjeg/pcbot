@@ -14,13 +14,14 @@ except ImportError:
 
 
 class PaginatedScoreList(discord.ui.View):
-    def __init__(self, osu_scores: list, mode: enums.GameMode, pages: int, embed: discord.Embed, nochoke: bool = False):
+    def __init__(self, osu_scores: list, mode: enums.GameMode, max_pages: int, embed: discord.Embed,
+                 nochoke: bool = False):
         super().__init__(timeout=30)
         self.osu_scores = osu_scores
         self.page = 1
         self.offset = 0
         self.mode = mode
-        self.pages = pages
+        self.max_pages = max_pages
         self.embed = embed
         self.nochoke = nochoke
 
@@ -28,7 +29,7 @@ class PaginatedScoreList(discord.ui.View):
         embed = message.embeds[0]
         embed.description = await get_formatted_score_list(self.mode, self.osu_scores, 5, offset=self.offset,
                                                            nochoke=self.nochoke)
-        embed.set_footer(text=f"Page {self.page} of {self.pages}")
+        embed.set_footer(text=f"Page {self.page} of {self.max_pages}")
         self.embed = embed
         await message.edit(embed=embed)
 
@@ -36,18 +37,22 @@ class PaginatedScoreList(discord.ui.View):
     async def last_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         if self.page == 1:
-            return
-        self.page -= 1
-        self.offset -= 5
+            self.page = self.max_pages
+            self.offset = (self.max_pages - 1) * 5
+        else:
+            self.page -= 1
+            self.offset -= 5
         await self.update_message(interaction.message)
 
     @discord.ui.button(label=">", style=discord.ButtonStyle.blurple)
     async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        if self.page == self.pages:
-            return
-        self.page += 1
-        self.offset += 5
+        if self.page == self.max_pages:
+            self.page = 1
+            self.offset = 0
+        else:
+            self.page += 1
+            self.offset += 5
         await self.update_message(interaction.message)
 
     @discord.ui.button(label="⭯", style=discord.ButtonStyle.blurple)
