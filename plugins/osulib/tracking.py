@@ -170,6 +170,7 @@ class OsuTracker:
         osu_tracking[member_id]["new"] = user_data
         if cache_user_profiles:
             osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
+            osu_profile_cache.data[member_id]["ticks"] = osu_tracking[member_id]["ticks"]
 
     async def __notify_recent_events(self, member_id: str, data: dict):
         """ Notify any map updates, such as update, resurrect and qualified. """
