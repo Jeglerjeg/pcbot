@@ -19,12 +19,9 @@ TUTORIAL:
 import copy
 import importlib
 import asyncio
-import logging
-import traceback
-from datetime import datetime, timezone
+from datetime import datetime
 from textwrap import wrap
 from operator import itemgetter
-import aiohttp
 import discord
 
 
@@ -32,8 +29,8 @@ import bot
 import plugins
 from pcbot import utils, Annotate
 from plugins.osulib import api, pp, ordr, enums
-from plugins.osulib.tracking import osu_tracking, osu_profile_cache, update_user_data, notify_pp, notify_recent_events
-from plugins.osulib.constants import update_interval, cache_user_profiles, minimum_pp_required, host
+from plugins.osulib.tracking import osu_tracking, osu_profile_cache, OsuTracking
+from plugins.osulib.constants import minimum_pp_required, host
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
 from plugins.osulib.config import osu_config
@@ -41,67 +38,20 @@ from plugins.osulib.config import osu_config
 client = plugins.client  # type: bot.Client
 
 last_rendered = {}  # Saves when the member last rendered a replay
-time_elapsed = 0  # The registered time it takes to process all information between updates (changes each update)
-previous_update = None  # The time osu user data was last updated. None until first update has run
+osu_tracker = OsuTracking()
 
 
 async def on_ready():
     """ Handle every event. """
-    global time_elapsed, previous_update
-    api_available = False
-
     await client.wait_until_ready()
     await ordr.establish_ws_connection()
-
-    # Notify the owner when they have not set their API key
-    if osu_config.data["client_secret"] == "change to your client secret" or \
-            osu_config.data["client_id"] == "change to your client ID":
-        logging.warning("osu! functionality is unavailable until a "
-                        "client ID and client secret is provided (config/osu.json)")
-    else:
-        await api.get_access_token(osu_config.data.get("client_id"), osu_config.data.get("client_secret"))
-        client.loop.create_task(api.refresh_access_token(osu_config.data.get("client_id"),
-                                                         osu_config.data.get("client_secret")))
-        api_available = True
-
-    while not client.loop.is_closed() and api_available:
-        try:
-            await asyncio.sleep(float(update_interval))
-            started = datetime.now()
-
-            for member_id, profile in list(osu_config.data["profiles"].items()):
-                # First, update the user's data
-                await update_user_data(member_id, profile)
-                if str(member_id) in osu_tracking:
-                    data = osu_tracking[str(member_id)]
-                    # Next, check for any differences in pp between the "old" and the "new" subsections
-                    # and notify any guilds
-                    if misc_utils.check_for_pp_difference(data):
-                        client.loop.create_task(notify_pp(str(member_id), data))
-                    # Check for any differences in the users' events and post about map updates
-                    if misc_utils.check_for_new_recent_events(data):
-                        client.loop.create_task(notify_recent_events(str(member_id), data))
-            if cache_user_profiles:
-                await osu_profile_cache.asyncsave()
-        except aiohttp.ClientOSError:
-            logging.error(traceback.format_exc())
-        except asyncio.CancelledError:
-            return
-        except Exception:
-            logging.error(traceback.format_exc())
-        finally:
-            # Save the time elapsed since we started the update
-            time_elapsed = (datetime.now() - started).total_seconds()
-            previous_update = datetime.now(tz=timezone.utc)
 
 
 async def on_reload(name: str):
     """ Preserve the tracking cache. """
-    global time_elapsed, previous_update, last_rendered
+    global last_rendered
     local_renders = last_rendered
     local_requests = api.requests_sent
-    local_update_time_elapsed = time_elapsed
-    local_update_time = previous_update
 
     importlib.reload(plugins.osulib.api)
     importlib.reload(plugins.osulib.args)
@@ -110,8 +60,6 @@ async def on_reload(name: str):
 
     api.requests_sent = local_requests
     last_rendered = local_renders
-    time_elapsed = local_update_time_elapsed
-    previous_update = local_update_time
 
 
 @plugins.event()
@@ -817,6 +765,7 @@ async def debug(message: discord.Message):
     client_time = f"<t:{int(client.time_started.timestamp())}:F>"
     member_list = [f"`{d['member'].name}`" for d in osu_tracking.values()
                    if "member" in d and user_utils.is_playing(d["member"])]
+    previous_update = osu_tracker.get_previous_time()
     await client.say(message, "Sent `{}` requests since the bot started ({}).\n"
                               "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
@@ -828,7 +777,7 @@ async def debug(message: discord.Message):
                                                    ((discord.utils.utcnow() -
                                                      client.time_started).total_seconds() / 60.0), 2)
                                if api.requests_sent > 0 else 0,
-                               time_elapsed,
+                               osu_tracker.get_time_elapsed(),
                                f"<t:{int(previous_update.timestamp())}:F>"
                                if previous_update else "Not updated yet.",
                                ", ".join(member_list) if member_list else "None", len(osu_tracking)
