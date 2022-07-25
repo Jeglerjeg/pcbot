@@ -1,6 +1,11 @@
+import copy
 import re
+
+from pcbot import Config
 from plugins.osulib import config
 
+osu_profile_cache = Config("osu_profile_cache", data={})
+osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Stores tracked osu! users
 host = "https://osu.ppy.sh/"
 max_diff_length = 22  # The maximum amount of characters in a beatmap difficulty
 logging_interval = 30  # The time it takes before posting logging information to the console.

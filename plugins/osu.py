@@ -29,8 +29,8 @@ import bot
 import plugins
 from pcbot import utils, Annotate
 from plugins.osulib import api, pp, ordr, enums
-from plugins.osulib.tracking import osu_tracking, osu_profile_cache, OsuTracking
-from plugins.osulib.constants import minimum_pp_required, host
+from plugins.osulib.tracking import OsuTracker
+from plugins.osulib.constants import minimum_pp_required, host, osu_profile_cache, osu_tracking
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
 from plugins.osulib.config import osu_config
@@ -38,7 +38,7 @@ from plugins.osulib.config import osu_config
 client = plugins.client  # type: bot.Client
 
 last_rendered = {}  # Saves when the member last rendered a replay
-osu_tracker = OsuTracking()
+osu_tracker = OsuTracker()
 
 
 async def on_ready():
@@ -49,15 +49,31 @@ async def on_ready():
 
 async def on_reload(name: str):
     """ Preserve the tracking cache. """
-    global last_rendered
+    global last_rendered, osu_tracker
     local_renders = last_rendered
     local_requests = api.requests_sent
+    local_tracker = osu_tracker
 
+    importlib.reload(plugins.osulib.formatting.beatmap_format)
+    importlib.reload(plugins.osulib.formatting.embed_format)
+    importlib.reload(plugins.osulib.formatting.misc_format)
+    importlib.reload(plugins.osulib.formatting.score_format)
+    importlib.reload(plugins.osulib.utils.beatmap_utils)
+    importlib.reload(plugins.osulib.utils.misc_utils)
+    importlib.reload(plugins.osulib.utils.score_utils)
+    importlib.reload(plugins.osulib.utils.user_utils)
     importlib.reload(plugins.osulib.api)
     importlib.reload(plugins.osulib.args)
+    importlib.reload(plugins.osulib.caching)
+    importlib.reload(plugins.osulib.config)
+    importlib.reload(plugins.osulib.constants)
+    importlib.reload(plugins.osulib.enums)
+    importlib.reload(plugins.osulib.ordr)
     importlib.reload(plugins.osulib.pp)
+    importlib.reload(plugins.osulib.tracking)
     await plugins.reload(name)
 
+    osu_tracker = local_tracker
     api.requests_sent = local_requests
     last_rendered = local_renders
 

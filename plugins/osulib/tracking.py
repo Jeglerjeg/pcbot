@@ -1,5 +1,4 @@
 import asyncio
-import copy
 import logging
 import traceback
 from datetime import datetime, timezone, timedelta
@@ -10,22 +9,15 @@ import discord
 
 import bot
 import plugins
-from pcbot import Config
 from plugins.osulib import api, enums, pp
 from plugins.osulib.constants import cache_user_profiles, not_playing_skip, event_repeat_interval, notify_empty_scores,\
-    score_request_limit, use_mentions_in_scores, update_interval
+    score_request_limit, use_mentions_in_scores, update_interval, osu_tracking, osu_profile_cache
 from plugins.osulib.enums import UpdateModes, Mods
 from plugins.osulib.formatting import embed_format, score_format, misc_format, beatmap_format
 from plugins.osulib.utils import user_utils, score_utils, misc_utils
 from plugins.osulib.config import osu_config
 
-osu_profile_cache = Config("osu_profile_cache", data={})
-osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Stores tracked osu! users
-
 client = plugins.client  # type: bot.Client
-
-previous_score_updates = []  # Saves the score IDs of recent map notifications so they don't get posted several times
-recent_map_events = []
 
 
 class MapEvent:
@@ -45,11 +37,13 @@ class MapEvent:
         return repr(self)
 
 
-class OsuTracking:
+class OsuTracker:
     def __init__(self):
         self.previous_update = None
         self.time_elapsed = 0
         self.started = None
+        self.previous_score_updates = []
+        self.recent_map_events = []
 
         # Notify the owner when they have not set their API key
         if osu_config.data["client_secret"] == "change to your client secret" or \
@@ -177,8 +171,7 @@ class OsuTracking:
         if cache_user_profiles:
             osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
 
-    @staticmethod
-    async def __notify_recent_events(member_id: str, data: dict):
+    async def __notify_recent_events(self, member_id: str, data: dict):
         """ Notify any map updates, such as update, resurrect and qualified. """
 
         old, new = data["old"]["events"], data["new"]["events"]
@@ -245,11 +238,11 @@ class OsuTracking:
                 event_text = [event["beatmapset"]["title"], event["type"],
                               (event["approval"] if event["type"] == "beatmapsetApprove" else "")]
                 new_event = MapEvent(text=str("".join(event_text)))
-                prev = discord.utils.get(recent_map_events, text="".join(event_text))
+                prev = discord.utils.get(self.recent_map_events, text="".join(event_text))
                 to_delete = []
 
                 if prev:
-                    recent_map_events.remove(prev)
+                    self.recent_map_events.remove(prev)
 
                     if prev.time_created + timedelta(hours=event_repeat_interval) > new_event.time_created:
                         to_delete = prev.messages
@@ -257,7 +250,7 @@ class OsuTracking:
                         new_event.time_created = prev.time_created
 
                 # Always append the new event to the recent list
-                recent_map_events.append(new_event)
+                self.recent_map_events.append(new_event)
 
                 # Send the message to all guilds
                 member = data["member"]
@@ -307,7 +300,7 @@ class OsuTracking:
                 osu_score = osu_scores["score"]
                 position = osu_scores["position"]
 
-                if osu_score["best_id"] in previous_score_updates:
+                if osu_score["best_id"] in self.previous_score_updates:
                     continue
 
                 top100_best_id = []
@@ -317,7 +310,7 @@ class OsuTracking:
                 if osu_score["best_id"] in top100_best_id:
                     continue
 
-                previous_score_updates.append(osu_score["best_id"])
+                self.previous_score_updates.append(osu_score["best_id"])
 
                 params = {
                     "beatmap_id": osu_score["beatmap"]["id"],
@@ -345,8 +338,7 @@ class OsuTracking:
                         except discord.Forbidden:
                             pass
 
-    @staticmethod
-    async def __notify_pp(member_id: str, data: dict):
+    async def __notify_pp(self, member_id: str, data: dict):
         """ Notify any differences in pp and post the scores + rank/pp gained. """
 
         old, new = data["old"], data["new"]
@@ -370,10 +362,10 @@ class OsuTracking:
             else:
                 logging.info("%s (%s) gained PP, but no new score was found.", member.name, member_id)
         for osu_score in list(osu_scores):
-            if osu_score["best_id"] in previous_score_updates:
+            if osu_score["best_id"] in self.previous_score_updates:
                 osu_scores.remove(osu_score)
                 continue
-            previous_score_updates.append(osu_score["best_id"])
+            self.previous_score_updates.append(osu_score["best_id"])
 
         if not osu_scores and not notify_empty_scores:
             return
