@@ -533,7 +533,7 @@ async def score(message: discord.Message, *options):
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
     osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
-    assert osu_scores, f"Found no scores by **{member.name}**."
+    assert osu_scores, f"Found no scores by **{osu_tracking[str(member.id)]['new']['username']}**."
 
     osu_score = osu_scores["score"]
     if mods:
@@ -600,7 +600,7 @@ async def scores(message: discord.Message, *options):
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
     fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, user_id, params=params)
-    assert fetched_osu_scores["scores"], f"Found no scores by **{member.name}**."
+    assert fetched_osu_scores["scores"], f"Found no scores by **{osu_tracking[str(member.id)]['new']['username']}**."
 
     params = {
         "beatmap_id": beatmap_id,
