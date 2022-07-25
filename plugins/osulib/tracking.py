@@ -84,6 +84,10 @@ class OsuTracking:
         self.time_elapsed = (datetime.now() - self.started).total_seconds()
         self.previous_update = datetime.now(tz=timezone.utc)
 
+    @__tracking_loop.before_loop
+    async def wait_for_ready(self):
+        await client.wait_until_ready()
+
     @staticmethod
     async def __update_user_data(member_id: str, profile: str):
         """ Go through all registered members playing osu!, and update their data. """
