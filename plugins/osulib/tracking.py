@@ -445,9 +445,3 @@ class OsuTracker:
                         await client.delete_message(mention)
                 except discord.Forbidden:
                     pass
-
-    def get_time_elapsed(self):
-        return self.time_elapsed
-
-    def get_previous_time(self):
-        return self.previous_update

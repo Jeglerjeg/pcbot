@@ -783,7 +783,6 @@ async def debug(message: discord.Message):
     client_time = f"<t:{int(client.time_started.timestamp())}:F>"
     member_list = [f"`{d['member'].name}`" for d in osu_tracking.values()
                    if "member" in d and user_utils.is_playing(d["member"])]
-    previous_update = osu_tracker.get_previous_time()
     await client.say(message, "Sent `{}` requests since the bot started ({}).\n"
                               "Sent an average of `{}` requests per minute. \n"
                               "Spent `{:.3f}` seconds last update.\n"
@@ -795,9 +794,9 @@ async def debug(message: discord.Message):
                                                    ((discord.utils.utcnow() -
                                                      client.time_started).total_seconds() / 60.0), 2)
                                if api.requests_sent > 0 else 0,
-                               osu_tracker.get_time_elapsed(),
-                               f"<t:{int(previous_update.timestamp())}:F>"
-                               if previous_update else "Not updated yet.",
+                               osu_tracker.time_elapsed,
+                               f"<t:{int(osu_tracker.previous_update.timestamp())}:F>"
+                               if osu_tracker.previous_update else "Not updated yet.",
                                ", ".join(member_list) if member_list else "None", len(osu_tracking)
                                )
                      )
