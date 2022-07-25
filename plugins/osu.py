@@ -53,6 +53,7 @@ async def on_reload(name: str):
     local_renders = last_rendered
     local_requests = api.requests_sent
     local_tracker = osu_tracker
+    local_tracking_data = plugins.osulib.constants.osu_tracking
 
     importlib.reload(plugins.osulib.formatting.beatmap_format)
     importlib.reload(plugins.osulib.formatting.embed_format)
@@ -76,6 +77,7 @@ async def on_reload(name: str):
     osu_tracker = local_tracker
     api.requests_sent = local_requests
     last_rendered = local_renders
+    plugins.osulib.constants.osu_tracking = local_tracking_data
 
 
 @plugins.event()
