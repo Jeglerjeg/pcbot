@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import logging
 import traceback
 from datetime import timezone, datetime
@@ -191,10 +192,10 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
     if new_scores:
         osu_tracking[member_id]["scores"]["time_updated"] = fetched_scores["time_updated"]
         if cache_user_profiles:
-            osu_profile_cache.data[member_id]["scores"]["time_updated"] = fetched_scores["time_updated"]
+            osu_profile_cache.data[member_id]["scores"]["time_updated"] = copy.deepcopy(fetched_scores["time_updated"])
     osu_tracking[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
     if cache_user_profiles:
-        osu_profile_cache.data[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
+        osu_profile_cache.data[member_id]["scores"]["score_list"] = copy.deepcopy(fetched_scores["score_list"])
         await misc_utils.save_profile_data(osu_profile_cache)
     return new_scores
 

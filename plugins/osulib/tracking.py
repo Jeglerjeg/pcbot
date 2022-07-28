@@ -160,7 +160,7 @@ class OsuTracker:
                 if fetched_scores:
                     osu_tracking[member_id]["scores"] = fetched_scores
                     if cache_user_profiles:
-                        osu_profile_cache.data[member_id]["scores"] = fetched_scores
+                        osu_profile_cache.data[member_id]["scores"] = copy.deepcopy(fetched_scores)
         except aiohttp.ServerDisconnectedError:
             return
         except asyncio.TimeoutError:
@@ -176,8 +176,8 @@ class OsuTracker:
 
         osu_tracking[member_id]["new"] = user_data
         if cache_user_profiles:
-            osu_profile_cache.data[member_id]["new"] = osu_tracking[member_id]["new"]
-            osu_profile_cache.data[member_id]["ticks"] = osu_tracking[member_id]["ticks"]
+            osu_profile_cache.data[member_id]["new"] = copy.deepcopy(osu_tracking[member_id]["new"])
+            osu_profile_cache.data[member_id]["ticks"] = copy.deepcopy(osu_tracking[member_id]["ticks"])
 
     async def __notify_recent_events(self, member_id: str, data: dict):
         """ Notify any map updates, such as update, resurrect and qualified. """
