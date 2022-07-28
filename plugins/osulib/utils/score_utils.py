@@ -65,18 +65,17 @@ def get_no_choke_scorerank(mods: list, acc: float):
 
 
 def get_score_object_count(osu_score: OsuScore):
-    mode = enums.GameMode(osu_score.mode)
     perfect = osu_score.count_max
     great = osu_score.count_300
     good = osu_score.count_200
     ok = osu_score.count_100
     meh = osu_score.count_50
     miss = osu_score.count_miss
-    if mode is enums.GameMode.osu:
+    if osu_score.mode is enums.GameMode.osu:
         objects = great + ok + meh + miss
-    elif mode is enums.GameMode.taiko:
+    elif osu_score.mode is enums.GameMode.taiko:
         objects = great + ok + miss
-    elif mode is enums.GameMode.mania:
+    elif osu_score.mode is enums.GameMode.mania:
         objects = perfect + great + good + ok + meh + miss
     else:
         objects = 0
@@ -85,21 +84,20 @@ def get_score_object_count(osu_score: OsuScore):
 
 def process_score_args(osu_score: OsuScore):
     formatted_mods = f"+{enums.Mods.format_mods(osu_score.mods)}"
-    mode = enums.GameMode(osu_score.mode)
     great = osu_score.count_300
     ok = osu_score.count_100
     miss = osu_score.count_miss
     acc = osu_score.accuracy
 
-    if mode is enums.GameMode.osu:
-        potential_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
+    if osu_score.mode is enums.GameMode.osu:
+        potential_acc = misc_utils.calculate_acc(osu_score.mode, osu_score, exclude_misses=True)
         meh = osu_score.count_50
         args_list = (f"{formatted_mods} {acc:.2%} {potential_acc:.2%}pot {great}x300 {ok}x100 {meh}x50 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
-    elif mode is enums.GameMode.taiko:
+    elif osu_score.mode is enums.GameMode.taiko:
         args_list = (f"{formatted_mods} {acc:.2%} {great}x300 {ok}x100 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
-    elif mode is enums.GameMode.mania:
+    elif osu_score.mode is enums.GameMode.mania:
         score = osu_score.max_combo
         args_list = f"{formatted_mods} {score}score {get_score_object_count(osu_score)}objects".split()
     else:
@@ -172,6 +170,8 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
         if osu_score.best_id not in old_score_ids:
+            if (datetime.utcnow() - osu_score.ended_at).total_seconds() < 3600*24:
+                continue
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,

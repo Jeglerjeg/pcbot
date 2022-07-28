@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
+from plugins.osulib.enums import GameMode
+
 
 class OsuScore:
     id: int
@@ -26,7 +28,7 @@ class OsuScore:
     pp: float
     rank: str
     ended_at: datetime
-    mode: int
+    mode: GameMode
     replay: bool
     new_pp: Optional[float]
     position: Optional[int]
@@ -42,7 +44,7 @@ class OsuScore:
         if from_file:
             self.score = json_data["score"]
             self.perfect = json_data["perfect"]
-            self.mode = json_data["mode"]
+            self.mode = GameMode(json_data["mode"])
             self.count_max = json_data["count_max"]
             self.count_300 = json_data["count_300"]
             self.count_200 = json_data["count_200"]
@@ -56,7 +58,7 @@ class OsuScore:
         else:
             self.score = json_data["total_score"]
             self.perfect = json_data["legacy_perfect"]
-            self.mode = json_data["ruleset_id"]
+            self.mode = GameMode(json_data["ruleset_id"])
             self.count_max = json_data["statistics"]["perfect"] if "perfect" in json_data["statistics"] else 0
             self.count_300 = json_data["statistics"]["great"] if "great" in json_data["statistics"] else 0
             self.count_200 = json_data["statistics"]["good"] if "good" in json_data["statistics"] else 0
@@ -105,10 +107,16 @@ class OsuScore:
     def __getitem__(self, item):
         return getattr(self, item)
 
+    def __repr__(self):
+        return self.to_dict()
+
     def to_dict(self):
         readable_dict = {}
         for attr, value in self.__dict__.items():
-            if isinstance(value, datetime):
+            if isinstance(value, GameMode):
+                readable_dict[attr] = value.value
+                continue
+            elif isinstance(value, datetime):
                 readable_dict[attr] = value.isoformat()
                 continue
             readable_dict[attr] = value

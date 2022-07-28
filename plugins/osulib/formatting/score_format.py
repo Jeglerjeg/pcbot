@@ -131,7 +131,7 @@ def format_score_statistics(osu_score: OsuScore, beatmap: dict, mode: enums.Game
 
 def format_score_info(osu_score: OsuScore, beatmap: dict):
     """ Return formatted beatmap information. """
-    beatmap_url = beatmap_utils.get_beatmap_url(beatmap["id"], enums.GameMode(osu_score.mode))
+    beatmap_url = beatmap_utils.get_beatmap_url(beatmap["id"], osu_score.mode)
     modslist = enums.Mods.format_mods(osu_score.mods, score_display=True)
     score_pp = utils.format_number(osu_score.pp, 2) if not hasattr(osu_score, "new_pp") else osu_score.new_pp
     ranked_score = f'{osu_score.score:,}' if osu_score.score else ""
@@ -168,7 +168,7 @@ async def format_minimal_score(osu_score: OsuScore, beatmap: dict, member: disco
         "**{pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
-        url=beatmap_utils.get_beatmap_url(osu_score.beatmap["id"], enums.GameMode(osu_score.mode)),
+        url=beatmap_utils.get_beatmap_url(osu_score.beatmap["id"], osu_score.mode),
         mods=enums.Mods.format_mods(osu_score.mods, score_display=True),
         acc=f"{utils.format_number(osu_score.accuracy * 100, 2)}%",
         artist=beatmap["beatmapset"]["artist"].replace("*", r"\*").replace("_", r"\_"),
@@ -189,7 +189,7 @@ async def format_minimal_score(osu_score: OsuScore, beatmap: dict, member: disco
 def format_completion_rate(osu_score: OsuScore, pp_stats: pp.PPStats):
     completion_rate = ""
     if osu_score and pp_stats and osu_score.passed is False \
-            and enums.GameMode(osu_score.mode) is not enums.GameMode.fruits:
+            and osu_score.mode is not enums.GameMode.fruits:
         beatmap_objects = (osu_score.beatmap["count_circles"] + osu_score.beatmap["count_sliders"] +
                            osu_score.beatmap["count_spinners"])
         objects = score_utils.get_score_object_count(osu_score)
