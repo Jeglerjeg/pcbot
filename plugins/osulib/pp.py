@@ -12,6 +12,7 @@ from operator import itemgetter
 from pcbot import utils, Config
 from plugins.osulib import enums, api
 from plugins.osulib.args import parse as parse_options
+from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import misc_utils, score_utils
 
 try:
@@ -243,28 +244,28 @@ def get_beatmap_sr(score_pp: PPStats, beatmap: dict, mods: str):
     return difficulty_rating
 
 
-def calculate_total_user_pp(osu_scores: list, member_id: str, osu_tracking: dict):
+def calculate_total_user_pp(osu_scores: list[OsuScore], member_id: str, osu_tracking: dict):
     """ Calculates the user's total PP. """
     total_pp = 0
     for i, osu_score in enumerate(osu_scores):
-        total_pp += osu_score["pp"] * (0.95 ** i)
+        total_pp += osu_score.pp * (0.95 ** i)
     total_pp_without_bonus_pp = 0
     for osu_score in osu_tracking[member_id]["scores"]["score_list"]:
-        total_pp_without_bonus_pp += osu_score["weight"]["pp"]
+        total_pp_without_bonus_pp += osu_score.weight["pp"]
     bonus_pp = osu_tracking[member_id]["new"]["statistics"]["pp"] - total_pp_without_bonus_pp
     return total_pp + bonus_pp
 
 
-async def get_score_pp(osu_score: dict, mode: enums.GameMode, beatmap: dict = None):
+async def get_score_pp(osu_score: OsuScore, mode: enums.GameMode, beatmap: dict = None):
     """ Return PP for a given score. """
     score_pp = None
     try:
-        score_pp = await calculate_pp(beatmap["id"] if beatmap else osu_score["beatmap"]["id"], mode=mode,
+        score_pp = await calculate_pp(beatmap["id"] if beatmap else osu_score.beatmap["id"], mode=mode,
                                       ignore_osu_cache=not bool(beatmap["status"] == "ranked"
                                                                 or beatmap["status"] == "approved") if beatmap
                                       else False,
                                       potential=score_utils.calculate_potential_pp(osu_score, mode),
-                                      failed=not osu_score["passed"], *score_utils.process_score_args(osu_score))
+                                      failed=not osu_score.passed, *score_utils.process_score_args(osu_score))
     except Exception:
         logging.error(traceback.format_exc())
     return score_pp
@@ -350,27 +351,27 @@ async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
     if member_id not in no_choke_cache or (member_id in no_choke_cache and no_choke_cache[member_id]["time_updated"]
                                            < datetime.fromisoformat(osu_scores["time_updated"])):
         for osu_score in osu_scores["score_list"]:
-            if osu_score["legacy_perfect"]:
+            if osu_score.perfect:
                 continue
             full_combo_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
             score_pp = await get_score_pp(osu_score, mode)
-            if (score_pp.max_pp - osu_score["pp"]) > 10:
-                osu_score["new_pp"] = f"""{utils.format_number(osu_score["pp"], 2)} => {utils.format_number(
+            if (score_pp.max_pp - osu_score.pp) > 10:
+                osu_score.new_pp = f"""{utils.format_number(osu_score.pp, 2)} => {utils.format_number(
                     score_pp.max_pp, 2)}"""
-                osu_score["pp"] = score_pp.max_pp
-                osu_score["legacy_perfect"] = True
-                osu_score["accuracy"] = full_combo_acc
-                osu_score["max_combo"] = score_pp.max_combo
-                osu_score["beatmap"]["difficulty_rating"] = score_pp.stars
-                osu_score["statistics"]["great"] = osu_score["statistics"]["great"] +\
-                    osu_score["statistics"]["miss"]
-                osu_score["statistics"]["miss"] = 0
-                osu_score["rank"] = score_utils.get_no_choke_scorerank(osu_score["mods"], full_combo_acc)
-                osu_score["score"] = None
+                osu_score.pp = score_pp.max_pp
+                osu_score.perfect = True
+                osu_score.accuracy = full_combo_acc
+                osu_score.max_combo = score_pp.max_combo
+                osu_score.beatmap["difficulty_rating"] = score_pp.stars
+                osu_score.count_300 = osu_score.count_300 +\
+                    osu_score.count_miss
+                osu_score.count_miss = 0
+                osu_score.rank = score_utils.get_no_choke_scorerank(osu_score.mods, full_combo_acc)
+                osu_score.score = None
                 no_choke_list.append(osu_score)
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
         for i, osu_score in enumerate(no_choke_list):
-            osu_score["pos"] = i + 1
+            osu_score.position = i + 1
         no_choke_cache[member_id] = dict(score_list=no_choke_list, time_updated=datetime.now(tz=timezone.utc))
         no_chokes = no_choke_cache[member_id]
     else:

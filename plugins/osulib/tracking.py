@@ -1,21 +1,28 @@
 import asyncio
+import copy
 import logging
 import traceback
 from datetime import datetime, timezone, timedelta
-from discord.ext import tasks
 
 import aiohttp
 import discord
+from discord.ext import tasks
 
 import bot
 import plugins
+from pcbot import Config
 from plugins.osulib import api, enums, pp
+from plugins.osulib.config import osu_config
 from plugins.osulib.constants import cache_user_profiles, not_playing_skip, event_repeat_interval, notify_empty_scores,\
-    score_request_limit, use_mentions_in_scores, update_interval, osu_tracking, osu_profile_cache
+    score_request_limit, use_mentions_in_scores, update_interval
 from plugins.osulib.enums import UpdateModes, Mods
 from plugins.osulib.formatting import embed_format, score_format, misc_format, beatmap_format
+from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import user_utils, score_utils, misc_utils
-from plugins.osulib.config import osu_config
+
+osu_profile_cache = Config("osu_profile_cache", data={})
+osu_profile_cache.data = misc_utils.load_profile_data(osu_profile_cache.data)
+osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Stores tracked osu! users
 
 client = plugins.client  # type: bot.Client
 
@@ -74,7 +81,7 @@ class OsuTracker:
                 if misc_utils.check_for_new_recent_events(data):
                     client.loop.create_task(self.__notify_recent_events(str(member_id), data))
         if cache_user_profiles:
-            await osu_profile_cache.asyncsave()
+            await misc_utils.save_profile_data(osu_profile_cache)
         self.time_elapsed = (datetime.now() - self.started).total_seconds()
         self.previous_update = datetime.now(tz=timezone.utc)
 
@@ -298,23 +305,23 @@ class OsuTracker:
                 if osu_scores is None:
                     continue
 
-                osu_score = osu_scores["score"]
-                position = osu_scores["position"]
+                osu_score = osu_scores["score"]  # type: OsuScore
+                osu_score.rank_global = osu_scores["position"]
 
-                if osu_score["best_id"] in self.previous_score_updates:
+                if osu_score.best_id in self.previous_score_updates:
                     continue
 
                 top100_best_id = []
                 for old_score in data["scores"]["score_list"]:
                     top100_best_id.append(old_score["best_id"])
 
-                if osu_score["best_id"] in top100_best_id:
+                if osu_score.best_id in top100_best_id:
                     continue
 
-                self.previous_score_updates.append(osu_score["best_id"])
+                self.previous_score_updates.append(osu_score.best_id)
 
                 params = {
-                    "beatmap_id": osu_score["beatmap"]["id"],
+                    "beatmap_id": osu_score.beatmap_id,
                 }
                 beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.name))
                 # Send the message to all guilds
@@ -328,8 +335,7 @@ class OsuTracker:
                     member = guild.get_member(int(member_id))
 
                     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode,
-                                                                          osu_tracking,
-                                                                          position, twitch_link=True)
+                                                                          osu_tracking, twitch_link=True)
                     embed.set_author(name=f"{data['new']['username']} set a new leaderboard score",
                                      icon_url=data["new"]["avatar_url"], url=user_utils.get_user_url(str(member.id)))
 
@@ -351,7 +357,7 @@ class OsuTracker:
         score_pp = None
         thumbnail_url = ""
         osu_score = None
-        osu_scores = []  # type: list
+        osu_scores = []  # type: list[OsuScore]
         # Since the user got pp they probably have a new score in their own top 100
         # If there is a score, there is also a beatmap
         if update_mode is not UpdateModes.PP:
@@ -363,10 +369,10 @@ class OsuTracker:
             else:
                 logging.info("%s (%s) gained PP, but no new score was found.", member.name, member_id)
         for osu_score in list(osu_scores):
-            if osu_score["best_id"] in self.previous_score_updates:
+            if osu_score.best_id in self.previous_score_updates:
                 osu_scores.remove(osu_score)
                 continue
-            self.previous_score_updates.append(osu_score["best_id"])
+            self.previous_score_updates.append(osu_score.best_id)
 
         if not osu_scores and not notify_empty_scores:
             return
@@ -375,35 +381,32 @@ class OsuTracker:
         if len(osu_scores) == 1:
             osu_score = osu_scores[0]
             params = {
-                "beatmap_id": osu_score["beatmap"]["id"],
+                "beatmap_id": osu_score.beatmap_id,
             }
-            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"], mode=mode.name))
+            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score.beatmap_id, mode=mode.name))
             thumbnail_url = beatmap["beatmapset"]["covers"]["list@2x"]
-            author_text = f"{data['new']['username']} set a new best (#{osu_score['pos']}/{score_request_limit} " \
-                          f"+{osu_score['diff']:.2f}pp)"
+            author_text = f"{data['new']['username']} set a new best (#{osu_score.position}/{score_request_limit} " \
+                          f"+{osu_score.pp_difference:.2f}pp)"
 
             # There might not be any events
-            scoreboard_rank = None
             if new["events"]:
-                scoreboard_rank = api.rank_from_events(new["events"], str(osu_score["beatmap"]["id"]), osu_score)
+                osu_score.rank_global = api.rank_from_events(new["events"], str(osu_score.beatmap_id), osu_score)
             # Calculate PP and change beatmap SR if using a difficult adjusting mod
             score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
-            mods = Mods.format_mods(osu_score["mods"])
+            mods = Mods.format_mods(osu_score.mods)
             beatmap["difficulty_rating"] = pp.get_beatmap_sr(score_pp, beatmap, mods)
             if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp.max_combo:
                 beatmap["max_combo"] = score_pp.max_combo
             if update_mode is UpdateModes.Minimal:
-                m.append("".join([await score_format.format_minimal_score(osu_score, beatmap, scoreboard_rank, member),
+                m.append("".join([await score_format.format_minimal_score(osu_score, beatmap, member),
                                   "\n"]))
             else:
-                m.append(await score_format.format_new_score(mode, osu_score, beatmap, scoreboard_rank, member))
+                m.append(await score_format.format_new_score(mode, osu_score, beatmap, member))
         elif len(osu_scores) > 1:
             for osu_score in list(osu_scores):
                 # There might not be any events
-                osu_score["scoreboard_rank"] = None
                 if new["events"]:
-                    osu_score["scoreboard_rank"] = api.rank_from_events(new["events"],
-                                                                        str(osu_score["beatmap"]["id"]), osu_score)
+                    osu_score.rank_global = api.rank_from_events(new["events"], str(osu_score.beatmap_id), osu_score)
             m.append(await score_format.get_formatted_score_list(mode, osu_scores,
                                                                  limit=len(osu_scores) if len(osu_scores) <= 5 else 5,
                                                                  no_time=True))
@@ -425,8 +428,8 @@ class OsuTracker:
             primary_guild = user_utils.get_primary_guild(str(member.id))
             is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
             potential_string = score_format.format_potential_pp(score_pp if score_pp is not None
-                                                                and not bool(osu_score["legacy_perfect"]
-                                                                             and osu_score["passed"])
+                                                                and not bool(osu_score.perfect
+                                                                             and osu_score.passed)
                                                                 else None,
                                                                 osu_score)
             embed = embed_format.get_embed_from_template("".join(m), member.color, author_text,

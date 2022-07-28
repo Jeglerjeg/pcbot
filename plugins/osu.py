@@ -16,24 +16,25 @@ TUTORIAL:
     This plugin might send a lot of requests, so keep up to date with the
     !osu debug command.
 """
+import asyncio
 import copy
 import importlib
-import asyncio
 from datetime import datetime
-from textwrap import wrap
 from operator import itemgetter
-import discord
+from textwrap import wrap
 
+import discord
 
 import bot
 import plugins
 from pcbot import utils, Annotate
 from plugins.osulib import api, pp, ordr, enums
-from plugins.osulib.tracking import OsuTracker
-from plugins.osulib.constants import minimum_pp_required, host, osu_profile_cache, osu_tracking
-from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
-from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
 from plugins.osulib.config import osu_config
+from plugins.osulib.constants import minimum_pp_required, host
+from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
+from plugins.osulib.models.score import OsuScore
+from plugins.osulib.tracking import OsuTracker, osu_profile_cache, osu_tracking
+from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
 
 client = plugins.client  # type: bot.Client
 
@@ -53,7 +54,7 @@ async def on_reload(name: str):
     local_renders = last_rendered
     local_requests = api.requests_sent
     local_tracker = osu_tracker
-    local_tracking_data = plugins.osulib.constants.osu_tracking
+    local_tracking_data = plugins.osulib.tracking.osu_tracking
 
     importlib.reload(plugins.osulib.formatting.beatmap_format)
     importlib.reload(plugins.osulib.formatting.embed_format)
@@ -77,7 +78,7 @@ async def on_reload(name: str):
     osu_tracker = local_tracker
     api.requests_sent = local_requests
     last_rendered = local_renders
-    plugins.osulib.constants.osu_tracking = local_tracking_data
+    plugins.osulib.tracking.osu_tracking = local_tracking_data
 
 
 @plugins.event()
@@ -231,7 +232,7 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
         del osu_tracking[str(member.id)]
     if str(member.id) in osu_profile_cache.data:
         del osu_profile_cache.data[str(member.id)]
-        await osu_profile_cache.asyncsave()
+        await misc_utils.save_profile_data(osu_profile_cache)
 
     # Unlink the given member (usually the message author)
     del osu_config.data["profiles"][str(member.id)]
@@ -264,7 +265,7 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
         del osu_tracking[str(message.author.id)]
     if str(message.author.id) in osu_profile_cache.data:
         del osu_profile_cache.data[str(message.author.id)]
-        await osu_profile_cache.asyncsave()
+        await misc_utils.save_profile_data(osu_profile_cache)
 
     await client.say(message, f"Set your gamemode to **{mode_name}**.")
 
@@ -403,18 +404,18 @@ async def recent(message: discord.Message, user: str = None):
         "limit": 1
     }
 
-    osu_scores = await api.get_user_scores(user_id, "recent", params=params)
+    osu_scores = await api.get_user_scores(user_id, "recent", params=params)  # type: list[OsuScore]
     assert osu_scores, "Found no recent score."
 
     osu_score = osu_scores[0]
 
     params = {
-        "beatmap_id": osu_score["beatmap"]["id"],
+        "beatmap_id": osu_score.beatmap["id"],
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score["beatmap"]["id"]), mode=mode.name))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score.beatmap["id"]), mode=mode.name))
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode, osu_tracking,
-                                                          twitch_link=osu_score["passed"])
+                                                          twitch_link=osu_score.passed)
     await client.send_message(message.channel, embed=embed)
 
 
@@ -501,25 +502,25 @@ async def score(message: discord.Message, *options):
     osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
     assert osu_scores, f"Found no scores by **{osu_tracking[str(member.id)]['new']['username']}**."
 
-    osu_score = osu_scores["score"]
+    osu_score = osu_scores["score"]  # type: OsuScore
     if mods:
         mod_list = wrap(mods, 2)
-        osu_score["mods"] = [{"acronym": mod, "settings": {}} for mod in mod_list]
-        osu_score["pp"] = None
-        osu_score["score"] = None
-        scoreboard_rank = None
+        osu_score.mods = [{"acronym": mod, "settings": {}} for mod in mod_list]
+        osu_score.pp = 0
+        osu_score.score = None
+        osu_score.rank_global = None
     else:
-        scoreboard_rank = osu_scores["position"]
+        osu_score.rank_global = osu_scores["position"]
 
     params = {
-        "beatmap_id": osu_score["beatmap"]["id"],
+        "beatmap_id": osu_score.beatmap["id"],
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score["beatmap"]["id"],
+    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score.beatmap["id"],
                                         mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
                                                           if beatmap_info.gamemode else mode, osu_tracking,
-                                                          scoreboard_rank, time=bool(not mods))
+                                                          time=bool(not mods))
     await client.send_message(message.channel, embed=embed)
 
 plugins.command(name="score", usage="[member] <url> +<mods>")(score)
@@ -576,7 +577,7 @@ async def scores(message: discord.Message, *options):
     if mods:
         modslist = wrap(mods, 2)
         for osu_score in fetched_osu_scores["scores"]:
-            if set(osu_score["mods"]) == set(modslist):
+            if set(osu_score.mods) == set(modslist):
                 matching_score = osu_score
                 break
         else:
@@ -591,7 +592,7 @@ async def scores(message: discord.Message, *options):
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add user to the score so formatting will work properly.
-        osu_score["user"] = osu_tracking[str(member.id)]["new"]
+        osu_score.user = osu_tracking[str(member.id)]["new"]
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
                                                               if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
@@ -633,9 +634,9 @@ def generate_full_no_choke_score_list(no_choke_scores: list, original_scores: li
     """ Insert no_choke plays into full score list. """
     no_choke_ids = []
     for osu_score in no_choke_scores:
-        no_choke_ids.append(osu_score["best_id"])
+        no_choke_ids.append(osu_score.best_id)
     for osu_score in list(original_scores):
-        if osu_score["best_id"] in no_choke_ids:
+        if osu_score.best_id in no_choke_ids:
             original_scores.remove(osu_score)
     for osu_score in no_choke_scores:
         original_scores.append(osu_score)

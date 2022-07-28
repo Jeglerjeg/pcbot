@@ -8,6 +8,9 @@ import json
 import logging
 import os
 import re
+
+from plugins.osulib.models.score import OsuScore
+
 try:
     import pyrate_limiter
 except ImportError:
@@ -21,7 +24,6 @@ import plugins
 from pcbot import utils
 from plugins.osulib import enums, caching
 from plugins.osulib.constants import ratelimit
-from plugins.osulib.utils.score_utils import add_missing_hit_values
 
 client = plugins.client  # type: bot.Client
 
@@ -150,11 +152,7 @@ async def get_user_scores(user_id, score_type, params=None):
     if "{'error': None}" in str(result) or result is None:
         result = None
     else:
-        new_result = []
-        for osu_score in result:
-            osu_score = add_missing_hit_values(osu_score)
-            new_result.append(osu_score)
-        result = new_result
+        result = [OsuScore(osu_score) for osu_score in result]
     return result
 
 
@@ -168,7 +166,7 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
     if "{'error': None}" in str(result):
         result = None
     else:
-        result["score"] = add_missing_hit_values(result["score"])
+        result["score"] = OsuScore(result["score"])
     return result
 
 
@@ -182,8 +180,7 @@ async def get_user_beatmap_scores(beatmap_id: int, user_id: int, params=None):
     if "{'error': None}" in str(result) or result is None:
         result = None
     else:
-        for osu_score in result["scores"]:
-            osu_score = add_missing_hit_values(osu_score)
+        result["scores"] = [OsuScore(osu_score) for osu_score in result["scores"]]
     return result
 
 
@@ -360,7 +357,7 @@ def lookup_beatmap(beatmaps: list, **lookup):
     return None
 
 
-def rank_from_events(events: dict, beatmap_id: str, score):
+def rank_from_events(events: dict, beatmap_id: str, osu_score: OsuScore):
     """ Return the rank of the first score of given beatmap_id from a
     list of events gathered via get_user().
     """
@@ -368,8 +365,8 @@ def rank_from_events(events: dict, beatmap_id: str, score):
         if event["type"] == "rank":
             beatmap_url = "https://osu.ppy.sh" + event["beatmap"]["url"]
             beatmap_info = parse_beatmap_url(beatmap_url)
-            time_diff = datetime.fromisoformat(score["ended_at"]) - datetime.fromisoformat(event["created_at"])
-            if (beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == score["rank"]) and \
+            time_diff = osu_score.ended_at - datetime.fromisoformat(event["created_at"])
+            if (beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == osu_score.rank) and \
                     (time_diff.total_seconds() < 60):
                 return event["rank"]
 

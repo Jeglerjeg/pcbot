@@ -1,12 +1,12 @@
 import logging
 import traceback
-from datetime import datetime
 
 import discord
 
 from pcbot import utils
 from plugins.osulib import enums
 from plugins.osulib.constants import host
+from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import misc_utils
 from plugins.twitchlib import twitch
 
@@ -83,7 +83,7 @@ def format_user_diff(mode: enums.GameMode, data_old: dict, data_new: dict):
     return "".join(formatted)
 
 
-async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
+async def format_stream(member: discord.Member, osu_score: OsuScore, beatmap: dict):
     """ Format the stream url and a VOD button when possible. """
     stream_url = None
     for activity in member.activities:
@@ -112,24 +112,23 @@ async def format_stream(member: discord.Member, osu_score: dict, beatmap: dict):
     vod = vod_request[0]
 
     # Find the timestamp of where the play would have started without pausing the game
-    score_created = datetime.fromisoformat(osu_score["ended_at"])
     vod_created = vod.created_at
     beatmap_length = int(beatmap["hit_length"])
 
     # Return if the stream was started after the score was set
-    if vod_created > score_created:
+    if vod_created > osu_score.ended_at:
         text.append("\n")
         return "".join(text)
 
     # Convert beatmap length when speed mods are enabled
-    mods = enums.Mods.format_mods(osu_score["mods"])
+    mods = enums.Mods.format_mods(osu_score.mods)
     if "DT" in mods or "NC" in mods:
         beatmap_length /= 1.5
     elif "HT" in mods:
         beatmap_length /= 0.75
 
     # Get the timestamp in the VOD when the score was created
-    timestamp_score_created = (score_created - vod_created).total_seconds()
+    timestamp_score_created = (osu_score.ended_at - vod_created).total_seconds()
     timestamp_play_started = timestamp_score_created - beatmap_length
 
     # Add the vod url with timestamp to the formatted text

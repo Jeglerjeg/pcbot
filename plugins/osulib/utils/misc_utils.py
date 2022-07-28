@@ -1,8 +1,12 @@
+import copy
+
 import discord
 
+from pcbot import Config
 from plugins.osulib import enums
-from plugins.osulib.constants import timestamp_pattern, pp_threshold
 from plugins.osulib.config import osu_config
+from plugins.osulib.constants import timestamp_pattern, pp_threshold
+from plugins.osulib.models.score import OsuScore
 
 
 def get_diff(old: dict, new: dict, value: str):
@@ -14,6 +18,33 @@ def get_diff(old: dict, new: dict, value: str):
     old_value = float(old["statistics"][value]) if old["statistics"][value] else 0.0
 
     return new_value - old_value
+
+
+async def save_profile_data(user_data: Config):
+    data_copy = copy.deepcopy(user_data.data)
+    if not user_data.data:
+        await user_data.asyncsave()
+    for profile in user_data.data:
+        if "scores" not in user_data.data[profile] or "score_list" not in user_data.data[profile]["scores"]:
+            continue
+        user_data.data[profile]["scores"]["score_list"] = \
+            [osu_score.to_dict() for osu_score in user_data.data[profile]["scores"]["score_list"]
+             if isinstance(osu_score, OsuScore)]
+
+    await user_data.asyncsave()
+    user_data.data = data_copy
+
+
+def load_profile_data(user_data: dict):
+    if not user_data:
+        return {}
+    for profile in user_data:
+        if "scores" not in user_data[profile] or "score_list" not in user_data[profile]["scores"]:
+            continue
+        user_data[profile]["scores"]["score_list"] = \
+            [OsuScore(osu_score, from_file=True) for osu_score in user_data[profile]["scores"]["score_list"]]
+
+    return user_data
 
 
 def get_notify_channels(guild: discord.Guild, data_type: str):
@@ -40,32 +71,32 @@ def get_timestamps_with_url(content: str):
         yield match.group(0), f"<osu://edit/{editor_url}>"
 
 
-def calculate_acc(mode: enums.GameMode, osu_score: dict, exclude_misses: bool = False):
+def calculate_acc(mode: enums.GameMode, osu_score: OsuScore, exclude_misses: bool = False):
     """ Calculate the accuracy using formulas from https://osu.ppy.sh/wiki/Accuracy """
-    # Parse data from the score: 50s, 100s, 300s, misses, katu and geki
-    keys = ("perfect", "great", "good", "ok", "meh", "miss", "large_tick_hit",
-            "large_tick_miss", "small_tick_hit", "small_tick_miss")
-    perfect, great, good, ok, meh, miss, large_tick_hit, large_tick_miss, small_tick_hit, small_tick_miss = \
-        (osu_score["statistics"][key] for key in keys)
 
     # Catch accuracy is done a tad bit differently, so we calculate that by itself
     if mode is enums.GameMode.fruits:
-        total_numbers_of_fruits_caught = small_tick_hit + large_tick_hit + great
-        total_numbers_of_fruits = miss + small_tick_hit + large_tick_hit + great + small_tick_miss
+        total_numbers_of_fruits_caught = osu_score.count_smalltickhit + osu_score.count_largetickhit +\
+                                         osu_score.count_300
+        total_numbers_of_fruits = (osu_score.count_miss + osu_score.count_smalltickhit + osu_score.count_largetickhit +
+                                   osu_score.count_300 + osu_score.count_smalltickmiss)
         return total_numbers_of_fruits_caught / total_numbers_of_fruits
 
     total_points_of_hits, total_number_of_hits = 0, 0
 
     if mode is enums.GameMode.osu:
-        total_points_of_hits = meh * 50 + ok * 100 + great * 300
-        total_number_of_hits = (0 if exclude_misses else miss) + meh + ok + great
+        total_points_of_hits = osu_score.count_50 * 50 + osu_score.count_100 * 100 + osu_score.count_300 * 300
+        total_number_of_hits = ((0 if exclude_misses else osu_score.count_miss) + osu_score.count_50 +
+                                osu_score.count_100 + osu_score.count_300)
     elif mode is enums.GameMode.taiko:
-        total_points_of_hits = (miss * 0 + ok * 0.5 + great * 1) * 300
-        total_number_of_hits = miss + ok + great
+        total_points_of_hits = (osu_score.count_miss * 0 + osu_score.count_100 * 0.5 + osu_score.count_300 * 1) * 300
+        total_number_of_hits = osu_score.count_miss + osu_score.count_100 + osu_score.count_300
     elif mode is enums.GameMode.mania:
         # In mania, katu is 200s and geki is MAX
-        total_points_of_hits = meh * 50 + ok * 100 + good * 200 + (great + perfect) * 300
-        total_number_of_hits = miss + meh + ok + good + great + perfect
+        total_points_of_hits = osu_score.count_50 * 50 + osu_score.count_100 * 100 + osu_score.count_200 * 200 +\
+                               (osu_score.count_300 + osu_score.count_max) * 300
+        total_number_of_hits = (osu_score.count_miss + osu_score.count_50 + osu_score.count_100 + osu_score.count_200 +
+                                osu_score.count_300 + osu_score.count_max)
 
     return total_points_of_hits / (total_number_of_hits * 300)
 
