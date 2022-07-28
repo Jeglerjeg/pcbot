@@ -376,8 +376,8 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
             options.remove(opt)
     await client.say(message,
                      "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`."
-                     .format(" ".join(options), artist=beatmap["beatmapset"]["artist"],
-                             title=beatmap["beatmapset"]["title"], version=beatmap["version"], stars=pp_stats.stars,
+                     .format(" ".join(options), artist=beatmap.beatmapset.artist,
+                             title=beatmap.beatmapset.title, version=beatmap["version"], stars=pp_stats.stars,
                              pp=pp_stats.pp))
 
 
@@ -607,7 +607,7 @@ async def scores(message: discord.Message, *options):
                                                      osu_tracking[str(member.id)]["new"]["username"],
                                                      user_utils.get_user_url(str(member.id)),
                                                      osu_tracking[str(member.id)]["new"]["avatar_url"],
-                                                     thumbnail_url=beatmap["beatmapset"]["covers"]["list@2x"])
+                                                     thumbnail_url=beatmap.beatmapset.covers.list2x)
     await client.send_message(message.channel, embed=embed)
 
 plugins.command(name="scores", usage="[member] <url> <+mods>")(scores)

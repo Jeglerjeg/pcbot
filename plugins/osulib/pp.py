@@ -12,7 +12,7 @@ from operator import itemgetter
 from pcbot import utils, Config
 from plugins.osulib import enums, api
 from plugins.osulib.args import parse as parse_options
-from plugins.osulib.models.beatmap import Beatmap
+from plugins.osulib.models.beatmap import Beatmap, Beatmapset
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import misc_utils, score_utils
 
@@ -272,65 +272,65 @@ async def get_score_pp(osu_score: OsuScore, mode: enums.GameMode, beatmap: Beatm
     return score_pp
 
 
-async def calculate_pp_for_beatmapset(beatmapset: dict, osu_config: Config, ignore_osu_cache: bool = False,
+async def calculate_pp_for_beatmapset(beatmapset: Beatmapset, osu_config: Config, ignore_osu_cache: bool = False,
                                       mods: str = "+Nomod"):
     """ Calculates the pp for every difficulty in the given mapset, added
     to a "pp" key in the difficulty's dict. """
     # Init the cache of this mapset if it has not been created
-    set_id = str(beatmapset["id"])
+    set_id = str(beatmapset.id)
     if set_id not in osu_config.data["map_cache"]:
         osu_config.data["map_cache"][set_id] = {}
 
     if not ignore_osu_cache:
-        ignore_osu_cache = not bool(beatmapset["status"] == "ranked" or beatmapset["status"] == "approved")
+        ignore_osu_cache = not bool(beatmapset.status == "ranked" or beatmapset.status == "approved")
 
     cached_mapset = osu_config.data["map_cache"][set_id]
 
-    for diff in beatmapset["beatmaps"]:
-        map_id = str(diff["id"])
+    for diff in beatmapset.beatmaps:
+        map_id = str(diff.id)
 
         if ignore_osu_cache:
             # If the diff is cached and unchanged, use the cached pp
             if map_id in cached_mapset and mods in cached_mapset[map_id]:
-                if diff["checksum"] == cached_mapset[map_id]["md5"]:
-                    diff["pp"] = cached_mapset[map_id][mods]["pp"]
-                    diff["difficulty_rating"] = cached_mapset[map_id][mods]["stars"]
-                    diff["ar"] = cached_mapset[map_id][mods]["ar"]
-                    diff["cs"] = cached_mapset[map_id][mods]["cs"]
-                    diff["accuracy"] = cached_mapset[map_id][mods]["od"]
-                    diff["drain"] = cached_mapset[map_id][mods]["hp"]
-                    diff["new_bpm"] = cached_mapset[map_id][mods]["new_bpm"]
+                if diff.checksum == cached_mapset[map_id]["md5"]:
+                    diff.add_max_pp(cached_mapset[map_id][mods]["pp"])
+                    diff.difficulty_rating = cached_mapset[map_id][mods]["stars"]
+                    diff.ar = cached_mapset[map_id][mods]["ar"]
+                    diff.cs = cached_mapset[map_id][mods]["cs"]
+                    diff.accuracy = cached_mapset[map_id][mods]["od"]
+                    diff.drain = cached_mapset[map_id][mods]["hp"]
+                    diff.add_new_bpm(cached_mapset[map_id][mods]["new_bpm"])
                     continue
 
                 # If it was changed, add an asterisk to the beatmap name (this is a really stupid place to do this)
-                diff["version"] = "".join(["*", diff["version"]])
+                diff.version = "".join(["*", diff.version])
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
-            pp_stats = await calculate_pp(int(map_id), mods, mode=enums.GameMode.get_mode(diff["mode"]),
+            pp_stats = await calculate_pp(int(map_id), mods, mode=diff.mode,
                                           ignore_osu_cache=ignore_osu_cache)
         except ValueError:
             logging.error(traceback.format_exc())
             continue
 
-        diff["pp"] = pp_stats.pp
-        diff["difficulty_rating"] = pp_stats.stars
-        diff["ar"] = pp_stats.ar
-        diff["cs"] = pp_stats.cs
-        diff["accuracy"] = pp_stats.od
-        diff["drain"] = pp_stats.hp
-        diff["new_bpm"] = pp_stats.bpm
+        diff.add_max_pp(pp_stats.pp)
+        diff.difficulty_rating = pp_stats.stars
+        diff.ar = pp_stats.ar
+        diff.cs = pp_stats.cs
+        diff.accuracy = pp_stats.od
+        diff.accuracy = pp_stats.hp
+        diff.add_new_bpm(pp_stats.bpm)
 
         if ignore_osu_cache:
             # Cache the difficulty
             if map_id in cached_mapset:
-                if diff["checksum"] != cached_mapset[map_id]["md5"]:
+                if diff.checksum != cached_mapset[map_id]["md5"]:
                     osu_config.data["map_cache"][set_id][map_id] = {
-                        "md5": diff["checksum"]
+                        "md5": diff.checksum
                     }
             else:
                 osu_config.data["map_cache"][set_id][map_id] = {
-                    "md5": diff["checksum"]
+                    "md5": diff.checksum
                 }
             if mods not in osu_config.data["map_cache"][set_id][map_id]:
                 osu_config.data["map_cache"][set_id][map_id][mods] = {}

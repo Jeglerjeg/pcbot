@@ -10,7 +10,7 @@ import os
 import re
 
 from plugins.osulib.models.score import OsuScore
-from plugins.osulib.models.beatmap import Beatmap
+from plugins.osulib.models.beatmap import Beatmap, Beatmapset
 
 try:
     import pyrate_limiter
@@ -128,8 +128,10 @@ async def beatmapset_lookup(params):
     """ Looks up a beatmapset using a beatmap ID"""
     request = def_section("beatmapsets/lookup")
     result = await request(**params)
+    if not result:
+        return None
     caching.cache_beatmapset(result, result["id"])
-    return result
+    return Beatmapset(result)
 
 
 async def get_user(user, mode=None, params=None):
@@ -198,7 +200,7 @@ async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
         beatmapset_path = os.path.join(caching.setcache_path, str(beatmapset_id) + ".json")
         with open(beatmapset_path, encoding="utf-8") as fp:
             result = json.load(fp)
-    return result
+    return Beatmapset(result)
 
 
 async def get_user_recent_activity(user, params=None):
@@ -281,7 +283,7 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
         beatmapset = False
     else:
         beatmapset = await get_beatmapset(beatmap_info.beatmapset_id)
-        difficulties = beatmapset["beatmaps"]
+        difficulties = beatmapset.beatmaps
         beatmapset = True
     # If the beatmap doesn't exist, the operation was unsuccessful
     if not difficulties or "{'error': None}" in str(difficulties):
@@ -299,9 +301,9 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
         beatmap = difficulties
 
     if return_type == "id":
-        return beatmap["id"]
+        return beatmap.id
     if return_type == "info":
-        beatmap_url = f"https://osu.ppy.sh/beatmaps/{beatmap['id']}"
+        beatmap_url = f"https://osu.ppy.sh/beatmaps/{beatmap.id}"
         return parse_beatmap_url(beatmap_url)
     return beatmap
 
