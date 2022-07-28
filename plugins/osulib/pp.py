@@ -12,6 +12,7 @@ from operator import itemgetter
 from pcbot import utils, Config
 from plugins.osulib import enums, api
 from plugins.osulib.args import parse as parse_options
+from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import misc_utils, score_utils
 
@@ -237,10 +238,10 @@ async def find_closest_pp(calculator, score_params, args):
     return ClosestPPStats(round(acc, 2), closest_pp, totalstars)
 
 
-def get_beatmap_sr(score_pp: PPStats, beatmap: dict, mods: str):
+def get_beatmap_sr(score_pp: PPStats, beatmap: Beatmap, mods: str):
     """ Change beatmap SR if using SR adjusting mods. """
     difficulty_rating = score_pp.stars if (mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF", "RX")
-                                           or not beatmap["convert"]) and score_pp else beatmap["difficulty_rating"]
+                                           or not beatmap.convert) and score_pp else beatmap.difficulty_rating
     return difficulty_rating
 
 
@@ -256,13 +257,13 @@ def calculate_total_user_pp(osu_scores: list[OsuScore], member_id: str, osu_trac
     return total_pp + bonus_pp
 
 
-async def get_score_pp(osu_score: OsuScore, mode: enums.GameMode, beatmap: dict = None):
+async def get_score_pp(osu_score: OsuScore, mode: enums.GameMode, beatmap: Beatmap = None):
     """ Return PP for a given score. """
     score_pp = None
     try:
-        score_pp = await calculate_pp(beatmap["id"] if beatmap else osu_score.beatmap["id"], mode=mode,
-                                      ignore_osu_cache=not bool(beatmap["status"] == "ranked"
-                                                                or beatmap["status"] == "approved") if beatmap
+        score_pp = await calculate_pp(beatmap.id if beatmap else osu_score.beatmap.id, mode=mode,
+                                      ignore_osu_cache=not bool(beatmap.status == "ranked"
+                                                                or beatmap.status == "approved") if beatmap
                                       else False,
                                       potential=score_utils.calculate_potential_pp(osu_score, mode),
                                       failed=not osu_score.passed, *score_utils.process_score_args(osu_score))
@@ -362,7 +363,7 @@ async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
                 osu_score.perfect = True
                 osu_score.accuracy = full_combo_acc
                 osu_score.max_combo = score_pp.max_combo
-                osu_score.beatmap["difficulty_rating"] = score_pp.stars
+                osu_score.beatmap.difficulty_rating = score_pp.stars
                 osu_score.count_300 = osu_score.count_300 +\
                     osu_score.count_miss
                 osu_score.count_miss = 0

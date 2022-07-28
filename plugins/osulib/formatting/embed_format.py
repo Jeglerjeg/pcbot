@@ -2,6 +2,7 @@ import discord
 
 from plugins.osulib import enums, pp, api
 from plugins.osulib.formatting import score_format
+from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import user_utils, score_utils
 
@@ -25,7 +26,7 @@ def get_embed_from_template(description: str, color: discord.Colour, author_text
     return embed
 
 
-async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore, beatmap: dict,
+async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore, beatmap: Beatmap,
                                      mode: enums.GameMode, osu_tracking: dict, twitch_link: bool = False,
                                      time: bool = False):
     """ Returns a score embed for use outside of automatic score notifications. """
@@ -37,15 +38,15 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
     elif osu_score.pp is None:
         osu_score.pp = 0
     if score_pp is not None:
-        beatmap["difficulty_rating"] = pp.get_beatmap_sr(score_pp, beatmap, mods)
-    if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
-        beatmap["max_combo"] = score_pp.max_combo
+        beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
+    if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp and score_pp.max_combo:
+        beatmap.add_max_combo(score_pp.max_combo)
 
     # There might not be any events
     if str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)] \
             and osu_tracking[str(member.id)]["new"]["events"]:
         osu_score.rank_global = api.rank_from_events(osu_tracking[str(member.id)]["new"]["events"],
-                                                     str(beatmap["id"]), osu_score)
+                                                     str(beatmap.id), osu_score)
 
     time_string = ""
     if time:
@@ -58,7 +59,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
                                     osu_score.user["avatar_url"],
                                     osu_score.beatmapset["covers"]["list@2x"]
                                     if hasattr(osu_score, "beatmapset")
-                                    else beatmap["beatmapset"]["covers"]["list@2x"],
+                                    else beatmap.beatmapset["covers"]["list@2x"],
                                     time=time_string,
                                     potential_string=score_format.format_potential_pp(
                                         score_pp if score_pp is not None else None,

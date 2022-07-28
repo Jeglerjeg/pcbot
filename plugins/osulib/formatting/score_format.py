@@ -3,6 +3,7 @@ import discord
 from pcbot import utils
 from plugins.osulib import pp, enums, api
 from plugins.osulib.formatting import misc_format
+from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import beatmap_utils, score_utils
 
@@ -100,7 +101,7 @@ def get_formatted_score_time(osu_score: OsuScore):
     return time_string
 
 
-def format_score_statistics(osu_score: OsuScore, beatmap: dict, mode: enums.GameMode):
+def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.GameMode):
     """" Returns formatted score statistics for each mode. """
     sign = "!" if osu_score.accuracy == 1 else ("+" if osu_score.perfect and osu_score.passed else "-")
     acc = f"{utils.format_number(osu_score.accuracy * 100, 2)}%"
@@ -114,7 +115,7 @@ def format_score_statistics(osu_score: OsuScore, beatmap: dict, mode: enums.Game
     large_tick_miss = osu_score.count_largetickmiss
     small_tick_miss = osu_score.count_smalltickmiss
     maxcombo = osu_score.max_combo
-    max_combo = f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None else ""
+    max_combo = f"/{beatmap.max_combo}" if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None else ""
     if mode is enums.GameMode.osu:
         return "  acc    300s  100s  50s  miss  combo\n" \
               f'{sign} {acc:<7}{great:<6}{ok:<6}{meh:<5}{miss:<6}{maxcombo}{max_combo}'
@@ -129,28 +130,28 @@ def format_score_statistics(osu_score: OsuScore, beatmap: dict, mode: enums.Game
            f"{max_combo}"
 
 
-def format_score_info(osu_score: OsuScore, beatmap: dict):
+def format_score_info(osu_score: OsuScore, beatmap: Beatmap):
     """ Return formatted beatmap information. """
-    beatmap_url = beatmap_utils.get_beatmap_url(beatmap["id"], osu_score.mode)
+    beatmap_url = beatmap_utils.get_beatmap_url(beatmap.id, osu_score.mode)
     modslist = enums.Mods.format_mods(osu_score.mods, score_display=True)
     score_pp = utils.format_number(osu_score.pp, 2) if not hasattr(osu_score, "new_pp") else osu_score.new_pp
     ranked_score = f'{osu_score.score:,}' if osu_score.score else ""
-    stars = utils.format_number(float(beatmap["difficulty_rating"]), 2)
+    stars = utils.format_number(float(beatmap.difficulty_rating), 2)
     scoreboard_rank = f"#{osu_score.rank_global} " if hasattr(osu_score, "rank_global") \
                       and osu_score.rank_global else ""
     failed = "(Failed) " if osu_score.passed is False and osu_score.rank != "F" else ""
     artist = osu_score.beatmapset["artist"].replace("_", r"\_") if hasattr(osu_score, "beatmapset") \
-        and osu_score.beatmapset else beatmap["beatmapset"]["artist"].replace("_", r"\_")
+        and osu_score.beatmapset else beatmap.beatmapset["artist"].replace("_", r"\_")
     title = osu_score.beatmapset["title"].replace("_", r"\_") if hasattr(osu_score, "beatmapset") \
-        and osu_score.beatmapset else beatmap["beatmapset"]["title"].replace("_", r"\_")
+        and osu_score.beatmapset else beatmap.beatmapset["title"].replace("_", r"\_")
     i = ("*" if "*" not in osu_score.beatmapset["artist"] + osu_score.beatmapset["title"] else "") if \
         hasattr(osu_score, "beatmapset") and osu_score.beatmapset else \
-        ("*" if "*" not in beatmap["beatmapset"]["artist"] + beatmap["beatmapset"]["title"] else "")
-    return f'[{i}{artist} - {title} [{beatmap["version"]}]{i}]({beatmap_url})\n' \
+        ("*" if "*" not in beatmap.beatmapset["artist"] + beatmap.beatmapset["title"] else "")
+    return f'[{i}{artist} - {title} [{beatmap.version}]{i}]({beatmap_url})\n' \
            f'**{score_pp}pp {stars}\u2605, {osu_score.rank} {scoreboard_rank}{failed}+{modslist} {ranked_score}**'
 
 
-async def format_new_score(mode: enums.GameMode, osu_score: OsuScore, beatmap: dict, member: discord.Member = None):
+async def format_new_score(mode: enums.GameMode, osu_score: OsuScore, beatmap: Beatmap, member: discord.Member = None):
     """ Format any score. There should be a member name/mention in front of this string. """
     return (
         f"{format_score_info(osu_score, beatmap)}"
@@ -160,7 +161,7 @@ async def format_new_score(mode: enums.GameMode, osu_score: OsuScore, beatmap: d
     )
 
 
-async def format_minimal_score(osu_score: OsuScore, beatmap: dict, member: discord.Member):
+async def format_minimal_score(osu_score: OsuScore, beatmap: Beatmap, member: discord.Member):
     """ Format any osu! score with minimal content.
     There should be a member name/mention in front of this string. """
     return (
@@ -168,17 +169,17 @@ async def format_minimal_score(osu_score: OsuScore, beatmap: dict, member: disco
         "**{pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
-        url=beatmap_utils.get_beatmap_url(osu_score.beatmap["id"], osu_score.mode),
+        url=beatmap_utils.get_beatmap_url(osu_score.beatmap.id, osu_score.mode),
         mods=enums.Mods.format_mods(osu_score.mods, score_display=True),
         acc=f"{utils.format_number(osu_score.accuracy * 100, 2)}%",
-        artist=beatmap["beatmapset"]["artist"].replace("*", r"\*").replace("_", r"\_"),
-        title=beatmap["beatmapset"]["title"].replace("*", r"\*").replace("_", r"\_"),
-        version=beatmap["version"],
+        artist=beatmap.beatmapset["artist"].replace("*", r"\*").replace("_", r"\_"),
+        title=beatmap.beatmapset["title"].replace("*", r"\*").replace("_", r"\_"),
+        version=beatmap.version,
         maxcombo=osu_score.max_combo,
-        max_combo=f"/{beatmap['max_combo']}" if "max_combo" in beatmap and beatmap["max_combo"] is not None
+        max_combo=f"/{beatmap.max_combo}" if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None
         else "",
         rank=osu_score.rank,
-        stars=utils.format_number(float(beatmap["difficulty_rating"]), 2),
+        stars=utils.format_number(float(beatmap.difficulty_rating), 2),
         scoreboard_rank=f"#{osu_score.rank_global} " if hasattr(osu_score, "rank_global")
                         and osu_score.rank_global else "",
         live=await misc_format.format_stream(member, osu_score, beatmap),
@@ -190,8 +191,8 @@ def format_completion_rate(osu_score: OsuScore, pp_stats: pp.PPStats):
     completion_rate = ""
     if osu_score and pp_stats and osu_score.passed is False \
             and osu_score.mode is not enums.GameMode.fruits:
-        beatmap_objects = (osu_score.beatmap["count_circles"] + osu_score.beatmap["count_sliders"] +
-                           osu_score.beatmap["count_spinners"])
+        beatmap_objects = (osu_score.beatmap.count_circles + osu_score.beatmap.count_sliders +
+                           osu_score.beatmap.count_spinners)
         objects = score_utils.get_score_object_count(osu_score)
         completion_rate = f"Completion rate: {(objects / beatmap_objects) * 100:.2f}% " \
                           f"({utils.format_number(pp_stats.partial_stars, 2)}\u2605)"
@@ -216,16 +217,16 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuSco
         if not nochoke:
             score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
             if score_pp is not None:
-                beatmap["difficulty_rating"] = pp.get_beatmap_sr(score_pp, beatmap, mods)
+                beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
                 if osu_score.pp is None or osu_score.pp == 0:
                     osu_score.pp = score_pp.pp
-            if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp and score_pp.max_combo:
-                beatmap["max_combo"] = score_pp.max_combo
+            if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp and score_pp.max_combo:
+                beatmap.add_max_combo(score_pp.max_combo)
             # Add potential pp to the score
             potential_string = format_potential_pp(score_pp, osu_score)
         else:
-            beatmap["difficulty_rating"] = osu_score.beatmap["difficulty_rating"]
-            beatmap["max_combo"] = osu_score.max_combo
+            beatmap.difficulty_rating = osu_score.beatmap.difficulty_rating
+            beatmap.add_max_combo(osu_score.max_combo)
             potential_string = ""
 
         # Add time since play to the score

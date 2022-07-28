@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from plugins.osulib.enums import GameMode
+from plugins.osulib.models.beatmap import Beatmap
 
 
 class OsuScore:
@@ -33,7 +34,7 @@ class OsuScore:
     new_pp: Optional[float]
     position: Optional[int]
     pp_difference: Optional[float]
-    beatmap: Optional[dict]
+    beatmap: Optional[Beatmap]
     beatmapset: Optional[dict]
     rank_country: Optional[int]
     rank_global: Optional[int]
@@ -92,7 +93,7 @@ class OsuScore:
         if "pp_difference" in json_data:
             self.pp_difference = json_data["pp_difference"]
         if "beatmap" in json_data:
-            self.beatmap = json_data["beatmap"]
+            self.beatmap = Beatmap(json_data["beatmap"])
         if "beatmapset" in json_data:
             self.beatmapset = json_data["beatmapset"]
         if "rank_global" in json_data:
@@ -115,6 +116,9 @@ class OsuScore:
         for attr, value in self.__dict__.items():
             if isinstance(value, GameMode):
                 readable_dict[attr] = value.value
+                continue
+            elif isinstance(value, Beatmap):
+                readable_dict[attr] = value.to_dict()
                 continue
             elif isinstance(value, datetime):
                 readable_dict[attr] = value.isoformat()

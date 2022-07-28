@@ -387,7 +387,7 @@ class OsuTracker:
                 "beatmap_id": osu_score.beatmap_id,
             }
             beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score.beatmap_id, mode=mode.name))
-            thumbnail_url = beatmap["beatmapset"]["covers"]["list@2x"]
+            thumbnail_url = beatmap.beatmapset["covers"]["list@2x"]
             author_text = f"{data['new']['username']} set a new best (#{osu_score.position}/{score_request_limit} " \
                           f"+{osu_score.pp_difference:.2f}pp)"
 
@@ -397,9 +397,9 @@ class OsuTracker:
             # Calculate PP and change beatmap SR if using a difficult adjusting mod
             score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
             mods = Mods.format_mods(osu_score.mods)
-            beatmap["difficulty_rating"] = pp.get_beatmap_sr(score_pp, beatmap, mods)
-            if ("max_combo" not in beatmap or not beatmap["max_combo"]) and score_pp.max_combo:
-                beatmap["max_combo"] = score_pp.max_combo
+            beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
+            if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp.max_combo:
+                beatmap.add_max_combo(score_pp.max_combo)
             if update_mode is UpdateModes.Minimal:
                 m.append("".join([await score_format.format_minimal_score(osu_score, beatmap, member),
                                   "\n"]))

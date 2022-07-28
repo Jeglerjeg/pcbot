@@ -10,6 +10,7 @@ import os
 import re
 
 from plugins.osulib.models.score import OsuScore
+from plugins.osulib.models.beatmap import Beatmap
 
 try:
     import pyrate_limiter
@@ -119,6 +120,7 @@ async def beatmap_lookup(params, map_id, mode):
     if not valid_result:
         await beatmapset_lookup(params=params)
         result = caching.retrieve_cache(map_id, "map", mode)
+    result = Beatmap(result)
     return result
 
 
@@ -331,30 +333,6 @@ async def beatmapset_from_url(url: str, force_redownload: bool = False):
         raise LookupError("The beatmapset with the given URL was not found.")
 
     return beatmapset
-
-
-def lookup_beatmap(beatmaps: list, **lookup):
-    """ Finds and returns the first beatmap with the lookup specified.
-
-    Beatmaps is a list of beatmap dicts and could be used with beatmap_lookup().
-    Lookup is any key stored in a beatmap from beatmap_lookup().
-    """
-    if not beatmaps:
-        return None
-
-    for beatmap in beatmaps:
-        match = True
-        for key, value in lookup.items():
-            if key.lower() not in beatmap:
-                raise KeyError(f"The list of beatmaps does not have key: {key}")
-
-            if not beatmap[key].lower() == value.lower():
-                match = False
-
-        if match:
-            return beatmap
-
-    return None
 
 
 def rank_from_events(events: dict, beatmap_id: str, osu_score: OsuScore):

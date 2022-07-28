@@ -355,8 +355,8 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
                                             mode=beatmap_info.gamemode.name))
 
         pp_stats = await pp.calculate_pp(beatmap_url, *options, mode=beatmap_info.gamemode,
-                                         ignore_osu_cache=not bool(beatmap["status"] == "ranked" or
-                                                                   beatmap["status"] == "approved"))
+                                         ignore_osu_cache=not bool(beatmap.status == "ranked" or
+                                                                   beatmap.status == "approved"))
     except ValueError as e:
         await client.say(message, str(e))
         return
@@ -410,9 +410,9 @@ async def recent(message: discord.Message, user: str = None):
     osu_score = osu_scores[0]
 
     params = {
-        "beatmap_id": osu_score.beatmap["id"],
+        "beatmap_id": osu_score.beatmap.id,
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score.beatmap["id"]), mode=mode.name))
+    beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score.beatmap.id), mode=mode.name))
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode, osu_tracking,
                                                           twitch_link=osu_score.passed)
@@ -513,9 +513,9 @@ async def score(message: discord.Message, *options):
         osu_score.rank_global = osu_scores["position"]
 
     params = {
-        "beatmap_id": osu_score.beatmap["id"],
+        "beatmap_id": osu_score.beatmap.id,
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score.beatmap["id"],
+    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score.beatmap.id,
                                         mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
