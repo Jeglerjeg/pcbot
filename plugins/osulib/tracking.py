@@ -73,13 +73,7 @@ class OsuTracker:
             await self.__update_user_data(member_id, profile)
             if str(member_id) in osu_tracking:
                 data = osu_tracking[str(member_id)]
-                # Next, check for any differences in pp between the "old" and the "new" subsections
-                # and notify any guilds
-                if misc_utils.check_for_pp_difference(data):
-                    client.loop.create_task(self.__notify_pp(str(member_id), data))
-                # Check for any differences in the users' events and post about map updates
-                if misc_utils.check_for_new_recent_events(data):
-                    client.loop.create_task(self.__notify_recent_events(str(member_id), data))
+                client.loop.create_task(self.__notify(member_id, data))
         if cache_user_profiles:
             await misc_utils.save_profile_data(osu_profile_cache)
         self.time_elapsed = (datetime.now() - self.started).total_seconds()
@@ -88,6 +82,15 @@ class OsuTracker:
     @__tracking_loop.before_loop
     async def wait_for_ready(self):
         await client.wait_until_ready()
+
+    async def __notify(self, member_id: str, data: dict):
+        # Next, check for any differences in pp between the "old" and the "new" subsections
+        # and notify any guilds
+        if misc_utils.check_for_pp_difference(data):
+            await self.__notify_pp(str(member_id), data)
+        # Check for any differences in the users' events and post about map updates
+        if misc_utils.check_for_new_recent_events(data):
+            await self.__notify_recent_events(str(member_id), data)
 
     @staticmethod
     async def __update_user_data(member_id: str, profile: str):
