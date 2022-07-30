@@ -170,7 +170,7 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
         if osu_score.best_id not in old_score_ids:
-            if (datetime.now(tz=timezone.utc) - osu_score.ended_at).total_seconds() < 3600*24:
+            if (datetime.now(tz=timezone.utc) - osu_score.ended_at).total_seconds() > 3600*24:
                 continue
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
