@@ -158,7 +158,9 @@ class OsuTracker:
             else:
                 user_data["events"] = []
             # User is already tracked
-            if "scores" not in osu_tracking[member_id]:
+            if "scores" not in osu_tracking[member_id] or ("scores" in osu_tracking[member_id]
+                                                           and "score_list" in osu_tracking[member_id]["scores"]
+                                                           and not osu_tracking[member_id]["scores"]["score_list"]):
                 fetched_scores = await score_utils.retrieve_osu_scores(profile, mode, current_time)
                 if fetched_scores:
                     osu_tracking[member_id]["scores"] = fetched_scores
