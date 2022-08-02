@@ -24,6 +24,8 @@ async def find_beatmap_info(channel: discord.TextChannel):
     return beatmap_info
 
 
-def get_beatmap_url(beatmap_id: int, mode: enums.GameMode):
+def get_beatmap_url(beatmap_id: int, mode: enums.GameMode, beatmapset_id: int = None):
     """ Return the beatmap's url. """
+    if beatmapset_id:
+        return f"{host}beatmapsets/{beatmapset_id}#{mode.name}/{beatmap_id}"
     return f"{host}beatmaps/{beatmap_id}?mode={mode.name}"

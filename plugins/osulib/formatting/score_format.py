@@ -132,7 +132,7 @@ def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.G
 
 def format_score_info(osu_score: OsuScore, beatmap: Beatmap):
     """ Return formatted beatmap information. """
-    beatmap_url = beatmap_utils.get_beatmap_url(beatmap.id, osu_score.mode)
+    beatmap_url = beatmap_utils.get_beatmap_url(beatmap.id, osu_score.mode, beatmap.beatmapset_id)
     modslist = enums.Mods.format_mods(osu_score.mods, score_display=True)
     score_pp = utils.format_number(osu_score.pp, 2) if not hasattr(osu_score, "new_pp") else osu_score.new_pp
     ranked_score = f'{osu_score.score:,}' if osu_score.score else ""
@@ -169,7 +169,7 @@ async def format_minimal_score(osu_score: OsuScore, beatmap: Beatmap, member: di
         "**{pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
-        url=beatmap_utils.get_beatmap_url(osu_score.beatmap.id, osu_score.mode),
+        url=beatmap_utils.get_beatmap_url(osu_score.beatmap.id, osu_score.mode, beatmap.beatmapset_id),
         mods=enums.Mods.format_mods(osu_score.mods, score_display=True),
         acc=f"{utils.format_number(osu_score.accuracy * 100, 2)}%",
         artist=beatmap.beatmapset["artist"].replace("*", r"\*").replace("_", r"\_"),
