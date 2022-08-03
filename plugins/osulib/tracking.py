@@ -68,16 +68,21 @@ class OsuTracker:
                                                              osu_config.data.get("client_secret")))
         self.started = datetime.now()
 
-        for member_id, profile in list(osu_config.data["profiles"].items()):
-            # First, update the user's data
-            await self.__update_user_data(member_id, profile)
-            if str(member_id) in osu_tracking:
-                data = osu_tracking[str(member_id)]
-                client.loop.create_task(self.__notify(member_id, data))
-        if cache_user_profiles:
-            await misc_utils.save_profile_data(osu_profile_cache)
-        self.time_elapsed = (datetime.now() - self.started).total_seconds()
-        self.previous_update = datetime.now(tz=timezone.utc)
+        try:
+            for member_id, profile in list(osu_config.data["profiles"].items()):
+                # First, update the user's data
+                await self.__update_user_data(member_id, profile)
+                if str(member_id) in osu_tracking:
+                    data = osu_tracking[str(member_id)]
+                    client.loop.create_task(self.__notify(member_id, data))
+            if cache_user_profiles:
+                await misc_utils.save_profile_data(osu_profile_cache)
+        except KeyError as e:
+            logging.exception(e)
+            return
+        finally:
+            self.time_elapsed = (datetime.now() - self.started).total_seconds()
+            self.previous_update = datetime.now(tz=timezone.utc)
 
     @__tracking_loop.before_loop
     async def wait_for_ready(self):
