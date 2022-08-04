@@ -118,6 +118,7 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
 
     if member.is_timed_out():
         await client.say(message, "This member is already muted.")
+        return
 
     timeout_duration = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(minutes=minutes)
     try:
