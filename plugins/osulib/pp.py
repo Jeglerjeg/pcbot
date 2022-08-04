@@ -352,7 +352,7 @@ async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
     if member_id not in no_choke_cache or (member_id in no_choke_cache and no_choke_cache[member_id]["time_updated"]
                                            < datetime.fromisoformat(osu_scores["time_updated"])):
         for osu_score in osu_scores["score_list"]:
-            if osu_score.perfect:
+            if osu_score.legacy_perfect:
                 continue
             full_combo_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
             score_pp = await get_score_pp(osu_score, mode)
@@ -360,15 +360,15 @@ async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
                 osu_score.new_pp = f"""{utils.format_number(osu_score.pp, 2)} => {utils.format_number(
                     score_pp.max_pp, 2)}"""
                 osu_score.pp = score_pp.max_pp
-                osu_score.perfect = True
+                osu_score.legacy_perfect = True
                 osu_score.accuracy = full_combo_acc
                 osu_score.max_combo = score_pp.max_combo
                 osu_score.beatmap.difficulty_rating = score_pp.stars
-                osu_score.count_300 = osu_score.count_300 +\
-                    osu_score.count_miss
-                osu_score.count_miss = 0
+                osu_score.statistics.great = osu_score.statistics.great +\
+                    osu_score.statistics.great
+                osu_score.statistics.miss = 0
                 osu_score.rank = score_utils.get_no_choke_scorerank(osu_score.mods, full_combo_acc)
-                osu_score.score = None
+                osu_score.total_score = None
                 no_choke_list.append(osu_score)
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
         for i, osu_score in enumerate(no_choke_list):

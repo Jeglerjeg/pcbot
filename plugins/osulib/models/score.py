@@ -5,6 +5,31 @@ from plugins.osulib.enums import GameMode
 from plugins.osulib.models.beatmap import Beatmap
 
 
+class ScoreStatistics:
+    perfect: int
+    great: int
+    good: int
+    ok: int
+    meh: int
+    small_tick_hit: int
+    small_tick_miss: int
+    large_tick_hit: int
+    large_tick_miss: int
+    miss: int
+
+    def __init__(self, raw_data: dict):
+        self.perfect = raw_data["perfect"] if "perfect" in raw_data else 0
+        self.great = raw_data["great"] if "great" in raw_data else 0
+        self.good = raw_data["good"] if "good" in raw_data else 0
+        self.ok = raw_data["ok"] if "ok" in raw_data else 0
+        self.meh = raw_data["meh"] if "meh" in raw_data else 0
+        self.small_tick_hit = raw_data["small_tick_hit"] if "small_tick_hit" in raw_data else 0
+        self.small_tick_miss = raw_data["small_tick_miss"] if "small_tick_miss" in raw_data else 0
+        self.large_tick_hit = raw_data["large_tick_hit"] if "large_tick_hit" in raw_data else 0
+        self.large_tick_miss = raw_data["large_tick_miss"] if "large_tick_miss" in raw_data else 0
+        self.miss = raw_data["miss"] if "miss" in raw_data else 0
+
+
 class OsuScore:
     id: int
     best_id: int
@@ -12,19 +37,10 @@ class OsuScore:
     beatmap_id: int
     accuracy: float
     mods: list
-    score: int
+    total_score: int
     max_combo: int
-    perfect: bool
-    count_perfect: int
-    count_300: int
-    count_200: int
-    count_100: int
-    count_50: int
-    count_smalltickhit: int
-    count_smalltickmiss: int
-    count_largetickhit: int
-    count_largetickmiss: int
-    count_miss: int
+    legacy_perfect: bool
+    statistics: ScoreStatistics
     passed: bool
     pp: float
     rank: str
@@ -41,39 +57,11 @@ class OsuScore:
     weight: Optional[float]
     user: Optional[dict]
 
-    def __init__(self, json_data: dict, from_file: bool = False):
-        if from_file:
-            self.score = json_data["score"]
-            self.perfect = json_data["perfect"]
-            self.mode = GameMode(json_data["mode"])
-            self.count_max = json_data["count_max"]
-            self.count_300 = json_data["count_300"]
-            self.count_200 = json_data["count_200"]
-            self.count_100 = json_data["count_100"]
-            self.count_50 = json_data["count_50"]
-            self.count_smalltickhit = json_data["count_smalltickhit"]
-            self.count_smalltickmiss = json_data["count_smalltickmiss"]
-            self.count_largetickhit = json_data["count_largetickhit"]
-            self.count_largetickmiss = json_data["count_largetickmiss"]
-            self.count_miss = json_data["count_miss"]
-        else:
-            self.score = json_data["total_score"]
-            self.perfect = json_data["legacy_perfect"]
-            self.mode = GameMode(json_data["ruleset_id"])
-            self.count_max = json_data["statistics"]["perfect"] if "perfect" in json_data["statistics"] else 0
-            self.count_300 = json_data["statistics"]["great"] if "great" in json_data["statistics"] else 0
-            self.count_200 = json_data["statistics"]["good"] if "good" in json_data["statistics"] else 0
-            self.count_100 = json_data["statistics"]["ok"] if "ok" in json_data["statistics"] else 0
-            self.count_50 = json_data["statistics"]["meh"] if "meh" in json_data["statistics"] else 0
-            self.count_smalltickhit = json_data["statistics"]["small_tick_hit"] if "small_tick_hit" in \
-                                                                                   json_data["statistics"] else 0
-            self.count_smalltickmiss = json_data["statistics"]["small_tick_miss"] if "small_tick_miss" in \
-                                                                                     json_data["statistics"] else 0
-            self.count_largetickhit = json_data["statistics"]["large_tick_hit"] if "large_tick_hit" in \
-                                                                                   json_data["statistics"] else 0
-            self.count_largetickmiss = json_data["statistics"]["large_tick_miss"] if "large_tick_miss" in \
-                                                                                     json_data["statistics"] else 0
-            self.count_miss = json_data["statistics"]["miss"] if "miss" in json_data["statistics"] else 0
+    def __init__(self, json_data: dict):
+        self.total_score = json_data["total_score"]
+        self.legacy_perfect = json_data["legacy_perfect"]
+        self.mode = GameMode(json_data["ruleset_id"])
+        self.statistics = ScoreStatistics(json_data["statistics"])
         self.id = json_data["id"]
         self.best_id = json_data["best_id"]
         self.user_id = json_data["user_id"]
@@ -115,13 +103,16 @@ class OsuScore:
         readable_dict = {}
         for attr, value in self.__dict__.items():
             if isinstance(value, GameMode):
-                readable_dict[attr] = value.value
+                readable_dict["ruleset_id"] = value.value
                 continue
             elif isinstance(value, Beatmap):
                 readable_dict[attr] = value.to_dict()
                 continue
             elif isinstance(value, datetime):
                 readable_dict[attr] = value.isoformat()
+                continue
+            elif isinstance(value, ScoreStatistics):
+                readable_dict[attr] = value.__dict__
                 continue
             readable_dict[attr] = value
         return readable_dict

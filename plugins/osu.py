@@ -507,7 +507,7 @@ async def score(message: discord.Message, *options):
         mod_list = wrap(mods, 2)
         osu_score.mods = [{"acronym": mod, "settings": {}} for mod in mod_list]
         osu_score.pp = 0
-        osu_score.score = None
+        osu_score.total_score = None
         osu_score.rank_global = None
     else:
         osu_score.rank_global = osu_scores["position"]

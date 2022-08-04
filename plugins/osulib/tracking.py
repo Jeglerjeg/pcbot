@@ -438,7 +438,7 @@ class OsuTracker:
             primary_guild = user_utils.get_primary_guild(str(member.id))
             is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
             potential_string = score_format.format_potential_pp(score_pp if score_pp is not None
-                                                                and not bool(osu_score.perfect
+                                                                and not bool(osu_score.legacy_perfect
                                                                              and osu_score.passed)
                                                                 else None,
                                                                 osu_score)

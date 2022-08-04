@@ -69,7 +69,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
                                                                                         score_pp is not None
                                                                                         and not
                                                                                         bool(
-                                                                                            osu_score.perfect
+                                                                                            osu_score.legacy_perfect
                                                                                             and
                                                                                             osu_score.passed
                                                                                         )

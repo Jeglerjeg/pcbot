@@ -42,7 +42,7 @@ def load_profile_data(user_data: dict):
         if "scores" not in user_data[profile] or "score_list" not in user_data[profile]["scores"]:
             continue
         user_data[profile]["scores"]["score_list"] = \
-            [OsuScore(osu_score, from_file=True) for osu_score in user_data[profile]["scores"]["score_list"]]
+            [OsuScore(osu_score) for osu_score in user_data[profile]["scores"]["score_list"]]
 
     return user_data
 
@@ -74,29 +74,35 @@ def get_timestamps_with_url(content: str):
 def calculate_acc(mode: enums.GameMode, osu_score: OsuScore, exclude_misses: bool = False):
     """ Calculate the accuracy using formulas from https://osu.ppy.sh/wiki/Accuracy """
 
+    great = osu_score.statistics.great
+    ok = osu_score.statistics.ok
+    meh = osu_score.statistics.meh
+    miss = osu_score.statistics.miss
+
     # Catch accuracy is done a tad bit differently, so we calculate that by itself
     if mode is enums.GameMode.fruits:
-        total_numbers_of_fruits_caught = osu_score.count_smalltickhit + osu_score.count_largetickhit +\
-                                         osu_score.count_300
-        total_numbers_of_fruits = (osu_score.count_miss + osu_score.count_smalltickhit + osu_score.count_largetickhit +
-                                   osu_score.count_300 + osu_score.count_smalltickmiss)
+        small_tick_hit = osu_score.statistics.small_tick_hit
+        small_tick_miss = osu_score.statistics.small_tick_miss
+        large_tick_hit = osu_score.statistics.large_tick_hit
+        total_numbers_of_fruits_caught = small_tick_hit + large_tick_hit + great
+        total_numbers_of_fruits = (miss + small_tick_hit + large_tick_hit +
+                                   great + small_tick_miss)
         return total_numbers_of_fruits_caught / total_numbers_of_fruits
 
     total_points_of_hits, total_number_of_hits = 0, 0
 
     if mode is enums.GameMode.osu:
-        total_points_of_hits = osu_score.count_50 * 50 + osu_score.count_100 * 100 + osu_score.count_300 * 300
-        total_number_of_hits = ((0 if exclude_misses else osu_score.count_miss) + osu_score.count_50 +
-                                osu_score.count_100 + osu_score.count_300)
+        total_points_of_hits = meh * 50 + ok * 100 + great * 300
+        total_number_of_hits = (0 if exclude_misses else miss) + meh + ok + great
     elif mode is enums.GameMode.taiko:
-        total_points_of_hits = (osu_score.count_miss * 0 + osu_score.count_100 * 0.5 + osu_score.count_300 * 1) * 300
-        total_number_of_hits = osu_score.count_miss + osu_score.count_100 + osu_score.count_300
+        total_points_of_hits = (miss * 0 + ok * 0.5 + great * 1) * 300
+        total_number_of_hits = miss + ok + great
     elif mode is enums.GameMode.mania:
+        perfect = osu_score.statistics.perfect
+        good = osu_score.statistics.good
         # In mania, katu is 200s and geki is MAX
-        total_points_of_hits = osu_score.count_50 * 50 + osu_score.count_100 * 100 + osu_score.count_200 * 200 +\
-                               (osu_score.count_300 + osu_score.count_max) * 300
-        total_number_of_hits = (osu_score.count_miss + osu_score.count_50 + osu_score.count_100 + osu_score.count_200 +
-                                osu_score.count_300 + osu_score.count_max)
+        total_points_of_hits = meh * 50 + ok * 100 + good * 200 + (great + perfect) * 300
+        total_number_of_hits = miss + meh + ok + good + great + perfect
 
     return total_points_of_hits / (total_number_of_hits * 300)
 

@@ -65,12 +65,12 @@ def get_no_choke_scorerank(mods: list, acc: float):
 
 
 def get_score_object_count(osu_score: OsuScore):
-    perfect = osu_score.count_max
-    great = osu_score.count_300
-    good = osu_score.count_200
-    ok = osu_score.count_100
-    meh = osu_score.count_50
-    miss = osu_score.count_miss
+    perfect = osu_score.statistics.perfect
+    great = osu_score.statistics.great
+    good = osu_score.statistics.good
+    ok = osu_score.statistics.ok
+    meh = osu_score.statistics.meh
+    miss = osu_score.statistics.miss
     if osu_score.mode is enums.GameMode.osu:
         objects = great + ok + meh + miss
     elif osu_score.mode is enums.GameMode.taiko:
@@ -84,14 +84,14 @@ def get_score_object_count(osu_score: OsuScore):
 
 def process_score_args(osu_score: OsuScore):
     formatted_mods = f"+{enums.Mods.format_mods(osu_score.mods)}"
-    great = osu_score.count_300
-    ok = osu_score.count_100
-    miss = osu_score.count_miss
+    great = osu_score.statistics.great
+    ok = osu_score.statistics.ok
+    miss = osu_score.statistics.miss
     acc = osu_score.accuracy
 
     if osu_score.mode is enums.GameMode.osu:
         potential_acc = misc_utils.calculate_acc(osu_score.mode, osu_score, exclude_misses=True)
-        meh = osu_score.count_50
+        meh = osu_score.statistics.meh
         args_list = (f"{formatted_mods} {acc:.2%} {potential_acc:.2%}pot {great}x300 {ok}x100 {meh}x50 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
     elif osu_score.mode is enums.GameMode.taiko:
@@ -101,9 +101,9 @@ def process_score_args(osu_score: OsuScore):
         score = osu_score.max_combo
         args_list = f"{formatted_mods} {score}score {get_score_object_count(osu_score)}objects".split()
     else:
-        large_tick_hit = osu_score.count_largetickhit
-        small_tick_hit = osu_score.count_smalltickhit
-        small_tick_miss = osu_score.count_smalltickmiss
+        large_tick_hit = osu_score.statistics.large_tick_hit
+        small_tick_hit = osu_score.statistics.small_tick_hit
+        small_tick_miss = osu_score.statistics.small_tick_miss
         args_list = (f"{formatted_mods} {great}x300 {large_tick_hit}x100 {small_tick_hit}x50 {small_tick_miss}dropmiss "
                      f"{miss}m {osu_score.max_combo}x").split()
     return args_list + process_mod_settings(osu_score)
@@ -133,7 +133,7 @@ def process_mod_settings(osu_score: OsuScore):
 
 
 def calculate_potential_pp(osu_score: OsuScore, mode: enums.GameMode):
-    return mode == enums.GameMode.osu and (not osu_score.perfect or not osu_score.passed)
+    return mode == enums.GameMode.osu and (not osu_score.legacy_perfect or not osu_score.passed)
 
 
 def add_score_position(osu_scores: list[OsuScore]):

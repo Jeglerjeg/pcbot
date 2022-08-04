@@ -66,7 +66,7 @@ class PaginatedScoreList(discord.ui.View):
 def format_potential_pp(score_pp: pp.PPStats, osu_score: OsuScore):
     """ Formats potential PP for scores. """
     if score_pp is not None and score_pp.max_pp is not None and (osu_score.pp / score_pp.max_pp) * 100 < 99\
-            and not osu_score.perfect:
+            and not osu_score.legacy_perfect:
         potential_string = f"Potential: {utils.format_number(score_pp.max_pp, 2):,}pp, " \
                            f"{utils.format_number(score_pp.max_pp - osu_score.pp, 2):+}pp"
     else:
@@ -103,17 +103,12 @@ def get_formatted_score_time(osu_score: OsuScore):
 
 def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.GameMode):
     """" Returns formatted score statistics for each mode. """
-    sign = "!" if osu_score.accuracy == 1 else ("+" if osu_score.perfect and osu_score.passed else "-")
+    sign = "!" if osu_score.accuracy == 1 else ("+" if osu_score.legacy_perfect and osu_score.passed else "-")
     acc = f"{utils.format_number(osu_score.accuracy * 100, 2)}%"
-    perfect = osu_score.count_max
-    great = osu_score.count_300
-    good = osu_score.count_200
-    ok = osu_score.count_100
-    meh = osu_score.count_50
-    miss = osu_score.count_miss
-    large_tick_hit = osu_score.count_largetickhit
-    large_tick_miss = osu_score.count_largetickmiss
-    small_tick_miss = osu_score.count_smalltickmiss
+    great = osu_score.statistics.great
+    ok = osu_score.statistics.ok
+    meh = osu_score.statistics.meh
+    miss = osu_score.statistics.miss
     maxcombo = osu_score.max_combo
     max_combo = f"/{beatmap.max_combo}" if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None else ""
     if mode is enums.GameMode.osu:
@@ -123,8 +118,13 @@ def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.G
         return "  acc    great  good  miss  combo\n" \
               f"{sign} {acc:<7}{great:<7}{ok:<6}{miss:<6}{maxcombo}{max_combo}"
     if mode is enums.GameMode.mania:
+        perfect = osu_score.statistics.perfect
+        good = osu_score.statistics.good
         return "  acc    max   300s  200s  100s  50s  miss\n" \
-              f"{sign} {acc:<7}{perfect:<6}{great:<6}{good:<6}{ok:<6}{meh:<5}{miss:<6}"
+               f"{sign} {acc:<7}{perfect:<6}{great:<6}{good:<6}{ok:<6}{meh:<5}{miss:<6}"
+    large_tick_hit = osu_score.statistics.large_tick_hit
+    large_tick_miss = osu_score.statistics.large_tick_miss
+    small_tick_miss = osu_score.statistics.small_tick_miss
     return "  acc    fruits ticks drpm miss combo\n" \
            f"{sign} {acc:<7}{great:<7}{large_tick_hit:<6}{small_tick_miss:<5}{miss+large_tick_miss:<5}{maxcombo}" \
            f"{max_combo}"
@@ -135,7 +135,7 @@ def format_score_info(osu_score: OsuScore, beatmap: Beatmap):
     beatmap_url = beatmap_utils.get_beatmap_url(beatmap.id, osu_score.mode, beatmap.beatmapset_id)
     modslist = enums.Mods.format_mods(osu_score.mods, score_display=True)
     score_pp = utils.format_number(osu_score.pp, 2) if not hasattr(osu_score, "new_pp") else osu_score.new_pp
-    ranked_score = f'{osu_score.score:,}' if osu_score.score else ""
+    ranked_score = f'{osu_score.total_score:,}' if osu_score.total_score else ""
     stars = utils.format_number(float(beatmap.difficulty_rating), 2)
     scoreboard_rank = f"#{osu_score.rank_global} " if hasattr(osu_score, "rank_global") \
                       and osu_score.rank_global else ""
