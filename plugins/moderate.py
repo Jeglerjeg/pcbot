@@ -96,7 +96,7 @@ async def unmute(message: discord.Message, *members: discord.Member):
 
     muted_members = []
     for member in members:
-        if member.timed_out:
+        if member.is_timed_out():
             await member.edit(timed_out_until=None)
             muted_members.append(member)
         else:
@@ -125,7 +125,7 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
 
     # Do not progress if the members were not successfully muted
     # At this point, manage_mute will have reported any errors
-    if not member.timed_out:
+    if not member.is_timed_out():
         return
 
     changelog_channel = get_changelog_channel(message.guild)
