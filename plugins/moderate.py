@@ -92,7 +92,7 @@ add_setting("Changelog", permissions=["manage_guild"], default=False)
 async def unmute(message: discord.Message, *members: discord.Member):
     """ Unmute the specified members. """
     assert message.channel.permissions_for(message.guild.me).moderate_members, \
-        "I need `Time out members` permission to use this command."
+        "I need `Moderate Member` permission to use this command."
 
     muted_members = []
     for member in members:
@@ -112,10 +112,12 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
     """ Timeout a user in minutes (will accept decimal numbers), send them
     the reason for being timed out and post the reason in the guild's
     changelog if it has one. """
-    client.loop.create_task(client.delete_message(message))
 
     assert message.channel.permissions_for(message.guild.me).moderate_members, \
-        "I need `Time out members` permission to use this command."
+        "I need `Moderate Member` permission to use this command."
+
+    if member.is_timed_out():
+        await client.say(message, "This member is already muted.")
 
     timeout_duration = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(minutes=minutes)
     try:
@@ -141,6 +143,7 @@ async def timeout(message: discord.Message, member: discord.Member, minutes: flo
         await client.send_message(changelog_channel,
                                   f"{message.author.mention} Timed out {member.mention} for **{minutes} minutes**. "
                                   f"**Reason:** {reason}")
+    client.loop.create_task(client.delete_message(message))
 
 
 @plugins.command(aliases="muteall mute* unmuteall unmute*", permissions="manage_messages")
