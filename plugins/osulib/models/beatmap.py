@@ -132,12 +132,15 @@ class BeatmapsetCompact:
     creator: str
     favourite_count: int
     id: int
+    nsfw: bool
     play_count: int
     source: str
     status: str
     title: str
     title_unicode: str
     user_id: int
+    beatmaps: Optional[list[Beatmap]]
+    converts: Optional[list[Beatmap]]
 
     def __init__(self, raw_data: dict):
         self.artist = raw_data["artist"]
@@ -152,6 +155,10 @@ class BeatmapsetCompact:
         self.title = raw_data["title"]
         self.title_unicode = raw_data["title_unicode"]
         self.user_id = raw_data["user_id"]
+        if "beatmaps" in raw_data:
+            self.beatmaps = [Beatmap(beatmap) for beatmap in raw_data["beatmaps"]]
+        if "converts" in raw_data:
+            self.converts = [Beatmap(beatmap) for beatmap in raw_data["converts"]]
 
     def __repr__(self):
         return self.to_dict()
@@ -169,14 +176,8 @@ class BeatmapsetCompact:
 class Beatmapset(BeatmapsetCompact):
     bpm: float
     ranked: int
-    beatmaps: Optional[list[Beatmap]]
-    converts: Optional[list[Beatmap]]
 
     def __init__(self, raw_data: dict):
         super().__init__(raw_data)
         self.bpm = raw_data["bpm"]
         self.ranked = raw_data["ranked"]
-        if "beatmaps" in raw_data:
-            self.beatmaps = [Beatmap(beatmap) for beatmap in raw_data["beatmaps"]]
-        if "converts" in raw_data:
-            self.converts = [Beatmap(beatmap) for beatmap in raw_data["converts"]]
