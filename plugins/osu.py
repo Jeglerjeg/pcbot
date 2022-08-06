@@ -377,7 +377,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
     await client.say(message,
                      "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`."
                      .format(" ".join(options), artist=beatmap.beatmapset.artist,
-                             title=beatmap.beatmapset.title, version=beatmap["version"], stars=pp_stats.stars,
+                             title=beatmap.beatmapset.title, version=beatmap.version, stars=pp_stats.stars,
                              pp=pp_stats.pp))
 
 

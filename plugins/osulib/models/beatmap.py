@@ -67,7 +67,7 @@ class Beatmap:
         self.ar = json_data["ar"]
         self.beatmapset_id = json_data["beatmapset_id"]
         if "beatmapset" in json_data:
-            self.beatmapset = json_data["beatmapset"]
+            self.beatmapset = Beatmapset(json_data["beatmapset"])
         if "checksum" in json_data:
             self.checksum = json_data["checksum"]
         if "failtimes" in json_data:
