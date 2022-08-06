@@ -140,13 +140,13 @@ def format_score_info(osu_score: OsuScore, beatmap: Beatmap):
     scoreboard_rank = f"#{osu_score.rank_global} " if hasattr(osu_score, "rank_global") \
                       and osu_score.rank_global else ""
     failed = "(Failed) " if osu_score.passed is False and osu_score.rank != "F" else ""
-    artist = osu_score.beatmapset["artist"].replace("_", r"\_") if hasattr(osu_score, "beatmapset") \
-        and osu_score.beatmapset else beatmap.beatmapset["artist"].replace("_", r"\_")
-    title = osu_score.beatmapset["title"].replace("_", r"\_") if hasattr(osu_score, "beatmapset") \
-        and osu_score.beatmapset else beatmap.beatmapset["title"].replace("_", r"\_")
-    i = ("*" if "*" not in osu_score.beatmapset["artist"] + osu_score.beatmapset["title"] else "") if \
+    artist = osu_score.beatmapset.artist.replace("_", r"\_") if hasattr(osu_score, "beatmapset") \
+        and osu_score.beatmapset else beatmap.beatmapset.artist.replace("_", r"\_")
+    title = osu_score.beatmapset.title.replace("_", r"\_") if hasattr(osu_score, "beatmapset") \
+        and osu_score.beatmapset else beatmap.beatmapset.title.replace("_", r"\_")
+    i = ("*" if "*" not in osu_score.beatmapset.artist + osu_score.beatmapset.title else "") if \
         hasattr(osu_score, "beatmapset") and osu_score.beatmapset else \
-        ("*" if "*" not in beatmap.beatmapset["artist"] + beatmap.beatmapset["title"] else "")
+        ("*" if "*" not in beatmap.beatmapset.artist + beatmap.beatmapset.title else "")
     return f'[{i}{artist} - {title} [{beatmap.version}]{i}]({beatmap_url})\n' \
            f'**{score_pp}pp {stars}\u2605, {osu_score.rank} {scoreboard_rank}{failed}+{modslist} {ranked_score}**'
 
@@ -172,8 +172,8 @@ async def format_minimal_score(osu_score: OsuScore, beatmap: Beatmap, member: di
         url=beatmap_utils.get_beatmap_url(osu_score.beatmap.id, osu_score.mode, beatmap.beatmapset_id),
         mods=enums.Mods.format_mods(osu_score.mods, score_display=True),
         acc=f"{utils.format_number(osu_score.accuracy * 100, 2)}%",
-        artist=beatmap.beatmapset["artist"].replace("*", r"\*").replace("_", r"\_"),
-        title=beatmap.beatmapset["title"].replace("*", r"\*").replace("_", r"\_"),
+        artist=beatmap.beatmapset.artist.replace("*", r"\*").replace("_", r"\_"),
+        title=beatmap.beatmapset.artist.replace("*", r"\*").replace("_", r"\_"),
         version=beatmap.version,
         maxcombo=osu_score.max_combo,
         max_combo=f"/{beatmap.max_combo}" if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None

@@ -66,7 +66,7 @@ class Beatmap:
         self.accuracy = json_data["accuracy"]
         self.ar = json_data["ar"]
         self.beatmapset_id = json_data["beatmapset_id"]
-        if "beatmapset" in json_data:
+        if "beatmapset" in json_data and json_data["beatmapset"]:
             self.beatmapset = Beatmapset(json_data["beatmapset"])
         if "checksum" in json_data:
             self.checksum = json_data["checksum"]
@@ -125,11 +125,10 @@ class Beatmap:
         self.new_bpm = bpm
 
 
-class Beatmapset:
+class BeatmapsetCompact:
     artist: str
     artist_unicode: str
     covers: BeatmapsetCovers
-    bpm: float
     creator: str
     favourite_count: int
     id: int
@@ -138,16 +137,12 @@ class Beatmapset:
     status: str
     title: str
     title_unicode: str
-    ranked: int
     user_id: int
-    beatmaps: Optional[list[Beatmap]]
-    converts: Optional[list[Beatmap]]
 
     def __init__(self, raw_data: dict):
         self.artist = raw_data["artist"]
         self.artist_unicode = raw_data["artist_unicode"]
         self.covers = BeatmapsetCovers(raw_data["covers"])
-        self.bpm = raw_data["bpm"]
         self.creator = raw_data["creator"]
         self.favourite_count = raw_data["favourite_count"]
         self.id = raw_data["id"]
@@ -156,12 +151,7 @@ class Beatmapset:
         self.status = raw_data["status"]
         self.title = raw_data["title"]
         self.title_unicode = raw_data["title_unicode"]
-        self.ranked = raw_data["ranked"]
         self.user_id = raw_data["user_id"]
-        if "beatmaps" in raw_data:
-            self.beatmaps = [Beatmap(beatmap) for beatmap in raw_data["beatmaps"]]
-        if "converts" in raw_data:
-            self.converts = [Beatmap(beatmap) for beatmap in raw_data["converts"]]
 
     def __repr__(self):
         return self.to_dict()
@@ -172,8 +162,21 @@ class Beatmapset:
             if isinstance(value, GameMode):
                 readable_dict[attr] = value.name
                 continue
-            elif isinstance(value, datetime):
-                readable_dict[attr] = value.isoformat()
-                continue
             readable_dict[attr] = value
         return readable_dict
+
+
+class Beatmapset(BeatmapsetCompact):
+    bpm: float
+    ranked: int
+    beatmaps: Optional[list[Beatmap]]
+    converts: Optional[list[Beatmap]]
+
+    def __init__(self, raw_data: dict):
+        super().__init__(raw_data)
+        self.bpm = raw_data["bpm"]
+        self.ranked = raw_data["ranked"]
+        if "beatmaps" in raw_data:
+            self.beatmaps = [Beatmap(beatmap) for beatmap in raw_data["beatmaps"]]
+        if "converts" in raw_data:
+            self.converts = [Beatmap(beatmap) for beatmap in raw_data["converts"]]

@@ -394,7 +394,7 @@ class OsuTracker:
                 "beatmap_id": osu_score.beatmap_id,
             }
             beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score.beatmap_id, mode=mode.name))
-            thumbnail_url = beatmap.beatmapset["covers"]["list@2x"]
+            thumbnail_url = beatmap.beatmapset.covers.list2x
             author_text = f"{data['new']['username']} set a new best (#{osu_score.position}/{score_request_limit} " \
                           f"+{osu_score.pp_difference:.2f}pp)"
 
