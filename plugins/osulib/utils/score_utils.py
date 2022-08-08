@@ -113,6 +113,8 @@ def process_mod_settings(osu_score: OsuScore):
     """ Adds args for all difficulty adjusting mod settings in a score. """
     args = []
     for mod in osu_score.mods:
+        if "settings" not in mod:
+            continue
         if mod["acronym"] == "DT" or mod["acronym"] == "NC" or mod["acronym"] == "HT" or mod["acronym"] == "DC":
             if "speed_change" in mod["settings"]:
                 args.append(f'{mod["settings"]["speed_change"]}*')
