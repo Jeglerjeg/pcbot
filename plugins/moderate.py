@@ -279,46 +279,36 @@ async def log_change(channel: discord.TextChannel, message: str):
 
 
 @plugins.event()
-async def on_raw_message_delete(raw_message: discord.RawMessageDeleteEvent):
+async def on_message_delete(message: discord.Message):
     """ Update the changelog with deleted messages. """
-    changelog_channel = get_changelog_channel(client.get_guild(raw_message.guild_id))
-    if raw_message.cached_message:
-        message = raw_message.cached_message
-        # Don't log any message the bot deleted
-        for m in client.last_deleted_messages:
-            if m.id == message.id:
-                return
-
-        if changelog_channel is None:
+    changelog_channel = get_changelog_channel(message.guild)
+    # Don't log any message the bot deleted
+    for m in client.last_deleted_messages:
+        if m.id == message.id:
             return
 
-        if message.channel == changelog_channel:
-            return
+    if changelog_channel is None:
+        return
 
-        if message.author == client.user:
-            return
+    if message.channel == changelog_channel:
+        return
 
-        if message.attachments:
-            attachments = ""
-            for attachment in message.attachments:
-                attachments += attachment.filename + "\n"
-            await log_change(
-                changelog_channel,
-                f"{message.author.mention}'s message was deleted "
-                f"in {message.channel.mention}:\n{message.clean_content}\nAttachments:\n``{attachments}``"
-            )
-        else:
-            await log_change(
-                changelog_channel,
-                f"{message.author.mention}'s message was deleted in {message.channel.mention}:\n{message.clean_content}"
-            )
-    else:
-        if changelog_channel is None:
-            return
+    if message.author == client.user:
+        return
 
+    if message.attachments:
+        attachments = ""
+        for attachment in message.attachments:
+            attachments += attachment.filename + "\n"
         await log_change(
             changelog_channel,
-            f"An uncached message was deleted in {client.get_channel(raw_message.channel_id).mention}"
+            f"{message.author.mention}'s message was deleted "
+            f"in {message.channel.mention}:\n{message.clean_content}\nAttachments:\n``{attachments}``"
+        )
+    else:
+        await log_change(
+            changelog_channel,
+            f"{message.author.mention}'s message was deleted in {message.channel.mention}:\n{message.clean_content}"
         )
 
 
