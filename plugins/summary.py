@@ -1,7 +1,9 @@
 """ Plugin for generating markov text, or a summary if you will. """
 
 import asyncio
+import json
 import logging
+import os
 import random
 import re
 import string
@@ -9,6 +11,7 @@ from collections import defaultdict, deque
 from functools import partial
 
 import discord
+from sqlalchemy import text
 
 import bot
 import plugins
@@ -22,6 +25,7 @@ except ImportError:
     logging.warning("Markovify could not be imported and as such !summary +strict will not work.")
 try:
     import nltk
+
     nltk.download("punkt", download_dir="plugins/nltk_data", quiet=True)
     nltk.data.path.append("plugins/nltk_data")
 except ImportError:
@@ -55,8 +59,69 @@ on_no_messages = "**There were no messages to generate a summary from, {0.author
 on_fail = "**I was unable to construct a summary, {0.author.name}.**"
 
 summary_options = Config("summary_options", data=dict(no_bot=False, no_self=False, persistent_channels=[]), pretty=True)
-summary_data = Config("summary_data", data=dict(channels={}))
-summary_data_changed = False
+
+
+def generate_query_data(messages: list[discord.Message]):
+    messages_to_commit = []
+    for message in messages:
+        messages_to_commit.append({"content": message.clean_content, "channel_id": message.channel.id,
+                                   "author_id": message.author.id, "is_bot": message.author.bot})
+    return messages_to_commit
+
+
+def commit_message(query_data: list):
+    with bot.engine.connect() as connection:
+        transaction = connection.begin()
+        connection.execute(
+            text("INSERT INTO summary_messages (content, channel_id, author_id, bot) "
+                 "VALUES (:content, :channel_id, :author_id, :is_bot)"),
+            query_data
+        )
+        transaction.commit()
+
+
+def migrate_summary_data():
+    with open("config/summary_data.json", encoding="utf-8") as f:
+        data = json.load(f)
+        query_data = []
+        for channel_id, messages in data["channels"].items():
+            for message in messages:
+                query_data.append({"content": message["content"], "channel_id": channel_id,
+                                   "author_id": message["author"], "is_bot": message["bot"]})
+        commit_message(query_data)
+    os.remove("config/summary_data.json")
+
+
+def create_table():
+    with bot.engine.connect() as conn:
+        transaction = conn.begin()
+        conn.execute(text("CREATE TABLE IF NOT EXISTS summary_messages (content str, channel_id int, "
+                          "author_id int, bot bool)"))
+        transaction.commit()
+
+
+create_table()
+
+logging.info(os.path.exists("config/summary_data.json"))
+if os.path.exists("config/summary_data.json"):
+    migrate_summary_data()
+
+
+def get_persistent_messages(channel_id: int, author_id: int = None, bots: bool = False):
+    query = "SELECT content FROM summary_messages WHERE channel_id = :channel_id"
+    query_dict = {"channel_id": channel_id}
+    if author_id:
+        query += " AND author_id = :author_id"
+        query_dict["author_id"] = author_id
+    if not bots:
+        query += " AND bot = :is_bot"
+        query_dict["is_bot"] = False
+    with bot.engine.connect() as connection:
+        result = connection.execute(
+            text(query),
+            query_dict
+        )
+        return result.all()
 
 
 def to_persistent(message: discord.Message):
@@ -271,18 +336,18 @@ def create_bigram_model(message_content: list):
 
 def generate_bigram_message(bigram_model: defaultdict[lambda: defaultdict[lambda: 0.0]], phrase: str):
     # Generate a sentence using the bigram model
-    text = [phrase if phrase else None]
+    bigram_text = [phrase if phrase else None]
     sentence_complete = False
     while not sentence_complete:
-        key = text[-1]
+        key = bigram_text[-1]
         bigram_word = list(bigram_model[key].keys())
         probabilities = list(bigram_model[key].values())
         random_word = numpy.random.choice(bigram_word, p=probabilities)
-        text.append(random_word)
+        bigram_text.append(random_word)
 
-        if text[-1] is None:
+        if bigram_text[-1] is None:
             sentence_complete = True
-    sentence = " ".join([t for t in text if t])
+    sentence = " ".join([t for t in bigram_text if t])
     return sentence
 
 
@@ -316,7 +381,7 @@ def is_endswith(phrase):
 
 
 @plugins.command(
-    usage="([*<num>] [@<user/role> ...] [#<channel>] [+re(gex)] [+case] [+tts] [+(no)bot] [+coherent] [+loose] "
+    usage="([*<num>] [@<user> ...] [#<channel>] [+re(gex)] [+case] [+tts] [+(no)bot] [+coherent] [+loose] "
           "[+bigram]) [phrase ...]",
     pos_check=is_valid_option, aliases="markov")
 async def summary(message: discord.Message, *options, phrase: Annotate.Content = None):
@@ -324,7 +389,7 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
     messages after first use. This command needs some time after the plugin reloads
     as it downloads the past 5000 messages in the given channel. """
     # This dict stores all parsed options as keywords
-    member, channel, num = [], None, None
+    member, channel, num = None, None, None
     regex, case, tts, coherent, strict, bigram = False, False, False, False, True, False
     bots = not summary_options.data["no_bot"]
 
@@ -338,18 +403,12 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
 
             member_match = valid_member.match(value)
             if member_match:
-                member.append(message.guild.get_member(int(member_match.group("id"))))
+                member = (message.guild.get_member(int(member_match.group("id"))))
                 continue
 
             member_match = valid_member_silent.match(value)
             if member_match:
-                member.append(utils.find_member(message.guild, member_match.group("name")))
-                continue
-
-            role_match = valid_role.match(value)
-            if role_match:
-                role = discord.utils.get(message.guild.roles, id=int(role_match.group("id")))
-                member.extend(m for m in message.guild.members if role in m.roles)
+                member = (utils.find_member(message.guild, member_match.group("name")))
                 continue
 
             channel_match = valid_channel.match(value)
@@ -373,7 +432,6 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
                     bigram = True
 
                 bots = False if value == "+nobot" else True if value == "+bot" else bots
-
         if phrase and len(phrase.split()) > 1 and bigram:
             await client.say(message, "Only 1 word phrases can be used with bigrams")
             return
@@ -397,13 +455,13 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
             "**You don't have permissions to send tts messages in this channel.**"
 
         if str(channel.id) in summary_options.data["persistent_channels"]:
-            messages = summary_data.data["channels"][str(channel.id)]
+            messages = get_persistent_messages(channel.id, member.id if member else None, bots)
+            message_content = [str(message.content) for message in messages]
         else:
             await update_task.wait()
             await update_messages(channel)
             messages = stored_messages[str(channel.id)]
-
-        message_content = filter_messages_by_arguments(messages, member, bots)
+            message_content = filter_messages_by_arguments(messages, member, bots)
 
         # Replace new lines with text to make them persist through splitting
         message_content = (s.replace("\n", NEW_LINE_IDENTIFIER) for s in message_content)
@@ -427,33 +485,12 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
 @plugins.event(bot=True, self=True)
 async def on_message(message: discord.Message):
     """ Whenever a message is sent, see if we can update in one of the channels. """
-    if str(message.channel.id) in stored_messages and message.content:
-        stored_messages[str(message.channel.id)].append(to_persistent(message))
-
     # Store to persistent if enabled for this channel
     if str(message.channel.id) in summary_options.data["persistent_channels"] and message.content:
-        if str(message.channel.id) not in summary_data.data["channels"]:
-            summary_data.data["channels"][str(message.channel.id)] = []
-        summary_data.data["channels"][str(message.channel.id)].append(to_persistent(message))
-        global summary_data_changed
-        summary_data_changed = True
-
-
-async def save_persistent_messages():
-    while not client.is_closed():
-        try:
-            await asyncio.sleep(60)
-        except asyncio.CancelledError:
-            summary_data.save()
-            return
-        global summary_data_changed
-        if summary_data_changed:
-            await summary_data.asyncsave()
-            summary_data_changed = False
-
-
-async def on_ready():
-    client.loop.create_task(save_persistent_messages())
+        query_data = generate_query_data([message])
+        commit_message(query_data)
+    elif str(message.channel.id) in stored_messages and message.content:
+        stored_messages[str(message.channel.id)].append(to_persistent(message))
 
 
 @summary.command(owner=True)
@@ -465,8 +502,6 @@ async def enable_persistent_messages(message: discord.Message, disable: bool = F
             return
         summary_options.data["persistent_channels"].remove(str(message.channel.id))
         await summary_options.asyncsave()
-        del summary_data.data['channels'][str(message.channel.id)]
-        await summary_data.asyncsave()
         await client.say(message, "Persistent messages are no longer enabled in this channel.")
         return
 
@@ -479,17 +514,22 @@ async def enable_persistent_messages(message: discord.Message, disable: bool = F
 
     await client.say(message, "Downloading messages. This may take a while.")
 
-    # Create the persistent storage
-    summary_data.data["channels"][str(message.channel.id)] = []
-
+    message_list = []
     # Download EVERY message in the channel
+    i = 0
     async for m in message.channel.history(before=message, limit=None):
+        i += 1
+        if i % 100 == 0:
+            query_data = generate_query_data(message_list)
+            commit_message(query_data)
+            message_list = []
         if not m.content:
             continue
 
         # We have no messages, so insert each from the left, leaving us with the oldest at index -1
-        summary_data.data["channels"][str(message.channel.id)].insert(0, to_persistent(m))
+        message_list.append(m)
 
-    await summary_data.asyncsave()
+    query_data = generate_query_data(message_list)
+    commit_message(query_data)
     await client.say(message,
-                     f"Downloaded {len(summary_data.data['channels'][str(message.channel.id)])} messages!")
+                     f"Downloaded {len(get_persistent_messages(message.channel.id))} messages!")
