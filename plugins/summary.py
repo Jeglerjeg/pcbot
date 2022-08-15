@@ -106,6 +106,7 @@ def delete_channel_messages(channel_id: int):
         conn.execute(text("DELETE FROM summary_messages WHERE channel_id = :channel_id"),
                      {"channel_id": channel_id})
         transaction.commit()
+        conn.execute(text("VACUUM"))
 
 
 create_table()
@@ -536,8 +537,8 @@ async def enable_persistent_messages(message: discord.Message, disable: bool = F
 
         # We have no messages, so insert each from the left, leaving us with the oldest at index -1
         message_list.append(m)
-
-    query_data = generate_query_data(message_list)
-    commit_message(query_data)
+    if message_list:
+        query_data = generate_query_data(message_list)
+        commit_message(query_data)
     await client.say(message,
                      f"Downloaded {len(get_persistent_messages(message.channel.id))} messages!")
