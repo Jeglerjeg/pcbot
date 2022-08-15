@@ -110,7 +110,6 @@ def delete_channel_messages(channel_id: int):
 
 create_table()
 
-logging.info(os.path.exists("config/summary_data.json"))
 if os.path.exists("config/summary_data.json"):
     migrate_summary_data()
 
