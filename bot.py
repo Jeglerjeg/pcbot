@@ -14,12 +14,15 @@ from copy import copy
 from datetime import datetime
 
 import discord
+from sqlalchemy import create_engine
 
 import plugins
 from pcbot import utils, config
 
 # Sets the version to enable accessibility for other modules
 __version__ = config.set_version("PCBOT V3")
+
+engine = create_engine("sqlite+pysqlite:///bot.db", echo=False, future=True)
 
 
 class Client(discord.Client):
