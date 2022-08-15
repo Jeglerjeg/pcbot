@@ -100,6 +100,14 @@ def create_table():
         transaction.commit()
 
 
+def delete_channel_messages(channel_id: int):
+    with bot.engine.connect() as conn:
+        transaction = conn.begin()
+        conn.execute(text("DELETE FROM summary_messages WHERE channel_id = :channel_id"),
+                     {"channel_id": channel_id})
+        transaction.commit()
+
+
 create_table()
 
 logging.info(os.path.exists("config/summary_data.json"))
@@ -502,6 +510,7 @@ async def enable_persistent_messages(message: discord.Message, disable: bool = F
             return
         summary_options.data["persistent_channels"].remove(str(message.channel.id))
         await summary_options.asyncsave()
+        delete_channel_messages(message.channel.id)
         await client.say(message, "Persistent messages are no longer enabled in this channel.")
         return
 
