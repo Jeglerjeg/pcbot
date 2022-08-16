@@ -11,7 +11,7 @@ from discord.ext import tasks
 import bot
 import plugins
 from pcbot import Config
-from plugins.osulib import api, enums, pp
+from plugins.osulib import api, enums, pp, db
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import cache_user_profiles, not_playing_skip, event_repeat_interval, notify_empty_scores,\
     score_request_limit, use_mentions_in_scores, update_interval
@@ -21,7 +21,6 @@ from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import user_utils, score_utils, misc_utils
 
 osu_profile_cache = Config("osu_profile_cache", data={})
-osu_profile_cache.data = misc_utils.load_profile_data(osu_profile_cache.data)
 osu_tracking = copy.deepcopy(osu_profile_cache.data)  # Stores tracked osu! users
 
 client = plugins.client  # type: bot.Client
@@ -76,7 +75,7 @@ class OsuTracker:
                     data = osu_tracking[str(member_id)]
                     client.loop.create_task(self.__notify(member_id, data))
             if cache_user_profiles:
-                await misc_utils.save_profile_data(osu_profile_cache)
+                await osu_profile_cache.asyncsave()
         except KeyError as e:
             logging.exception(e)
             return
@@ -163,14 +162,12 @@ class OsuTracker:
             else:
                 user_data["events"] = []
             # User is already tracked
-            if "scores" not in osu_tracking[member_id] or ("scores" in osu_tracking[member_id]
-                                                           and "score_list" in osu_tracking[member_id]["scores"]
-                                                           and not osu_tracking[member_id]["scores"]["score_list"]):
-                fetched_scores = await score_utils.retrieve_osu_scores(profile, mode, current_time)
-                if fetched_scores:
-                    osu_tracking[member_id]["scores"] = fetched_scores
-                    if cache_user_profiles:
-                        osu_profile_cache.data[member_id]["scores"] = copy.deepcopy(fetched_scores)
+            if not db.get_user_scores(user_data["id"]):
+                scores = await score_utils.retrieve_osu_scores(profile, mode, current_time)
+                query_data = []
+                for osu_score in scores["score_list"]:
+                    query_data.append(osu_score.to_db_query())
+                db.insert_scores(query_data)
         except aiohttp.ServerDisconnectedError:
             return
         except asyncio.TimeoutError:
@@ -322,8 +319,8 @@ class OsuTracker:
                     continue
 
                 top100_best_id = []
-                for old_score in data["scores"]["score_list"]:
-                    top100_best_id.append(old_score["best_id"])
+                for old_score in db.get_user_scores(user_id):
+                    top100_best_id.append(old_score.best_id)
 
                 if osu_score.best_id in top100_best_id:
                     continue

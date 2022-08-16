@@ -251,7 +251,7 @@ def calculate_total_user_pp(osu_scores: list[OsuScore], member_id: str, osu_trac
     for i, osu_score in enumerate(osu_scores):
         total_pp += osu_score.pp * (0.95 ** i)
     total_pp_without_bonus_pp = 0
-    for osu_score in osu_tracking[member_id]["scores"]["score_list"]:
+    for osu_score in osu_scores:
         total_pp_without_bonus_pp += osu_score.weight["pp"]
     bonus_pp = osu_tracking[member_id]["new"]["statistics"]["pp"] - total_pp_without_bonus_pp
     return total_pp + bonus_pp
@@ -261,7 +261,7 @@ async def get_score_pp(osu_score: OsuScore, mode: enums.GameMode, beatmap: Beatm
     """ Return PP for a given score. """
     score_pp = None
     try:
-        score_pp = await calculate_pp(beatmap.id if beatmap else osu_score.beatmap.id, mode=mode,
+        score_pp = await calculate_pp(beatmap.id if beatmap else osu_score.beatmap_id, mode=mode,
                                       ignore_osu_cache=not bool(beatmap.status == "ranked"
                                                                 or beatmap.status == "approved") if beatmap
                                       else False,
@@ -345,13 +345,12 @@ async def calculate_pp_for_beatmapset(beatmapset: Beatmapset, osu_config: Config
         await osu_config.asyncsave()
 
 
-async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
+async def calculate_no_choke_top_plays(osu_scores: list, member_id: str):
     """ Calculates and returns a new list of unchoked plays. """
     mode = enums.GameMode.osu
     no_choke_list = []
-    if member_id not in no_choke_cache or (member_id in no_choke_cache and no_choke_cache[member_id]["time_updated"]
-                                           < datetime.fromisoformat(osu_scores["time_updated"])):
-        for osu_score in osu_scores["score_list"]:
+    if member_id not in no_choke_cache:
+        for osu_score in osu_scores:
             if osu_score.legacy_perfect:
                 continue
             full_combo_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
@@ -363,7 +362,6 @@ async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
                 osu_score.legacy_perfect = True
                 osu_score.accuracy = full_combo_acc
                 osu_score.max_combo = score_pp.max_combo
-                osu_score.beatmap.difficulty_rating = score_pp.stars
                 osu_score.statistics.great = osu_score.statistics.great +\
                     osu_score.statistics.great
                 osu_score.statistics.miss = 0
@@ -373,7 +371,7 @@ async def calculate_no_choke_top_plays(osu_scores: dict, member_id: str):
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
         for i, osu_score in enumerate(no_choke_list):
             osu_score.position = i + 1
-        no_choke_cache[member_id] = dict(score_list=no_choke_list, time_updated=datetime.now(tz=timezone.utc))
+        no_choke_cache[member_id] = no_choke_list
         no_chokes = no_choke_cache[member_id]
     else:
         no_chokes = no_choke_cache[member_id]

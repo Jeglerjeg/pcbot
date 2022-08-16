@@ -1,3 +1,4 @@
+import pickle
 from datetime import datetime
 from typing import Optional
 
@@ -29,6 +30,9 @@ class ScoreStatistics:
         self.large_tick_miss = raw_data["large_tick_miss"] if "large_tick_miss" in raw_data else 0
         self.miss = raw_data["miss"] if "miss" in raw_data else 0
 
+    def __repr__(self):
+        return str(self.__dict__)
+
 
 class OsuScore:
     id: int
@@ -54,50 +58,84 @@ class OsuScore:
     beatmapset: Optional[BeatmapsetCompact]
     rank_country: Optional[int]
     rank_global: Optional[int]
-    weight: Optional[float]
+    weight: Optional[dict]
     user: Optional[dict]
 
-    def __init__(self, json_data: dict):
-        self.total_score = json_data["total_score"]
-        self.legacy_perfect = json_data["legacy_perfect"]
-        self.mode = GameMode(json_data["ruleset_id"])
-        self.statistics = ScoreStatistics(json_data["statistics"])
-        self.id = json_data["id"]
-        self.best_id = json_data["best_id"]
-        self.user_id = json_data["user_id"]
-        self.beatmap_id = json_data["beatmap_id"]
-        self.accuracy = json_data["accuracy"]
-        self.mods = json_data["mods"]
-        self.max_combo = json_data["max_combo"]
-        self.passed = json_data["passed"]
-        self.pp = json_data["pp"] if json_data["pp"] is not None else 0.0
-        self.rank = json_data["rank"]
-        self.ended_at = datetime.fromisoformat(json_data["ended_at"])
-        self.replay = json_data["replay"]
-        if "new_pp" in json_data:
-            self.new_pp = json_data["new_pp"]
-        if "position" in json_data:
-            self.position = json_data["position"]
-        if "pp_difference" in json_data:
-            self.pp_difference = json_data["pp_difference"]
-        if "beatmap" in json_data:
-            self.beatmap = Beatmap(json_data["beatmap"])
-        if "beatmapset" in json_data and json_data["beatmapset"]:
-            self.beatmapset = BeatmapsetCompact(json_data["beatmapset"])
-        if "rank_global" in json_data:
-            self.rank_global = json_data["rank_global"]
-        if "rank_country" in json_data:
-            self.rank_country = json_data["rank_country"]
-        if "weight" in json_data:
-            self.weight = json_data["weight"]
-        if "user" in json_data:
-            self.user = json_data["user"]
+    def __init__(self, data, db: bool = False):
+        if db:
+            self.from_db(data)
+        else:
+            self.from_api(data)
+
+    def from_db(self, data):
+        self.id = data.id
+        self.best_id = data.best_id
+        self.user_id = data.user_id
+        self.beatmap_id = data.beatmap_id
+        self.accuracy = data.accuracy
+        self.mods = pickle.loads(data.mods)
+        self.total_score = data.total_score
+        self.max_combo = data.max_combo
+        self.legacy_perfect = data.legacy_perfect
+        self.statistics = ScoreStatistics(pickle.loads(data.statistics))
+        self.passed = data.passed
+        self.pp = data.pp
+        self.rank = data.rank
+        self.ended_at = datetime.fromisoformat(data.ended_at)
+        self.mode = GameMode(data.mode)
+        self.replay = data.replay
+        self.position = data.position
+        self.weight = pickle.loads(data.weight)
+
+    def from_api(self, data: dict):
+        self.total_score = data["total_score"]
+        self.legacy_perfect = data["legacy_perfect"]
+        self.mode = GameMode(data["ruleset_id"])
+        self.statistics = ScoreStatistics(data["statistics"])
+        self.id = data["id"]
+        self.best_id = data["best_id"]
+        self.user_id = data["user_id"]
+        self.beatmap_id = data["beatmap_id"]
+        self.accuracy = data["accuracy"]
+        self.mods = data["mods"]
+        self.max_combo = data["max_combo"]
+        self.passed = data["passed"]
+        self.pp = data["pp"] if data["pp"] is not None else 0.0
+        self.rank = data["rank"]
+        self.ended_at = datetime.fromisoformat(data["ended_at"])
+        self.replay = data["replay"]
+        if "new_pp" in data:
+            self.new_pp = data["new_pp"]
+        if "position" in data:
+            self.position = data["position"]
+        if "pp_difference" in data:
+            self.pp_difference = data["pp_difference"]
+        if "beatmap" in data:
+            self.beatmap = Beatmap(data["beatmap"])
+        if "beatmapset" in data and data["beatmapset"]:
+            self.beatmapset = BeatmapsetCompact(data["beatmapset"])
+        if "rank_global" in data:
+            self.rank_global = data["rank_global"]
+        if "rank_country" in data:
+            self.rank_country = data["rank_country"]
+        if "weight" in data:
+            self.weight = data["weight"]
+        if "user" in data:
+            self.user = data["user"]
 
     def __getitem__(self, item):
         return getattr(self, item)
 
     def __repr__(self):
-        return self.to_dict()
+        return str(self.to_dict())
+
+    def to_db_query(self):
+        return {"id": self.id, "best_id": self.best_id, "user_id": self.user_id, "beatmap_id": self.beatmap_id,
+                "accuracy": self.accuracy, "mods": pickle.dumps(self.mods), "total_score": self.total_score,
+                "max_combo": self.max_combo, "legacy_perfect": self.legacy_perfect,
+                "statistics": pickle.dumps(self.statistics.__dict__), "passed": self.passed, "pp": self.pp,
+                "rank": self.rank, "ended_at": self.ended_at, "mode": self.mode.value, "replay": self.replay,
+                "position": self.position, "weight": pickle.dumps(self.weight)}
 
     def to_dict(self):
         readable_dict = {}

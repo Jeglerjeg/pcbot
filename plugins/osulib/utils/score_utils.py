@@ -8,7 +8,7 @@ from operator import itemgetter
 import aiohttp
 
 from pcbot import Config
-from plugins.osulib import enums, api
+from plugins.osulib import enums, api, db
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import score_request_limit, cache_user_profiles
 from plugins.osulib.models.score import OsuScore
@@ -167,7 +167,7 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
     if fetched_scores is None:
         return None
 
-    old_score_ids = [osu_score.best_id for osu_score in osu_tracking[member_id]["scores"]["score_list"]]
+    old_score_ids = [osu_score.best_id for osu_score in db.get_user_scores(profile)]
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
@@ -177,7 +177,7 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,
-                                                        old_scores=osu_tracking[member_id]["scores"],
+                                                        old_scores=db.get_user_scores(profile),
                                                         old=dict(osu_tracking[member_id]["old"]),
                                                         new=dict(osu_tracking[member_id]["new"]))
 
@@ -192,13 +192,11 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
 
     # Save the updated score list, and if there are new scores, update time_updated
     if new_scores:
-        osu_tracking[member_id]["scores"]["time_updated"] = fetched_scores["time_updated"]
-        if cache_user_profiles:
-            osu_profile_cache.data[member_id]["scores"]["time_updated"] = copy.deepcopy(fetched_scores["time_updated"])
-    osu_tracking[member_id]["scores"]["score_list"] = fetched_scores["score_list"]
-    if cache_user_profiles:
-        osu_profile_cache.data[member_id]["scores"]["score_list"] = copy.deepcopy(fetched_scores["score_list"])
-        await misc_utils.save_profile_data(osu_profile_cache)
+        db.delete_user_scores(profile)
+        query_data = []
+        for osu_score in fetched_scores["score_list"]:
+            query_data.append(osu_score.to_db_query())
+        db.insert_scores(query_data)
     return new_scores
 
 

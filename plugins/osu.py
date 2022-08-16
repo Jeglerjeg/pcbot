@@ -28,7 +28,7 @@ import discord
 import bot
 import plugins
 from pcbot import utils, Annotate
-from plugins.osulib import api, pp, ordr, enums
+from plugins.osulib import api, pp, ordr, enums, db
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
@@ -40,6 +40,9 @@ client = plugins.client  # type: bot.Client
 
 last_rendered = {}  # Saves when the member last rendered a replay
 osu_tracker = OsuTracker()
+
+
+db.create_table()
 
 
 async def on_ready():
@@ -671,17 +674,19 @@ async def top(message: discord.Message, *options):
         member = message.author
     mode = user_utils.get_mode(str(member.id))
     assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
-    assert str(member.id) in osu_tracking and "scores" in osu_tracking[str(member.id)], \
+    assert str(member.id) in osu_tracking, \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again."
+    db_scores = db.get_user_scores(osu_tracking[str(member.id)]["new"]["id"])
+    assert db_scores, "Scores have not been retrieved for this user yet. Please wait a bit and try again."
     assert mode is enums.GameMode.osu if nochoke else True, \
         "No-choke lists are only supported for osu!standard."
     assert not list_type == "score" if nochoke else True, "No-choke lists can't be sorted by score."
     if nochoke:
         async with message.channel.typing():
-            osu_scores = await pp.calculate_no_choke_top_plays(copy.deepcopy(osu_tracking[str(member.id)]["scores"]),
+            osu_scores = await pp.calculate_no_choke_top_plays(db_scores,
                                                                str(member.id))
             full_osu_score_list = generate_full_no_choke_score_list(
-                osu_scores["score_list"], copy.deepcopy(osu_tracking[str(member.id)]["scores"]["score_list"]))
+                osu_scores, db_scores)
             new_total_pp = pp.calculate_total_user_pp(full_osu_score_list, str(member.id), osu_tracking)
             author_text = "{} ({} => {}, {:+})".format(osu_tracking[str(member.id)]["new"]["username"],
                                                        utils.format_number(
@@ -691,16 +696,16 @@ async def top(message: discord.Message, *options):
                                                           new_total_pp -
                                                           osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
     else:
-        osu_scores = osu_tracking[str(member.id)]["scores"]
+        osu_scores = db_scores
         author_text = osu_tracking[str(member.id)]["new"]["username"]
-    sorted_scores = score_utils.get_sorted_scores(osu_scores["score_list"], list_type)
+    sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
     m = await score_format.get_formatted_score_list(mode, sorted_scores, 5, nochoke=nochoke)
     e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
                                              osu_tracking[str(member.id)]["new"]["avatar_url"],
                                              osu_tracking[str(member.id)]["new"]["avatar_url"])
     view = score_format.PaginatedScoreList(sorted_scores, mode,
                                            score_utils.count_score_pages(sorted_scores, 5), e, nochoke)
-    e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(osu_scores['score_list'], 5)}")
+    e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
     message = await client.send_message(message.channel, embed=e, view=view)
     await view.wait()
     await message.edit(embed=view.embed, view=None)

@@ -214,20 +214,17 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuSco
         mods = enums.Mods.format_mods(osu_score.mods)
         beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_id if beatmap_id else osu_score.beatmap_id,
                                             mode=mode.name))
-        if not nochoke:
-            score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
-            if score_pp is not None:
-                beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
-                if osu_score.pp is None or osu_score.pp == 0:
-                    osu_score.pp = score_pp.pp
-            if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp and score_pp.max_combo:
+        score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
+        if score_pp is not None:
+            beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
+            if osu_score.pp is None or osu_score.pp == 0:
+                osu_score.pp = score_pp.pp
+            if nochoke:
                 beatmap.add_max_combo(score_pp.max_combo)
-            # Add potential pp to the score
-            potential_string = format_potential_pp(score_pp, osu_score)
-        else:
-            beatmap.difficulty_rating = osu_score.beatmap.difficulty_rating
-            beatmap.add_max_combo(osu_score.max_combo)
-            potential_string = ""
+            elif (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp and score_pp.max_combo:
+                beatmap.add_max_combo(score_pp.max_combo)
+        # Add potential pp to the score
+        potential_string = format_potential_pp(score_pp, osu_score)
 
         # Add time since play to the score
         time_since_string = f"<t:{int(osu_score.ended_at.timestamp())}:R>"

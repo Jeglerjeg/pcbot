@@ -1,8 +1,6 @@
-import copy
 
 import discord
 
-from pcbot import Config
 from plugins.osulib import enums
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import timestamp_pattern, pp_threshold
@@ -18,33 +16,6 @@ def get_diff(old: dict, new: dict, value: str):
     old_value = float(old["statistics"][value]) if old["statistics"][value] else 0.0
 
     return new_value - old_value
-
-
-async def save_profile_data(user_data: Config):
-    data_copy = copy.deepcopy(user_data.data)
-    if not user_data.data:
-        await user_data.asyncsave()
-    for profile in user_data.data:
-        if "scores" not in user_data.data[profile] or "score_list" not in user_data.data[profile]["scores"]:
-            continue
-        user_data.data[profile]["scores"]["score_list"] = \
-            [osu_score.to_dict() for osu_score in user_data.data[profile]["scores"]["score_list"]
-             if isinstance(osu_score, OsuScore)]
-
-    await user_data.asyncsave()
-    user_data.data = data_copy
-
-
-def load_profile_data(user_data: dict):
-    if not user_data:
-        return {}
-    for profile in user_data:
-        if "scores" not in user_data[profile] or "score_list" not in user_data[profile]["scores"]:
-            continue
-        user_data[profile]["scores"]["score_list"] = \
-            [OsuScore(osu_score) for osu_score in user_data[profile]["scores"]["score_list"]]
-
-    return user_data
 
 
 def get_notify_channels(guild: discord.Guild, data_type: str):
