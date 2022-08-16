@@ -27,6 +27,12 @@ To get voice support, you can optionally install PyNaCl:
 pip install -U PyNaCl
 ```
 
+The bot also requires SQLAlchemy in order to function:
+
+```
+pip install -U SQLAlchemy
+```
+
 To install the bot, one can clone the repo:
 
 ```
@@ -54,7 +60,6 @@ errors when modules are missing, although modules as of now are:
 | pyrate_limiter | `pip install pyrate_limiter`, necessary for osu api functionality                                            |
 | nltk           | `pip install nltk`, support bigrams in [`summary.py`](plugins/summary.py)                                    |
 | rosu-pp        | `pip install rosu-pp-py`, support pp calculation in [`pp.py`](plugins/osulib/pp.py), requires rust toolchain |
-| sqlalchemy     | `pip install nltk`, support [`summary.py`](plugins/summary.py)                                               |
 
 ## Running
 Running the bot is simple. Go to the root directory 
