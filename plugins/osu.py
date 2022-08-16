@@ -17,7 +17,6 @@ TUTORIAL:
     !osu debug command.
 """
 import asyncio
-import copy
 import importlib
 from datetime import datetime
 from operator import itemgetter
@@ -189,7 +188,12 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
     # Clear the scores when changing user
     if str(message.author.id) in osu_tracking:
+        if db.get_user_scores(osu_tracking[str(message.author.id)]["new"]["id"]):
+            db.delete_user_scores(osu_tracking[str(message.author.id)]["new"]["id"])
         del osu_tracking[str(message.author.id)]
+    if str(message.author.id) in osu_profile_cache.data:
+        del osu_profile_cache.data[str(message.author.id)]
+        await osu_profile_cache.asyncsave()
 
     user_id = osu_user["id"]
 
@@ -232,10 +236,12 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
 
     # Clear the tracking data when unlinking user
     if str(member.id) in osu_tracking:
+        if db.get_user_scores(osu_tracking[str(member.id)]["new"]["id"]):
+            db.delete_user_scores(osu_tracking[str(member.id)]["new"]["id"])
         del osu_tracking[str(member.id)]
     if str(member.id) in osu_profile_cache.data:
         del osu_profile_cache.data[str(member.id)]
-        await misc_utils.save_profile_data(osu_profile_cache)
+        await osu_profile_cache.asyncsave()
 
     # Unlink the given member (usually the message author)
     del osu_config.data["profiles"][str(member.id)]
@@ -268,7 +274,7 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
         del osu_tracking[str(message.author.id)]
     if str(message.author.id) in osu_profile_cache.data:
         del osu_profile_cache.data[str(message.author.id)]
-        await misc_utils.save_profile_data(osu_profile_cache)
+        await osu_profile_cache.asyncsave()
 
     await client.say(message, f"Set your gamemode to **{mode_name}**.")
 
