@@ -106,7 +106,6 @@ def delete_channel_messages(channel_id: int):
         conn.execute(text("DELETE FROM summary_messages WHERE channel_id = :channel_id"),
                      {"channel_id": channel_id})
         transaction.commit()
-        conn.execute(text("VACUUM"))
 
 
 create_table()

@@ -14,7 +14,7 @@ from copy import copy
 from datetime import datetime
 
 import discord
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 import plugins
 from pcbot import utils, config
@@ -23,6 +23,14 @@ from pcbot import utils, config
 __version__ = config.set_version("PCBOT V3")
 
 engine = create_engine("sqlite+pysqlite:///bot.db", echo=False, future=True)
+
+
+async def vacuum_db():
+    await asyncio.sleep(60 * 30)
+    with engine.connect() as conn:
+        transaction = conn.begin()
+        conn.execute(text("VACUUM"))
+        transaction.commit()
 
 
 class Client(discord.Client):
@@ -551,6 +559,7 @@ async def add_tasks():
         if hasattr(plugin, "on_ready"):
             client.loop.create_task(plugin.on_ready())
 
+    client.loop.create_task(vacuum_db())
     client.loop.create_task(autosave())
 
 
