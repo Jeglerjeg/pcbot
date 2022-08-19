@@ -164,6 +164,9 @@ class OsuTracker:
             # User is already tracked
             if not db.get_user_scores(user_data["id"]):
                 scores = await score_utils.retrieve_osu_scores(profile, mode, current_time)
+                if not scores["score_list"]:
+                    logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
+                    return
                 query_data = []
                 for osu_score in scores["score_list"]:
                     query_data.append(osu_score.to_db_query())
