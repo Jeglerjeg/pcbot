@@ -40,11 +40,8 @@ def validate_cache(beatmap: Beatmap | Beatmapset):
         return False
     valid_result = True
     time_now = datetime.now(tz=timezone.utc)
-    previous_sr_update = datetime(2021, 8, 5, tzinfo=timezone.utc)
     diff = time_now - beatmap.time_cached
-    if beatmap.time_cached < previous_sr_update:
-        valid_result = False
-    elif beatmap.status == "loved":
+    if beatmap.status == "loved":
         if diff.days > 30:
             valid_result = False
     elif beatmap.status == "pending" or beatmap.status == "graveyard" or beatmap.status == "wip" \
