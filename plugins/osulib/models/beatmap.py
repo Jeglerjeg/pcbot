@@ -27,7 +27,7 @@ class BeatmapsetCovers:
         self.slimcover2x = raw_data["slimcover@2x"]
 
     def __repr__(self):
-        return self.__dict__
+        return str(self.__dict__)
 
 
 class Beatmap:
@@ -137,7 +137,7 @@ class Beatmap:
         self.version = data["version"]
 
     def __repr__(self):
-        return self.to_dict()
+        return str(self.to_dict())
 
     def to_db_query(self):
         return {"accuracy": self.accuracy, "ar": self.ar, "beatmapset_id": self.beatmapset_id,
@@ -210,7 +210,7 @@ class BeatmapsetCompact:
                 self.converts = [Beatmap(beatmap) for beatmap in raw_data["converts"]]
 
     def __repr__(self):
-        return self.to_dict()
+        return str(self.to_dict())
 
     def to_dict(self):
         readable_dict = {}
