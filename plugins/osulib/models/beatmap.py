@@ -65,16 +65,19 @@ class Beatmap:
     version: str
     time_cached: datetime
 
-    def __init__(self, data, from_db: bool = False):
+    def __init__(self, data, from_db: bool = False, beatmapset: bool = True):
         if from_db:
-            self.from_db(data)
+            self.from_db(data, beatmapset)
         else:
             self.from_file(data)
 
-    def from_db(self, data):
+    def from_db(self, data, beatmapset: bool):
         self.accuracy = data.accuracy
         self.ar = data.ar
         self.beatmapset_id = data.beatmapset_id
+        if beatmapset:
+            self.beatmapset = Beatmapset(db.get_beatmapset(self.beatmapset_id), from_db=True,
+                                         beatmaps=False)
         self.checksum = data.checksum
         self.max_combo = data.max_combo
         self.bpm = data.bpm
@@ -227,14 +230,14 @@ class Beatmapset(BeatmapsetCompact):
     ranked: int
     time_cached: datetime
 
-    def __init__(self, raw_data, from_db: bool = False):
+    def __init__(self, raw_data, from_db: bool = False, beatmaps: bool = True):
         super().__init__(raw_data, from_db)
         if from_db:
-            self.from_db(raw_data)
+            self.from_db(raw_data, beatmaps)
         else:
             self.from_file(raw_data)
 
-    def from_db(self, raw_data):
+    def from_db(self, raw_data, beatmaps: bool):
         self.artist = raw_data.artist
         self.artist_unicode = raw_data.artist_unicode
         self.covers = pickle.loads(raw_data.covers)
@@ -247,7 +250,9 @@ class Beatmapset(BeatmapsetCompact):
         self.title = raw_data.title
         self.title_unicode = raw_data.title_unicode
         self.user_id = raw_data.user_id
-        self.beatmaps = [Beatmap(db.get_beatmap(beatmap), from_db=True) for beatmap in pickle.loads(raw_data.beatmaps)]
+        if beatmaps:
+            self.beatmaps = [Beatmap(db.get_beatmap(beatmap),
+                                     from_db=True, beatmapset=False) for beatmap in pickle.loads(raw_data.beatmaps)]
         self.bpm = raw_data.bpm
         self.ranked = raw_data.ranked
         self.time_cached = raw_data.time_cached.replace(tzinfo=timezone.utc)

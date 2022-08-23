@@ -52,15 +52,14 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
     time_string = ""
     if time:
         time_string = score_format.get_formatted_score_time(osu_score)
-    beatmapset = await api.get_beatmapset(beatmap.beatmapset_id)
-    embed = get_embed_from_template(await score_format.format_new_score(mode, osu_score, beatmap, beatmapset,
+    embed = get_embed_from_template(await score_format.format_new_score(mode, osu_score, beatmap,
                                                                         member if twitch_link else None),
                                     member.color, osu_score.user["username"],
                                     user_utils.get_user_url(str(member.id)),
                                     osu_score.user["avatar_url"],
                                     osu_score.beatmapset.covers.list2x
                                     if hasattr(osu_score, "beatmapset")
-                                    else beatmapset.covers.list2x,
+                                    else beatmap.beatmapset.covers.list2x,
                                     time=time_string,
                                     potential_string=score_format.format_potential_pp(
                                         score_pp if score_pp is not None else None,

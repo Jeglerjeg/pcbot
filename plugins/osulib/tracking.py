@@ -402,12 +402,11 @@ class OsuTracker:
             beatmap.max_combo = score_pp.max_combo
             if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp.max_combo:
                 beatmap.add_max_combo(score_pp.max_combo)
-            beatmapset = await api.get_beatmapset(beatmap.beatmapset_id)
             if update_mode is UpdateModes.Minimal:
-                m.append("".join([await score_format.format_minimal_score(osu_score, beatmap, beatmapset, member),
+                m.append("".join([await score_format.format_minimal_score(osu_score, beatmap, member),
                                   "\n"]))
             else:
-                m.append(await score_format.format_new_score(mode, osu_score, beatmap, beatmapset, member))
+                m.append(await score_format.format_new_score(mode, osu_score, beatmap, member))
         elif len(osu_scores) > 1:
             for osu_score in list(osu_scores):
                 # There might not be any events
