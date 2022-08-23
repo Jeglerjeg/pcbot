@@ -29,6 +29,15 @@ def get_beatmap(beatmap_id: int):
         return result.fetchone()
 
 
+def delete_beatmap(beatmap_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["beatmaps"]
+        statement = delete(table).where(table.c.id == beatmap_id)
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
 def insert_beatmapset(query_data: list):
     with engine.connect() as connection:
         table = db_metadata.tables["beatmapsets"]
@@ -44,6 +53,15 @@ def get_beatmapset(beatmapset_id: int):
         statement = select(table).where(table.c.id == beatmapset_id)
         result = connection.execute(statement)
         return result.fetchone()
+
+
+def delete_beatmapset(beatmapset_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["beatmapsets"]
+        statement = delete(table).where(table.c.id == beatmapset_id)
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
 
 
 def delete_user_scores(user_id: int):

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
-from plugins.osulib.db import insert_beatmap, get_beatmap, get_beatmapset, insert_beatmapset
+from plugins.osulib.db import insert_beatmap, get_beatmap, get_beatmapset, insert_beatmapset, delete_beatmap, \
+    delete_beatmapset
 from plugins.osulib.models.beatmap import Beatmap, Beatmapset
 
 
@@ -25,6 +26,12 @@ def retrieve_cache(map_id: int, map_type: str):
         if beatmap:
             result = Beatmap(beatmap, from_db=True)
     return result
+
+
+def delete_cache(beatmapset: Beatmapset):
+    for beatmap in beatmapset.beatmaps:
+        delete_beatmap(beatmap.id)
+    delete_beatmapset(beatmapset.id)
 
 
 def validate_cache(beatmap: Beatmap | Beatmapset):
