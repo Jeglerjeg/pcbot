@@ -268,6 +268,8 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
 
     # Clear the scores when changing mode
     if str(message.author.id) in osu_tracking:
+        if score_utils.get_db_scores(osu_tracking[str(message.author.id)]["new"]["id"]):
+            db.delete_user_scores(osu_tracking[str(message.author.id)]["new"]["id"])
         del osu_tracking[str(message.author.id)]
     if str(message.author.id) in osu_profile_cache.data:
         del osu_profile_cache.data[str(message.author.id)]
