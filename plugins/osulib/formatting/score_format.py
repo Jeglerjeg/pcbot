@@ -214,6 +214,7 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuSco
         score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
         if score_pp is not None:
             beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
+            beatmap.max_combo = score_pp.max_combo
             if osu_score.pp is None or osu_score.pp == 0:
                 osu_score.pp = score_pp.pp
             if nochoke:

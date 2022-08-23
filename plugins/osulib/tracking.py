@@ -399,6 +399,7 @@ class OsuTracker:
             score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
             mods = Mods.format_mods(osu_score.mods)
             beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
+            beatmap.max_combo = score_pp.max_combo
             if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp.max_combo:
                 beatmap.add_max_combo(score_pp.max_combo)
             beatmapset = await api.get_beatmapset(beatmap.beatmapset_id)

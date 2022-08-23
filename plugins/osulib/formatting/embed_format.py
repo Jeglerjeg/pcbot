@@ -39,6 +39,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
         osu_score.pp = 0
     if score_pp is not None:
         beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
+        beatmap.max_combo = score_pp.max_combo
     if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp and score_pp.max_combo:
         beatmap.add_max_combo(score_pp.max_combo)
 
