@@ -1,5 +1,4 @@
 import asyncio
-import copy
 import logging
 import traceback
 from datetime import timezone, datetime
@@ -7,10 +6,9 @@ from operator import itemgetter
 
 import aiohttp
 
-from pcbot import Config
 from plugins.osulib import enums, api, db
 from plugins.osulib.config import osu_config
-from plugins.osulib.constants import score_request_limit, cache_user_profiles
+from plugins.osulib.constants import score_request_limit
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import user_utils, misc_utils
 
@@ -152,7 +150,7 @@ def get_db_scores(user_id: int):
     return score_list
 
 
-async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: Config):
+async def get_new_score(member_id: str, osu_tracking: dict):
     """ Compare old user scores with new user scores and return the discovered
     new score if there is any. When a score is returned, it's position in the
     player's top plays can be retrieved with score["pos"]. """

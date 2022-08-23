@@ -4,7 +4,7 @@ from plugins.osulib.db import insert_beatmap, get_beatmap, get_beatmapset, inser
 from plugins.osulib.models.beatmap import Beatmap, Beatmapset
 
 
-def cache_beatmapset(beatmap: dict, map_id: int):
+def cache_beatmapset(beatmap: dict):
     """ Saves beatmapsets to cache. """
 
     insert_beatmapset(Beatmapset(beatmap).to_db_query())

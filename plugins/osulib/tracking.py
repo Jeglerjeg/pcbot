@@ -330,9 +330,6 @@ class OsuTracker:
 
                 self.previous_score_updates.append(osu_score.best_id)
 
-                params = {
-                    "beatmap_id": osu_score.beatmap_id,
-                }
                 beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
                 # Send the message to all guilds
                 member = data["member"]
@@ -372,7 +369,7 @@ class OsuTracker:
         # If there is a score, there is also a beatmap
         if update_mode is not UpdateModes.PP:
             for i in range(3):
-                osu_scores = await score_utils.get_new_score(member_id, osu_tracking, osu_profile_cache)
+                osu_scores = await score_utils.get_new_score(member_id, osu_tracking)
                 if osu_scores:
                     break
                 await asyncio.sleep(osu_config.data["score_update_delay"])
@@ -390,9 +387,6 @@ class OsuTracker:
         # If a new score was found, format the score(s)
         if len(osu_scores) == 1:
             osu_score = osu_scores[0]
-            params = {
-                "beatmap_id": osu_score.beatmap_id,
-            }
             beatmap = await api.beatmap_lookup(map_id=osu_score.beatmap_id)
             thumbnail_url = beatmap.beatmapset.covers.list2x
             author_text = f"{data['new']['username']} set a new best (#{osu_score.position}/{score_request_limit} " \

@@ -209,9 +209,6 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuSco
             continue
         if i > (limit + offset) - 1:
             break
-        params = {
-            "beatmap_id": beatmap_id if beatmap_id else osu_score.beatmap_id
-        }
         mods = enums.Mods.format_mods(osu_score.mods)
         beatmap = await api.beatmap_lookup(map_id=beatmap_id if beatmap_id else osu_score.beatmap_id)
         score_pp = await pp.get_score_pp(osu_score, mode, beatmap)

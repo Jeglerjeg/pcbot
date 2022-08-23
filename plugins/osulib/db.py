@@ -6,7 +6,7 @@ from pcbot.db import engine, db_metadata
 def insert_scores(query_data: list):
     with engine.connect() as connection:
         table = db_metadata.tables["osu_scores"]
-        statement = insert(table).values(query_data)
+        statement = insert(table).prefix_with('OR IGNORE').values(query_data)
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()
@@ -15,7 +15,7 @@ def insert_scores(query_data: list):
 def insert_beatmap(query_data: list):
     with engine.connect() as connection:
         table = db_metadata.tables["beatmaps"]
-        statement = insert(table).values(query_data)
+        statement = insert(table).prefix_with('OR IGNORE').values(query_data)
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()
@@ -32,7 +32,7 @@ def get_beatmap(beatmap_id: int):
 def insert_beatmapset(query_data: list):
     with engine.connect() as connection:
         table = db_metadata.tables["beatmapsets"]
-        statement = insert(table).values(query_data)
+        statement = insert(table).prefix_with('OR IGNORE').values(query_data)
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()

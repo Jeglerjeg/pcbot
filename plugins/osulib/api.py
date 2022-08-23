@@ -131,7 +131,7 @@ async def beatmapset_lookup(params):
     result = await request(**params)
     if not result:
         return None
-    caching.cache_beatmapset(result, result["id"])
+    caching.cache_beatmapset(result)
     return Beatmapset(result)
 
 
@@ -196,7 +196,7 @@ async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     if not valid_result or force_redownload:
         request = def_section(f"beatmapsets/{beatmapset_id}")
         result = await request()
-        caching.cache_beatmapset(result, result["id"])
+        caching.cache_beatmapset(result)
         result = Beatmapset(result)
     return result
 
@@ -274,9 +274,6 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
             # Only download the beatmap of the id, so that only this beatmap will be returned
         if return_type == "info":
             return beatmap_info
-        params = {
-            "beatmap_id": beatmap_info.beatmap_id,
-        }
         difficulties = await beatmap_lookup(map_id=beatmap_info.beatmap_id)
         beatmapset = False
     else:

@@ -411,9 +411,6 @@ async def recent(message: discord.Message, user: str = None):
 
     osu_score = osu_scores[0]
 
-    params = {
-        "beatmap_id": osu_score.beatmap.id,
-    }
     beatmap = await api.beatmap_lookup(map_id=int(osu_score.beatmap.id))
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode, osu_tracking,
@@ -514,9 +511,6 @@ async def score(message: discord.Message, *options):
     else:
         osu_score.rank_global = osu_scores["position"]
 
-    params = {
-        "beatmap_id": osu_score.beatmap.id,
-    }
     beatmap = await api.beatmap_lookup(map_id=osu_score.beatmap.id)
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
@@ -570,9 +564,6 @@ async def scores(message: discord.Message, *options):
     fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, user_id, params=params)
     assert fetched_osu_scores["scores"], f"Found no scores by **{osu_tracking[str(member.id)]['new']['username']}**."
 
-    params = {
-        "beatmap_id": beatmap_id,
-    }
     beatmap = await api.beatmap_lookup(map_id=beatmap_id)
     if mods:
         modslist = wrap(mods, 2)
