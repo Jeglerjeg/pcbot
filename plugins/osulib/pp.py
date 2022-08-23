@@ -240,8 +240,9 @@ async def find_closest_pp(calculator, score_params, args):
 
 def get_beatmap_sr(score_pp: PPStats, beatmap: Beatmap, mods: str):
     """ Change beatmap SR if using SR adjusting mods. """
-    difficulty_rating = score_pp.stars if (mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF", "RX")
-                                           or not beatmap.convert) and score_pp else beatmap.difficulty_rating
+    difficulty_rating = score_pp.stars if \
+        (mods not in ("Nomod", "HD", "FL", "TD", "ScoreV2", "NF", "SD", "PF", "RX")) and score_pp \
+        else beatmap.difficulty_rating
     return difficulty_rating
 
 
