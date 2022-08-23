@@ -145,11 +145,13 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     # Calculate the pp
     max_pp = None
     total_stars = None
+    max_combo = None
     # Calculate maximum stars and pp
     if failed or potential:
         if args.potential_acc:
             score_params.acc = args.potential_acc
         [potential_pp_info] = calculator.calculate(score_params)
+        max_combo = potential_pp_info.maxCombo
         total_stars = potential_pp_info.stars
         if mode is enums.GameMode.osu:
             max_pp = potential_pp_info.pp
@@ -157,7 +159,8 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     # Calculate actual stars and pp
     score_params = get_score_params(score_params, args)
     [pp_info] = calculator.calculate(score_params)
-    max_combo = pp_info.maxCombo
+    if not max_combo:
+        max_combo = pp_info.maxCombo
 
     pp = pp_info.pp
     total_stars = total_stars if failed else pp_info.stars
