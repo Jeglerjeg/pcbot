@@ -9,6 +9,7 @@ from sqlalchemy import text
 import bot
 import plugins
 from pcbot import Config
+from pcbot.db import engine
 
 client = plugins.client  # type: bot.Client
 
@@ -18,23 +19,12 @@ command_pattern = re.compile(r"(.+)(?:\s+or|\s*,)\s+([^?]+)\?*")
 recently_asked = {}
 
 
-def create_table():
-    with bot.engine.connect() as conn:
-        transaction = conn.begin()
-        conn.execute(text("CREATE TABLE IF NOT EXISTS questions (choice_1 str, choice_2 str, "
-                          "choice_1_answers int, choice_2_answers int)"))
-        transaction.commit()
-
-
-create_table()
-
-
 def migrate():
     query_data = []
     for question in db.data["questions"]:
         query_data.append({"choice_1": question["choices"][0], "choice_2": question["choices"][1],
                            "choice_1_answers": question["answers"][0], "choice_2_answers": question["answers"][1]})
-    with bot.engine.connect() as connection:
+    with engine.connect() as connection:
         transaction = connection.begin()
         connection.execute(
             text("INSERT INTO questions (choice_1, choice_2, choice_1_answers, choice_2_answers) "
@@ -51,7 +41,7 @@ if "questions" in db.data:
 
 
 def add_question(choice_1: str, choice_2: str):
-    with bot.engine.connect() as connection:
+    with engine.connect() as connection:
         transaction = connection.begin()
         connection.execute(
             text("INSERT INTO questions (choice_1, choice_2, choice_1_answers, choice_2_answers) "
@@ -62,7 +52,7 @@ def add_question(choice_1: str, choice_2: str):
 
 
 def retrieve_question(choice_1: str, choice_2: str):
-    with bot.engine.connect() as connection:
+    with engine.connect() as connection:
         result = connection.execute(
             text("SELECT 1 FROM questions WHERE choice_1 = :choice_1 COLLATE NOCASE AND choice_2 = :choice_2 "
                  "COLLATE NOCASE"),
@@ -72,7 +62,7 @@ def retrieve_question(choice_1: str, choice_2: str):
 
 
 def count_questions():
-    with bot.engine.connect() as connection:
+    with engine.connect() as connection:
         result = connection.execute(
             text("SELECT * FROM questions")
         )
@@ -80,7 +70,7 @@ def count_questions():
 
 
 def retrieve_random_question():
-    with bot.engine.connect() as connection:
+    with engine.connect() as connection:
         result = connection.execute(
             text("SELECT * FROM questions ORDER BY RANDOM() LIMIT 1")
         )
@@ -112,7 +102,7 @@ def check_duplicate_question(choices: list):
 
 
 def delete_question(choice_1: str, choice_2: str):
-    with bot.engine.connect() as conn:
+    with engine.connect() as conn:
         transaction = conn.begin()
         conn.execute(text("DELETE FROM questions WHERE choice_1 = :choice_1 AND choice_2 = :choice_2"),
                      {"choice_1": choice_1, "choice_2": choice_2})
@@ -120,7 +110,7 @@ def delete_question(choice_1: str, choice_2: str):
 
 
 def update_answer_count(choice_1: str, choice_2: str, choice: int):
-    with bot.engine.connect() as connection:
+    with engine.connect() as connection:
         transaction = connection.begin()
         connection.execute(
             text(f"UPDATE questions SET choice_{choice}_answers = choice_{choice}_answers + 1 "

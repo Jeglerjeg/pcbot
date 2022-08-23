@@ -41,9 +41,6 @@ last_rendered = {}  # Saves when the member last rendered a replay
 osu_tracker = OsuTracker()
 
 
-db.create_table()
-
-
 async def on_ready():
     """ Handle every event. """
     await client.wait_until_ready()

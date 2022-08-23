@@ -14,7 +14,6 @@ from copy import copy
 from datetime import datetime
 
 import discord
-from sqlalchemy import create_engine, text, event
 
 import plugins
 from pcbot import utils, config
@@ -22,32 +21,7 @@ from pcbot import utils, config
 # Sets the version to enable accessibility for other modules
 __version__ = config.set_version("PCBOT V3")
 
-engine = create_engine("sqlite+pysqlite:///bot.db", echo=False, future=True)
-
-
-async def vacuum_db():
-    await asyncio.sleep(3600 * 24)
-    with engine.connect() as conn:
-        transaction = conn.begin()
-        conn.execute(text("VACUUM"))
-        transaction.commit()
-
-
-@event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA synchronous=normal")
-    cursor.execute("PRAGMA  cache_size=-128000")
-    cursor.close()
-
-
-@event.listens_for(engine, "close")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA analysis_limit=400")
-    cursor.execute("PRAGMA optimize")
-    cursor.close()
+from pcbot.db import vacuum_db, create_tables
 
 
 class Client(discord.Client):
@@ -606,6 +580,9 @@ async def main():
         config.default_command_prefix = bot_meta.data["command_prefix"]
         config.default_case_sensitive_commands = bot_meta.data["case_sensitive_commands"]
         config.owner_error = bot_meta.data["display_owner_error_in_chat"]
+
+        # Create all database tables
+        create_tables()
 
         # Set the client for the plugins to use
         plugins.set_client(client)

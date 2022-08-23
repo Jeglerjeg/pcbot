@@ -1,5 +1,5 @@
 import pickle
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from plugins.osulib.enums import GameMode
@@ -81,7 +81,7 @@ class OsuScore:
         self.passed = data.passed
         self.pp = data.pp
         self.rank = data.rank
-        self.ended_at = datetime.fromisoformat(data.ended_at)
+        self.ended_at = data.ended_at.replace(tzinfo=timezone.utc)
         self.mode = GameMode(data.mode)
         self.replay = data.replay
         self.position = data.position

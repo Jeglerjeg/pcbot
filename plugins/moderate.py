@@ -16,32 +16,73 @@ Commands:
 
 import asyncio
 import datetime
-from collections import defaultdict
+import json
+import os
 
 import discord
 
 import bot
 import plugins
-from pcbot import Config, utils, Annotate
+from pcbot import utils, Annotate
+from sqlalchemy.sql import select, insert, update
+
+from pcbot.db import engine, db_metadata
 
 client = plugins.client  # type: bot.Client
 
-moderate = Config("moderate", data=defaultdict(dict))
-default_config = {}  # Used by add_setting helper function
+
+def migrate():
+    with open("config/moderate.json", encoding="utf-8") as f:
+        data = json.load(f)
+        query_data = []
+        for guild_id, settings in data.items():
+            query_data.append({"guild_id": guild_id, "nsfwfilter": settings["nsfwfilter"],
+                               "changelog": settings["changelog"]})
+        with engine.connect() as connection:
+            table = db_metadata.tables["moderate"]
+            statement = insert(table).values(query_data)
+            transaction = connection.begin()
+            connection.execute(statement)
+            transaction.commit()
+    os.remove("config/moderate.json")
 
 
-def setup_default_config(guild: discord.Guild):
-    """ Setup default settings for a guild. """
-    # Set to defaults if there is no config for the guild
-    if str(guild.id) not in moderate.data:
-        moderate.data[str(guild.id)] = default_config
-        moderate.save()
-        return
+if os.path.exists("config/moderate.json"):
+    migrate()
 
-    # Set to defaults if guild's config is mis>asing values
-    if not all(k in moderate.data[str(guild.id)].keys() for k in default_config):
-        moderate.data[str(guild.id)] = default_config
-        moderate.save()
+
+def add_new_guild(guild_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["moderate"]
+        statement = insert(table).values(guild_id=guild_id, nsfwfilter=False, changelog=False)
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def retrieve_guild(guild_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["moderate"]
+        statement = select(table).where(table.c.guild_id == guild_id)
+        result = connection.execute(statement)
+        return result.fetchone()
+
+
+def update_setting(guild_id: int, setting: str, new_value: bool):
+    with engine.connect() as connection:
+        table = db_metadata.tables["moderate"]
+        statement = update(table).where(table.c.guild_id == guild_id).values({setting: new_value})
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def get_guild_config(guild_id: int):
+    guild_config = retrieve_guild(guild_id)
+    if not guild_config:
+        add_new_guild(guild_id)
+        guild_config = retrieve_guild(guild_id)
+    return guild_config
 
 
 @plugins.command(name="moderate", permissions="manage_messages")
@@ -59,28 +100,24 @@ def add_setting(setting: str, default=True, name=None, permissions=None):
     if not name:
         name = setting.lower().replace("\n", "").replace(" ", "")
 
-    default_config[name] = default
-
     @moderate_.command(name=name, usage="[on | off]", permissions=permissions,
                        description=f"Display current {setting} setting or enable/disable it.")
     async def display_setting(message: discord.Message):
         """ The command to display the current setting. """
-        setup_default_config(message.guild)
-        current = moderate.data[str(message.guild.id)][name]
+        guild_config = get_guild_config(message.guild.id)
+        current = guild_config.name
         await client.say(message, f'{setting} is **{"enabled" if current else "disabled"}**.')
 
     @display_setting.command(hidden=True, aliases="true set enable", permissions=permissions)
     async def on(message: discord.Message):
         """ The command to enable this setting. """
-        moderate.data[str(message.guild.id)][name] = True
-        await moderate.asyncsave()
+        update_setting(message.guild.id, name, True)
         await client.say(message, f"{setting} **enabled**.")
 
     @display_setting.command(hidden=True, aliases="false unset disable", permissions=permissions)
     async def off(message: discord.Message):
         """ The command to enable this setting. """
-        moderate.data[str(message.guild.id)][name] = False
-        await moderate.asyncsave()
+        update_setting(message.guild.id, name, False)
         await client.say(message, f"{setting} **disabled**.")
 
 
@@ -219,9 +256,6 @@ async def purge(message: discord.Message, *instances: members_and_channels, num:
 async def check_nsfw(message: discord.Message):
     """ Check if the message is NSFW (very rough check). """
     # Check if this guild has nsfwfilter enabled
-    if not moderate.data[str(message.guild.id)]["nsfwfilter"]:
-        return False
-
     # Do not check if the channel is designed for nsfw content
     if "nsfw" in message.channel.name or message.channel.is_nsfw():
         return False
@@ -245,14 +279,13 @@ async def check_nsfw(message: discord.Message):
 async def on_message(message: discord.Message):
     """ Check plugin settings. """
     # Do not check in private messages
-    if isinstance(message.channel, discord.abc.PrivateChannel):
-        return False
+    if not message.guild:
+        return
 
-    setup_default_config(message.guild)
+    guild_config = get_guild_config(message.guild.id)
 
-    nsfw_success = await check_nsfw(message)
-    if nsfw_success is True:
-        return True
+    if guild_config.nsfwfilter:
+        await check_nsfw(message)
 
 
 def get_changelog_channel(guild: discord.Guild):
@@ -260,8 +293,8 @@ def get_changelog_channel(guild: discord.Guild):
     if not guild:
         return None
 
-    setup_default_config(guild)
-    if not moderate.data[str(guild.id)]["changelog"]:
+    guild_config = get_guild_config(guild.id)
+    if not guild_config.changelog:
         return None
 
     channel = discord.utils.get(guild.channels, name="changelog")

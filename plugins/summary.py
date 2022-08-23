@@ -16,6 +16,7 @@ from sqlalchemy import text
 import bot
 import plugins
 from pcbot import utils, Annotate, config, Config
+from pcbot.db import engine
 
 client = plugins.client  # type: bot.Client
 
@@ -70,7 +71,7 @@ def generate_query_data(messages: list[discord.Message]):
 
 
 def commit_message(query_data: list):
-    with bot.engine.connect() as connection:
+    with engine.connect() as connection:
         transaction = connection.begin()
         connection.execute(
             text("INSERT INTO summary_messages (content, channel_id, author_id, bot) "
@@ -92,23 +93,13 @@ def migrate_summary_data():
     os.remove("config/summary_data.json")
 
 
-def create_table():
-    with bot.engine.connect() as conn:
-        transaction = conn.begin()
-        conn.execute(text("CREATE TABLE IF NOT EXISTS summary_messages (content str, channel_id int, "
-                          "author_id int, bot bool)"))
-        transaction.commit()
-
-
 def delete_channel_messages(channel_id: int):
-    with bot.engine.connect() as conn:
+    with engine.connect() as conn:
         transaction = conn.begin()
         conn.execute(text("DELETE FROM summary_messages WHERE channel_id = :channel_id"),
                      {"channel_id": channel_id})
         transaction.commit()
 
-
-create_table()
 
 if os.path.exists("config/summary_data.json"):
     migrate_summary_data()
@@ -123,7 +114,7 @@ def get_persistent_messages(channel_id: int, author_id: int = None, bots: bool =
     if not bots:
         query += " AND bot = :is_bot"
         query_dict["is_bot"] = False
-    with bot.engine.connect() as connection:
+    with engine.connect() as connection:
         result = connection.execute(
             text(query),
             query_dict
