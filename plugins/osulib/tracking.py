@@ -124,6 +124,8 @@ class OsuTracker:
         if "schedule_wipe" not in osu_tracking[member_id]:
             osu_tracking[member_id]["schedule_wipe"] = False
         elif osu_tracking[member_id]["schedule_wipe"] is True:
+            if score_utils.get_db_scores(int(profile)):
+                db.delete_user_scores(int(profile))
             osu_tracking[member_id] = {}
             osu_profile_cache.data[member_id] = {}
 
