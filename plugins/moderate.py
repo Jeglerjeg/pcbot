@@ -257,6 +257,9 @@ async def on_message(message: discord.Message):
 
 def get_changelog_channel(guild: discord.Guild):
     """ Return the changelog channel for a guild. """
+    if not guild:
+        return None
+
     setup_default_config(guild)
     if not moderate.data[str(guild.id)]["changelog"]:
         return None
