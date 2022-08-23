@@ -448,7 +448,7 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
 
         if str(channel.id) in summary_options.data["persistent_channels"]:
             messages = get_persistent_messages(channel.id, member.id if member else None, bots)
-            message_content = [message.content for message in messages]
+            message_content = [str(message.content) for message in messages]
         else:
             await update_task.wait()
             await update_messages(channel)
