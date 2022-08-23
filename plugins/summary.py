@@ -11,12 +11,12 @@ from collections import defaultdict, deque
 from functools import partial
 
 import discord
-from sqlalchemy import text
+from sqlalchemy.sql import select, insert, delete
 
 import bot
 import plugins
 from pcbot import utils, Annotate, config, Config
-from pcbot.db import engine
+from pcbot.db import engine, db_metadata
 
 client = plugins.client  # type: bot.Client
 
@@ -66,18 +66,16 @@ def generate_query_data(messages: list[discord.Message]):
     messages_to_commit = []
     for message in messages:
         messages_to_commit.append({"content": message.clean_content, "channel_id": message.channel.id,
-                                   "author_id": message.author.id, "is_bot": message.author.bot})
+                                   "author_id": message.author.id, "bot": message.author.bot})
     return messages_to_commit
 
 
 def commit_message(query_data: list):
     with engine.connect() as connection:
+        table = db_metadata.tables["summary_messages"]
+        statement = insert(table).values(query_data)
         transaction = connection.begin()
-        connection.execute(
-            text("INSERT INTO summary_messages (content, channel_id, author_id, bot) "
-                 "VALUES (:content, :channel_id, :author_id, :is_bot)"),
-            query_data
-        )
+        connection.execute(statement)
         transaction.commit()
 
 
@@ -95,9 +93,10 @@ def migrate_summary_data():
 
 def delete_channel_messages(channel_id: int):
     with engine.connect() as conn:
+        table = db_metadata.tables["summary_messages"]
+        statement = delete(table).where(table.c.channel_id == channel_id)
         transaction = conn.begin()
-        conn.execute(text("DELETE FROM summary_messages WHERE channel_id = :channel_id"),
-                     {"channel_id": channel_id})
+        conn.execute(statement)
         transaction.commit()
 
 
@@ -106,19 +105,14 @@ if os.path.exists("config/summary_data.json"):
 
 
 def get_persistent_messages(channel_id: int, author_id: int = None, bots: bool = False):
-    query = "SELECT content FROM summary_messages WHERE channel_id = :channel_id"
-    query_dict = {"channel_id": channel_id}
+    table = db_metadata.tables["summary_messages"]
+    statement = select(table.c.content).where((table.c.channel_id == channel_id)).whereclause
     if author_id:
-        query += " AND author_id = :author_id"
-        query_dict["author_id"] = author_id
+        statement = select(table.c.content).where(statement & (table.c.author_id == author_id)).whereclause
     if not bots:
-        query += " AND bot = :is_bot"
-        query_dict["is_bot"] = False
+        statement = select(table.c.content).where(statement & (table.c.bot == bots)).whereclause
     with engine.connect() as connection:
-        result = connection.execute(
-            text(query),
-            query_dict
-        )
+        result = connection.execute(select(table.c.content).where(statement))
         return result.all()
 
 
@@ -454,7 +448,7 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
 
         if str(channel.id) in summary_options.data["persistent_channels"]:
             messages = get_persistent_messages(channel.id, member.id if member else None, bots)
-            message_content = [str(message.content) for message in messages]
+            message_content = [message.content for message in messages]
         else:
             await update_task.wait()
             await update_messages(channel)
