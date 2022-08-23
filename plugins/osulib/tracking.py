@@ -162,7 +162,7 @@ class OsuTracker:
             else:
                 user_data["events"] = []
             # User is already tracked
-            if not db.get_user_scores(user_data["id"]):
+            if not score_utils.get_db_scores(user_data["id"]):
                 scores = await score_utils.retrieve_osu_scores(profile, mode, current_time)
                 if not scores["score_list"]:
                     logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
@@ -322,7 +322,7 @@ class OsuTracker:
                     continue
 
                 top100_best_id = []
-                for old_score in db.get_user_scores(user_id):
+                for old_score in score_utils.get_db_scores(user_id):
                     top100_best_id.append(old_score.best_id)
 
                 if osu_score.best_id in top100_best_id:
@@ -333,7 +333,7 @@ class OsuTracker:
                 params = {
                     "beatmap_id": osu_score.beatmap_id,
                 }
-                beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode=mode.name))
+                beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
                 # Send the message to all guilds
                 member = data["member"]
                 if not member:
@@ -393,7 +393,7 @@ class OsuTracker:
             params = {
                 "beatmap_id": osu_score.beatmap_id,
             }
-            beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score.beatmap_id, mode=mode.name))
+            beatmap = await api.beatmap_lookup(map_id=osu_score.beatmap_id)
             thumbnail_url = beatmap.beatmapset.covers.list2x
             author_text = f"{data['new']['username']} set a new best (#{osu_score.position}/{score_request_limit} " \
                           f"+{osu_score.pp_difference:.2f}pp)"
@@ -407,11 +407,12 @@ class OsuTracker:
             beatmap.difficulty_rating = pp.get_beatmap_sr(score_pp, beatmap, mods)
             if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp.max_combo:
                 beatmap.add_max_combo(score_pp.max_combo)
+            beatmapset = await api.get_beatmapset(beatmap.beatmapset_id)
             if update_mode is UpdateModes.Minimal:
-                m.append("".join([await score_format.format_minimal_score(osu_score, beatmap, member),
+                m.append("".join([await score_format.format_minimal_score(osu_score, beatmap, beatmapset, member),
                                   "\n"]))
             else:
-                m.append(await score_format.format_new_score(mode, osu_score, beatmap, member))
+                m.append(await score_format.format_new_score(mode, osu_score, beatmap, beatmapset, member))
         elif len(osu_scores) > 1:
             for osu_score in list(osu_scores):
                 # There might not be any events

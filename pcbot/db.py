@@ -8,7 +8,7 @@ db_metadata = MetaData()
 
 
 def get_moderate_db():
-    return Table(
+    Table(
         "moderate",
         db_metadata,
         Column("guild_id", Integer, unique=True),
@@ -18,7 +18,7 @@ def get_moderate_db():
 
 
 def get_summary_db():
-    return Table(
+    Table(
         "summary_messages",
         db_metadata,
         Column("content", String(4000), nullable=False),
@@ -29,7 +29,7 @@ def get_summary_db():
 
 
 def get_wyr_db():
-    return Table(
+    Table(
         "questions",
         db_metadata,
         Column("choice_1", String, nullable=False),
@@ -40,7 +40,7 @@ def get_wyr_db():
 
 
 def get_osu_scores_db():
-    return Table(
+    Table(
         "osu_scores",
         db_metadata,
         Column("id", Integer, unique=True),
@@ -64,11 +64,67 @@ def get_osu_scores_db():
     )
 
 
+def get_osu_beatmaps_db():
+    Table(
+        "beatmaps",
+        db_metadata,
+        Column("accuracy", Float),
+        Column("ar", Float),
+        Column("beatmapset_id", Integer),
+        Column("checksum", String),
+        Column("max_combo", Integer),
+        Column("bpm", Float),
+        Column("convert", Boolean),
+        Column("count_circles", Integer),
+        Column("count_sliders", Integer),
+        Column("count_spinners", Integer),
+        Column("cs", Integer),
+        Column("difficulty_rating", Float),
+        Column("drain", Integer),
+        Column("hit_length", Integer),
+        Column("id", Integer, unique=True),
+        Column("mode", Integer),
+        Column("passcount", Integer),
+        Column("playcount", Integer),
+        Column("ranked", Integer),
+        Column("status", String),
+        Column("total_length", Integer),
+        Column("user_id", Integer),
+        Column("version", String),
+        Column("time_cached", DateTime)
+    )
+
+
+def get_osu_beatmapset_db():
+    Table(
+        "beatmapsets",
+        db_metadata,
+        Column("artist", String),
+        Column("artist_unicode", String),
+        Column("bpm", Float),
+        Column("covers", BLOB),
+        Column("creator", String),
+        Column("favourite_count", Integer),
+        Column("id", Integer, unique=True),
+        Column("play_count", Integer),
+        Column("source", String),
+        Column("status", String),
+        Column("title", String),
+        Column("title_unicode", String),
+        Column("ranked", Integer),
+        Column("user_id", Integer),
+        Column("beatmaps", BLOB),
+        Column("time_cached", DateTime)
+    )
+
+
 def create_tables():
     get_moderate_db()
     get_summary_db()
     get_wyr_db()
     get_osu_scores_db()
+    get_osu_beatmaps_db()
+    get_osu_beatmapset_db()
     db_metadata.create_all(engine)
 
 

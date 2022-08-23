@@ -144,6 +144,14 @@ def add_score_position(osu_scores: list[OsuScore]):
     return osu_scores
 
 
+def get_db_scores(user_id: int):
+    score_list = []
+    db_scores = db.get_user_scores(user_id)
+    for osu_score in db_scores:
+        score_list.append(OsuScore(osu_score, db=True))
+    return score_list
+
+
 async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: Config):
     """ Compare old user scores with new user scores and return the discovered
     new score if there is any. When a score is returned, it's position in the
@@ -167,7 +175,7 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
     if fetched_scores is None:
         return None
 
-    old_score_ids = [osu_score.best_id for osu_score in db.get_user_scores(profile)]
+    old_score_ids = [osu_score.best_id for osu_score in get_db_scores(profile)]
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
@@ -177,7 +185,7 @@ async def get_new_score(member_id: str, osu_tracking: dict, osu_profile_cache: C
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,
-                                                        old_scores=db.get_user_scores(profile),
+                                                        old_scores=get_db_scores(profile),
                                                         old=dict(osu_tracking[member_id]["old"]),
                                                         new=dict(osu_tracking[member_id]["new"]))
 

@@ -185,7 +185,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
     # Clear the scores when changing user
     if str(message.author.id) in osu_tracking:
-        if db.get_user_scores(osu_tracking[str(message.author.id)]["new"]["id"]):
+        if score_utils.get_db_scores(osu_tracking[str(message.author.id)]["new"]["id"]):
             db.delete_user_scores(osu_tracking[str(message.author.id)]["new"]["id"])
         del osu_tracking[str(message.author.id)]
     if str(message.author.id) in osu_profile_cache.data:
@@ -233,7 +233,7 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
 
     # Clear the tracking data when unlinking user
     if str(member.id) in osu_tracking:
-        if db.get_user_scores(osu_tracking[str(member.id)]["new"]["id"]):
+        if score_utils.get_db_scores(osu_tracking[str(member.id)]["new"]["id"]):
             db.delete_user_scores(osu_tracking[str(member.id)]["new"]["id"])
         del osu_tracking[str(member.id)]
     if str(member.id) in osu_profile_cache.data:
@@ -354,11 +354,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
         assert beatmap_info.beatmap_id, "Please link to a specific difficulty."
         assert beatmap_info.gamemode, "Please link to a specific mode."
 
-        params = {
-            "beatmap_id": beatmap_info.beatmap_id,
-        }
-        beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id,
-                                            mode=beatmap_info.gamemode.name))
+        beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
 
         pp_stats = await pp.calculate_pp(beatmap_url, *options, mode=beatmap_info.gamemode,
                                          ignore_osu_cache=not bool(beatmap.status == "ranked" or
@@ -418,7 +414,7 @@ async def recent(message: discord.Message, user: str = None):
     params = {
         "beatmap_id": osu_score.beatmap.id,
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=int(osu_score.beatmap.id), mode=mode.name))
+    beatmap = await api.beatmap_lookup(map_id=int(osu_score.beatmap.id))
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode, osu_tracking,
                                                           twitch_link=osu_score.passed)
@@ -521,8 +517,7 @@ async def score(message: discord.Message, *options):
     params = {
         "beatmap_id": osu_score.beatmap.id,
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=osu_score.beatmap.id,
-                                        mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
+    beatmap = await api.beatmap_lookup(map_id=osu_score.beatmap.id)
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
                                                           if beatmap_info.gamemode else mode, osu_tracking,
@@ -578,8 +573,7 @@ async def scores(message: discord.Message, *options):
     params = {
         "beatmap_id": beatmap_id,
     }
-    beatmap = (await api.beatmap_lookup(params=params, map_id=beatmap_id,
-                                        mode=beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name))
+    beatmap = await api.beatmap_lookup(map_id=beatmap_id)
     if mods:
         modslist = wrap(mods, 2)
         for osu_score in fetched_osu_scores["scores"]:
@@ -679,7 +673,7 @@ async def top(message: discord.Message, *options):
     assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
     assert str(member.id) in osu_tracking, \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again."
-    db_scores = db.get_user_scores(osu_tracking[str(member.id)]["new"]["id"])
+    db_scores = score_utils.get_db_scores(osu_tracking[str(member.id)]["new"]["id"])
     assert db_scores, "Scores have not been retrieved for this user yet. Please wait a bit and try again."
     assert mode is enums.GameMode.osu if nochoke else True, \
         "No-choke lists are only supported for osu!standard."

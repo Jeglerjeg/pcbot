@@ -4,13 +4,11 @@
     request functions.
 """
 import asyncio
-import json
 import logging
-import os
 import re
 
 from plugins.osulib.models.score import OsuScore
-from plugins.osulib.models.beatmap import Beatmap, Beatmapset
+from plugins.osulib.models.beatmap import Beatmapset
 
 try:
     import pyrate_limiter
@@ -113,14 +111,17 @@ def def_section(api_name: str, first_element: bool = False):
 
 
 # Define all osu! API requests using the template
-async def beatmap_lookup(params, map_id, mode):
+async def beatmap_lookup(map_id):
     """ Looks up a beatmap unless cache exists"""
-    result = caching.retrieve_cache(map_id, "map", mode)
+    result = caching.retrieve_cache(map_id, "map")
     valid_result = caching.validate_cache(result)
     if not valid_result:
+        params = {
+            "beatmap_id": map_id,
+        }
         await beatmapset_lookup(params=params)
-        result = caching.retrieve_cache(map_id, "map", mode)
-    result = Beatmap(result)
+        result = caching.retrieve_cache(map_id, "map")
+    result = result
     return result
 
 
@@ -196,11 +197,8 @@ async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
         request = def_section(f"beatmapsets/{beatmapset_id}")
         result = await request()
         caching.cache_beatmapset(result, result["id"])
-    else:
-        beatmapset_path = os.path.join(caching.setcache_path, str(beatmapset_id) + ".json")
-        with open(beatmapset_path, encoding="utf-8") as fp:
-            result = json.load(fp)
-    return Beatmapset(result)
+        result = Beatmapset(result)
+    return result
 
 
 async def get_user_recent_activity(user, params=None):
@@ -279,14 +277,14 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
         params = {
             "beatmap_id": beatmap_info.beatmap_id,
         }
-        difficulties = await beatmap_lookup(params=params, map_id=beatmap_info.beatmap_id, mode="osu")
+        difficulties = await beatmap_lookup(map_id=beatmap_info.beatmap_id)
         beatmapset = False
     else:
         beatmapset = await get_beatmapset(beatmap_info.beatmapset_id)
         difficulties = beatmapset.beatmaps
         beatmapset = True
     # If the beatmap doesn't exist, the operation was unsuccessful
-    if not difficulties or "{'error': None}" in str(difficulties):
+    if not difficulties:
         raise LookupError("The beatmap with the given URL was not found.")
 
     # Find the most difficult beatmap
@@ -294,7 +292,7 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
     highest = -1
     if beatmapset:
         for diff in difficulties:
-            stars = diff["difficulty_rating"]
+            stars = diff.difficulty_rating
             if stars > highest:
                 beatmap, highest = diff, stars
     else:

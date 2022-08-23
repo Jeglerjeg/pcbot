@@ -1,6 +1,8 @@
-from datetime import datetime
+import pickle
+from datetime import datetime, timezone
 from typing import Optional
 
+from plugins.osulib import db
 from plugins.osulib.enums import GameMode
 
 
@@ -61,47 +63,91 @@ class Beatmap:
     url: str
     user_id: int
     version: str
+    time_cached: datetime
 
-    def __init__(self, json_data: dict):
-        self.accuracy = json_data["accuracy"]
-        self.ar = json_data["ar"]
-        self.beatmapset_id = json_data["beatmapset_id"]
-        if "beatmapset" in json_data and json_data["beatmapset"]:
-            self.beatmapset = Beatmapset(json_data["beatmapset"])
-        if "checksum" in json_data:
-            self.checksum = json_data["checksum"]
-        if "failtimes" in json_data:
-            self.failtimes = json_data["failtimes"]
-        if "max_combo" in json_data:
-            self.max_combo = json_data["max_combo"]
-        if "bpm" in json_data and json_data["bpm"]:
-            self.bpm = json_data["bpm"]
-        self.convert = json_data["convert"]
-        self.count_circles = json_data["count_circles"]
-        self.count_sliders = json_data["count_sliders"]
-        self.count_spinners = json_data["count_spinners"]
-        self.cs = json_data["cs"]
-        if "deleted_at" in json_data and json_data["deleted_at"]:
-            self.deleted_at = datetime.fromisoformat(json_data["deleted_at"])
-        self.difficulty_rating = json_data["difficulty_rating"]
-        self.drain = json_data["drain"]
-        self.hit_length = json_data["hit_length"]
-        self.id = json_data["id"]
-        self.is_scoreable = json_data["is_scoreable"]
-        self.last_updated = datetime.fromisoformat(json_data["last_updated"])
-        self.mode = GameMode.get_mode(json_data["mode"])
-        self.mode_int = json_data["mode_int"]
-        self.passcount = json_data["passcount"]
-        self.playcount = json_data["playcount"]
-        self.ranked = json_data["ranked"]
-        self.status = json_data["status"]
-        self.total_length = json_data["total_length"]
-        self.url = json_data["url"]
-        self.user_id = json_data["user_id"]
-        self.version = json_data["version"]
+    def __init__(self, data, from_db: bool = False):
+        if from_db:
+            self.from_db(data)
+        else:
+            self.from_file(data)
+
+    def from_db(self, data):
+        self.accuracy = data.accuracy
+        self.ar = data.ar
+        self.beatmapset_id = data.beatmapset_id
+        self.checksum = data.checksum
+        self.max_combo = data.max_combo
+        self.bpm = data.bpm
+        self.convert = data.convert
+        self.count_circles = data.count_circles
+        self.count_sliders = data.count_sliders
+        self.count_spinners = data.count_spinners
+        self.cs = data.cs
+        self.difficulty_rating = data.difficulty_rating
+        self.drain = data.drain
+        self.hit_length = data.hit_length
+        self.id = data.id
+        self.mode = GameMode(data.mode)
+        self.mode_int = data.mode
+        self.passcount = data.passcount
+        self.playcount = data.playcount
+        self.ranked = data.ranked
+        self.status = data.status
+        self.total_length = data.total_length
+        self.user_id = data.user_id
+        self.version = data.version
+        self.time_cached = data.time_cached.replace(tzinfo=timezone.utc)
+
+    def from_file(self, data: dict):
+        self.accuracy = data["accuracy"]
+        self.ar = data["ar"]
+        self.beatmapset_id = data["beatmapset_id"]
+        if "beatmapset" in data and data["beatmapset"]:
+            self.beatmapset = Beatmapset(data["beatmapset"])
+        if "checksum" in data:
+            self.checksum = data["checksum"]
+        if "failtimes" in data:
+            self.failtimes = data["failtimes"]
+        if "max_combo" in data:
+            self.max_combo = data["max_combo"]
+        if "bpm" in data and data["bpm"]:
+            self.bpm = data["bpm"]
+        self.convert = data["convert"]
+        self.count_circles = data["count_circles"]
+        self.count_sliders = data["count_sliders"]
+        self.count_spinners = data["count_spinners"]
+        self.cs = data["cs"]
+        if "deleted_at" in data and data["deleted_at"]:
+            self.deleted_at = datetime.fromisoformat(data["deleted_at"])
+        self.difficulty_rating = data["difficulty_rating"]
+        self.drain = data["drain"]
+        self.hit_length = data["hit_length"]
+        self.id = data["id"]
+        self.is_scoreable = data["is_scoreable"]
+        self.last_updated = datetime.fromisoformat(data["last_updated"])
+        self.mode = GameMode.get_mode(data["mode"])
+        self.mode_int = data["mode_int"]
+        self.passcount = data["passcount"]
+        self.playcount = data["playcount"]
+        self.ranked = data["ranked"]
+        self.status = data["status"]
+        self.total_length = data["total_length"]
+        self.url = data["url"]
+        self.user_id = data["user_id"]
+        self.version = data["version"]
 
     def __repr__(self):
         return self.to_dict()
+
+    def to_db_query(self):
+        return {"accuracy": self.accuracy, "ar": self.ar, "beatmapset_id": self.beatmapset_id,
+                "checksum": self.checksum, "max_combo": self.max_combo, "bpm": self.bpm, "convert": self.convert,
+                "count_circles": self.count_circles, "count_sliders": self.count_sliders,
+                "count_spinners": self.count_spinners, "cs": self.cs, "difficulty_rating": self.difficulty_rating,
+                "drain": self.drain, "hit_length": self.hit_length, "id": self.id, "mode": self.mode_int,
+                "passcount": self.passcount, "playcount": self.playcount, "ranked": self.ranked, "status": self.status,
+                "total_length": self.total_length, "user_id": self.user_id, "version": self.version,
+                "time_cached": datetime.utcnow()}
 
     def to_dict(self):
         readable_dict = {}
@@ -142,23 +188,26 @@ class BeatmapsetCompact:
     beatmaps: Optional[list[Beatmap]]
     converts: Optional[list[Beatmap]]
 
-    def __init__(self, raw_data: dict):
-        self.artist = raw_data["artist"]
-        self.artist_unicode = raw_data["artist_unicode"]
-        self.covers = BeatmapsetCovers(raw_data["covers"])
-        self.creator = raw_data["creator"]
-        self.favourite_count = raw_data["favourite_count"]
-        self.id = raw_data["id"]
-        self.play_count = raw_data["play_count"]
-        self.source = raw_data["source"]
-        self.status = raw_data["status"]
-        self.title = raw_data["title"]
-        self.title_unicode = raw_data["title_unicode"]
-        self.user_id = raw_data["user_id"]
-        if "beatmaps" in raw_data:
-            self.beatmaps = [Beatmap(beatmap) for beatmap in raw_data["beatmaps"]]
-        if "converts" in raw_data:
-            self.converts = [Beatmap(beatmap) for beatmap in raw_data["converts"]]
+    def __init__(self, raw_data, from_db: bool = False):
+        if from_db:
+            pass
+        else:
+            self.artist = raw_data["artist"]
+            self.artist_unicode = raw_data["artist_unicode"]
+            self.covers = BeatmapsetCovers(raw_data["covers"])
+            self.creator = raw_data["creator"]
+            self.favourite_count = raw_data["favourite_count"]
+            self.id = raw_data["id"]
+            self.play_count = raw_data["play_count"]
+            self.source = raw_data["source"]
+            self.status = raw_data["status"]
+            self.title = raw_data["title"]
+            self.title_unicode = raw_data["title_unicode"]
+            self.user_id = raw_data["user_id"]
+            if "beatmaps" in raw_data:
+                self.beatmaps = [Beatmap(beatmap) for beatmap in raw_data["beatmaps"]]
+            if "converts" in raw_data:
+                self.converts = [Beatmap(beatmap) for beatmap in raw_data["converts"]]
 
     def __repr__(self):
         return self.to_dict()
@@ -176,8 +225,42 @@ class BeatmapsetCompact:
 class Beatmapset(BeatmapsetCompact):
     bpm: float
     ranked: int
+    time_cached: datetime
 
-    def __init__(self, raw_data: dict):
-        super().__init__(raw_data)
+    def __init__(self, raw_data, from_db: bool = False):
+        super().__init__(raw_data, from_db)
+        if from_db:
+            self.from_db(raw_data)
+        else:
+            self.from_file(raw_data)
+
+    def from_db(self, raw_data):
+        self.artist = raw_data.artist
+        self.artist_unicode = raw_data.artist_unicode
+        self.covers = pickle.loads(raw_data.covers)
+        self.creator = raw_data.creator
+        self.favourite_count = raw_data.favourite_count
+        self.id = raw_data.id
+        self.play_count = raw_data.play_count
+        self.source = raw_data.source
+        self.status = raw_data.status
+        self.title = raw_data.title
+        self.title_unicode = raw_data.title_unicode
+        self.user_id = raw_data.user_id
+        self.beatmaps = [Beatmap(db.get_beatmap(beatmap), from_db=True) for beatmap in pickle.loads(raw_data.beatmaps)]
+        self.bpm = raw_data.bpm
+        self.ranked = raw_data.ranked
+        self.time_cached = raw_data.time_cached.replace(tzinfo=timezone.utc)
+
+    def from_file(self, raw_data: dict):
         self.bpm = raw_data["bpm"]
         self.ranked = raw_data["ranked"]
+
+    def to_db_query(self):
+        return {"artist": self.artist, "artist_unicode": self.artist_unicode,
+                "covers": pickle.dumps(self.covers),
+                "creator": self.creator, "favourite_count": self.favourite_count, "id": self.id,
+                "play_count": self.play_count, "source": self.source, "status": self.status, "title": self.title,
+                "title_unicode": self.title_unicode, "user_id": self.user_id,
+                "beatmaps": pickle.dumps([beatmap.id for beatmap in self.beatmaps]), "bpm": self.bpm,
+                "ranked": self.ranked, "time_cached": datetime.utcnow()}
