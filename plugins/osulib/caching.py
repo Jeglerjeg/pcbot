@@ -9,8 +9,10 @@ def cache_beatmapset(beatmap: dict):
     """ Saves beatmapsets to cache. """
 
     insert_beatmapset(Beatmapset(beatmap).to_db_query())
+    query_data = []
     for diff in beatmap["beatmaps"]:
-        insert_beatmap(Beatmap(diff).to_db_query())
+        query_data.append(Beatmap(diff).to_db_query())
+    insert_beatmap(query_data)
 
 
 def retrieve_cache(map_id: int, map_type: str):
