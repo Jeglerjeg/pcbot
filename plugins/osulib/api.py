@@ -128,11 +128,17 @@ async def beatmap_lookup(map_id):
 async def beatmapset_lookup(params):
     """ Looks up a beatmapset using a beatmap ID"""
     request = def_section("beatmapsets/lookup")
-    result = await request(**params)
-    if not result:
-        return None
-    caching.cache_beatmapset(result)
-    return Beatmapset(result)
+    beatmap = caching.retrieve_cache(params["beatmap_id"], "map")
+    if beatmap:
+        result = caching.retrieve_cache(beatmap.beatmapset_id, "set")
+    else:
+        result = None
+    valid_result = caching.validate_cache(result)
+    if not valid_result:
+        result = await request(**params)
+        caching.cache_beatmapset(result)
+        result = Beatmapset(result)
+    return result
 
 
 async def get_user(user, mode=None, params=None):
