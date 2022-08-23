@@ -14,7 +14,7 @@ from copy import copy
 from datetime import datetime
 
 import discord
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
 
 import plugins
 from pcbot import utils, config
@@ -26,11 +26,28 @@ engine = create_engine("sqlite+pysqlite:///bot.db", echo=False, future=True)
 
 
 async def vacuum_db():
-    await asyncio.sleep(60 * 30)
+    await asyncio.sleep(3600 * 24)
     with engine.connect() as conn:
         transaction = conn.begin()
         conn.execute(text("VACUUM"))
         transaction.commit()
+
+
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=normal")
+    cursor.execute("PRAGMA  cache_size=-128000")
+    cursor.close()
+
+
+@event.listens_for(engine, "close")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA analysis_limit=400")
+    cursor.execute("PRAGMA optimize")
+    cursor.close()
 
 
 class Client(discord.Client):
