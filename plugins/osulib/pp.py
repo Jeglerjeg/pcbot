@@ -355,6 +355,7 @@ async def calculate_no_choke_top_plays(osu_scores: list, member_id: str):
     if member_id not in no_choke_cache:
         for osu_score in osu_scores:
             if osu_score.legacy_perfect:
+                no_choke_list.append(osu_score)
                 continue
             full_combo_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
             score_pp = await get_score_pp(osu_score, mode)
@@ -370,7 +371,7 @@ async def calculate_no_choke_top_plays(osu_scores: list, member_id: str):
                 osu_score.statistics.miss = 0
                 osu_score.rank = score_utils.get_no_choke_scorerank(osu_score.mods, full_combo_acc)
                 osu_score.total_score = None
-                no_choke_list.append(osu_score)
+            no_choke_list.append(osu_score)
         no_choke_list.sort(key=itemgetter("pp"), reverse=True)
         for i, osu_score in enumerate(no_choke_list):
             osu_score.position = i + 1

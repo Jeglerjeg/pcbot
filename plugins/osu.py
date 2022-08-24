@@ -675,9 +675,7 @@ async def top(message: discord.Message, *options):
         async with message.channel.typing():
             osu_scores = await pp.calculate_no_choke_top_plays(db_scores,
                                                                str(member.id))
-            full_osu_score_list = generate_full_no_choke_score_list(
-                osu_scores, db_scores)
-            new_total_pp = pp.calculate_total_user_pp(full_osu_score_list, str(member.id), osu_tracking)
+            new_total_pp = pp.calculate_total_user_pp(osu_scores, str(member.id), osu_tracking)
             author_text = "{} ({} => {}, {:+})".format(osu_tracking[str(member.id)]["new"]["username"],
                                                        utils.format_number(
                                                           osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2),
