@@ -185,7 +185,8 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
     # Clear the scores when changing user
     if str(message.author.id) in osu_tracking:
-        if score_utils.get_db_scores(osu_tracking[str(message.author.id)]["new"]["id"]):
+        if "new" in osu_tracking[str(message.author.id)] and \
+                score_utils.get_db_scores(osu_tracking[str(message.author.id)]["new"]["id"]):
             db.delete_user_scores(osu_tracking[str(message.author.id)]["new"]["id"])
         del osu_tracking[str(message.author.id)]
     if str(message.author.id) in osu_profile_cache.data:
