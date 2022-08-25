@@ -120,6 +120,6 @@ def user_exists(member: discord.Member, member_id: str, profile: str):
 
 def user_unlinked_during_iteration(member_id: str, data: dict):
     """ Check if the member was unlinked after iteration started. """
-    return (member_id in data and data[member_id]["new"]
+    return (member_id in data and "new" in data[member_id] and data[member_id]["new"]
             and "id" in data[member_id]["new"]
             and str(data[member_id]["new"]["id"]) not in osu_config.data["profiles"][member_id])
