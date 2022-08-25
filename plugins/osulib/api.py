@@ -138,7 +138,7 @@ async def beatmapset_lookup(params):
     valid_result = caching.validate_cache(result)
     if not valid_result:
         if result:
-            caching.delete_cache(Beatmapset(result))
+            caching.delete_cache(result)
         result = await request(**params)
         caching.cache_beatmapset(result)
         result = Beatmapset(result)
@@ -205,7 +205,7 @@ async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     valid_result = caching.validate_cache(result)
     if not valid_result or force_redownload:
         if result:
-            caching.delete_cache(Beatmapset(result))
+            caching.delete_cache(result)
         request = def_section(f"beatmapsets/{beatmapset_id}")
         result = await request()
         caching.cache_beatmapset(result)
