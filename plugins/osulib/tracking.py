@@ -135,6 +135,7 @@ class OsuTracker:
             osu_tracking[member_id]["schedule_wipe"] = False
             if cache_user_profiles:
                 osu_profile_cache.data[member_id] = {}
+                osu_profile_cache.data[member_id]["schedule_wipe"] = False
 
         # Add update ticks to member tracking
         if "ticks" not in osu_tracking[member_id]:
