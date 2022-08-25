@@ -158,7 +158,7 @@ class Beatmap:
             if isinstance(value, GameMode):
                 readable_dict[attr] = value.name
                 continue
-            elif isinstance(value, datetime):
+            if isinstance(value, datetime):
                 readable_dict[attr] = value.isoformat()
                 continue
             readable_dict[attr] = value

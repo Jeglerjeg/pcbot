@@ -143,13 +143,13 @@ class OsuScore:
             if isinstance(value, GameMode):
                 readable_dict["ruleset_id"] = value.value
                 continue
-            elif isinstance(value, Beatmap):
+            if isinstance(value, Beatmap):
                 readable_dict[attr] = value.to_dict()
                 continue
-            elif isinstance(value, datetime):
+            if isinstance(value, datetime):
                 readable_dict[attr] = value.isoformat()
                 continue
-            elif isinstance(value, ScoreStatistics):
+            if isinstance(value, ScoreStatistics):
                 readable_dict[attr] = value.__dict__
                 continue
             readable_dict[attr] = value

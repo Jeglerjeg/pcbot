@@ -47,8 +47,7 @@ def validate_cache(beatmap: Union[Beatmap, Beatmapset]):
     if beatmap.status == "loved":
         if diff.days > 30:
             valid_result = False
-    elif beatmap.status == "pending" or beatmap.status == "graveyard" or beatmap.status == "wip" \
-            or beatmap.status == "qualified":
+    elif beatmap.status in ("pending", "graveyard", "wip", "qualified"):
         if diff.days > 7:
             valid_result = False
 

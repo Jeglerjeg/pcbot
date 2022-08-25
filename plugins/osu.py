@@ -670,8 +670,7 @@ async def top(message: discord.Message, *options):
     assert not list_type == "score" if nochoke else True, "No-choke lists can't be sorted by score."
     if nochoke:
         async with message.channel.typing():
-            osu_scores = await pp.calculate_no_choke_top_plays(db_scores,
-                                                               str(member.id))
+            osu_scores = await pp.calculate_no_choke_top_plays(db_scores)
             new_total_pp = pp.calculate_total_user_pp(osu_scores, str(member.id), osu_tracking)
             pp_difference = new_total_pp - osu_tracking[str(member.id)]["new"]["statistics"]["pp"]
             author_text = f'{osu_tracking[str(member.id)]["new"]["username"]} ' \

@@ -7,22 +7,23 @@ import asyncio
 import logging
 import re
 
-from plugins.osulib.models.score import OsuScore
+from collections import namedtuple
+from datetime import datetime, timezone, timedelta
+
 from plugins.osulib.models.beatmap import Beatmapset
+from plugins.osulib.models.score import OsuScore
 
 try:
     import pyrate_limiter
 except ImportError:
     pyrate_limiter = None
     logging.info("pyrate_limiter is not installed, osu api functionality is unavailable.")
-from collections import namedtuple
-from datetime import datetime, timezone, timedelta
 
 import bot
 import plugins
-from pcbot import utils
-from plugins.osulib import enums, caching
+from plugins.osulib import enums, caching, db
 from plugins.osulib.constants import ratelimit
+from pcbot import utils
 
 client = plugins.client  # type: bot.Client
 
@@ -117,13 +118,12 @@ async def beatmap_lookup(map_id):
     valid_result = caching.validate_cache(result)
     if not valid_result:
         if result:
-            caching.delete_cache(result.beatmapset_id)
+            caching.delete_cache(Beatmapset(db.get_beatmapset(result.beatmapset_id)))
         params = {
             "beatmap_id": map_id,
         }
         await beatmapset_lookup(params=params)
         result = caching.retrieve_cache(map_id, "map")
-    result = result
     return result
 
 
@@ -138,7 +138,7 @@ async def beatmapset_lookup(params):
     valid_result = caching.validate_cache(result)
     if not valid_result:
         if result:
-            caching.delete_cache(result.id)
+            caching.delete_cache(Beatmapset(result))
         result = await request(**params)
         caching.cache_beatmapset(result)
         result = Beatmapset(result)
@@ -205,7 +205,7 @@ async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     valid_result = caching.validate_cache(result)
     if not valid_result or force_redownload:
         if result:
-            caching.delete_cache(result.id)
+            caching.delete_cache(Beatmapset(result))
         request = def_section(f"beatmapsets/{beatmapset_id}")
         result = await request()
         caching.cache_beatmapset(result)

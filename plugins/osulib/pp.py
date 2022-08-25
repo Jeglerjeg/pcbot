@@ -264,8 +264,7 @@ async def get_score_pp(osu_score: OsuScore, mode: enums.GameMode, beatmap: Beatm
     score_pp = None
     try:
         score_pp = await calculate_pp(beatmap.id if beatmap else osu_score.beatmap_id, mode=mode,
-                                      ignore_osu_cache=not bool(beatmap.status == "ranked"
-                                                                or beatmap.status == "approved") if beatmap
+                                      ignore_osu_cache=not bool(beatmap.status in ("ranked", "approved")) if beatmap
                                       else False,
                                       potential=score_utils.calculate_potential_pp(osu_score, mode),
                                       failed=not osu_score.passed, *score_utils.process_score_args(osu_score))
@@ -284,7 +283,7 @@ async def calculate_pp_for_beatmapset(beatmapset: Beatmapset, osu_config: Config
         osu_config.data["map_cache"][set_id] = {}
 
     if not ignore_osu_cache:
-        ignore_osu_cache = not bool(beatmapset.status == "ranked" or beatmapset.status == "approved")
+        ignore_osu_cache = not bool(beatmapset.status in ("ranked", "approved"))
 
     cached_mapset = osu_config.data["map_cache"][set_id]
 
@@ -347,7 +346,7 @@ async def calculate_pp_for_beatmapset(beatmapset: Beatmapset, osu_config: Config
         await osu_config.asyncsave()
 
 
-async def calculate_no_choke_top_plays(osu_scores: list, member_id: str):
+async def calculate_no_choke_top_plays(osu_scores: list):
     """ Calculates and returns a new list of unchoked plays. """
     mode = enums.GameMode.osu
     no_choke_list = []
@@ -364,8 +363,7 @@ async def calculate_no_choke_top_plays(osu_scores: list, member_id: str):
             osu_score.legacy_perfect = True
             osu_score.accuracy = full_combo_acc
             osu_score.max_combo = score_pp.max_combo
-            osu_score.statistics.great = osu_score.statistics.great + \
-                                         osu_score.statistics.great
+            osu_score.statistics.great += osu_score.statistics.miss
             osu_score.statistics.miss = 0
             osu_score.rank = score_utils.get_no_choke_scorerank(osu_score.mods, full_combo_acc)
             osu_score.total_score = None
