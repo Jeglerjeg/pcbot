@@ -359,8 +359,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
         beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
 
         pp_stats = await pp.calculate_pp(beatmap_url, *options, mode=beatmap_info.gamemode,
-                                         ignore_osu_cache=not bool(beatmap.status == "ranked" or
-                                                                   beatmap.status == "approved"))
+                                         ignore_osu_cache=not bool(beatmap.status in ("ranked", "approved")))
     except ValueError as e:
         await client.say(message, str(e))
         return
@@ -379,10 +378,8 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
             options.append(opt.upper())
             options.remove(opt)
     await client.say(message,
-                     "*{artist} - {title}* **[{version}] {0}** {stars:.02f}\u2605 would be worth `{pp:,.02f}pp`."
-                     .format(" ".join(options), artist=beatmap.beatmapset.artist,
-                             title=beatmap.beatmapset.title, version=beatmap.version, stars=pp_stats.stars,
-                             pp=pp_stats.pp))
+                     f"*{beatmap.beatmapset.artist} - {beatmap.beatmapset.title}* **[{beatmap.version}] "
+                     f"{' '.join(options)}** {pp_stats.stars:.02f}\u2605 would be worth `{pp_stats.pp:,.02f}pp`.")
 
 
 plugins.command(name="pp", aliases="oppai")(pp_)
@@ -676,13 +673,11 @@ async def top(message: discord.Message, *options):
             osu_scores = await pp.calculate_no_choke_top_plays(db_scores,
                                                                str(member.id))
             new_total_pp = pp.calculate_total_user_pp(osu_scores, str(member.id), osu_tracking)
-            author_text = "{} ({} => {}, {:+})".format(osu_tracking[str(member.id)]["new"]["username"],
-                                                       utils.format_number(
-                                                          osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2),
-                                                       utils.format_number(new_total_pp, 2),
-                                                       utils.format_number(
-                                                          new_total_pp -
-                                                          osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2))
+            pp_difference = new_total_pp - osu_tracking[str(member.id)]["new"]["statistics"]["pp"]
+            author_text = f'{osu_tracking[str(member.id)]["new"]["username"]} ' \
+                          f'({utils.format_number(osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2)} ' \
+                          f'=> {utils.format_number(new_total_pp, 2)}, ' \
+                          f'{utils.format_number(pp_difference, 2):+})'
     else:
         osu_scores = db_scores
         author_text = osu_tracking[str(member.id)]["new"]["username"]
@@ -777,20 +772,14 @@ async def debug(message: discord.Message):
     client_time = f"<t:{int(client.time_started.timestamp())}:F>"
     member_list = [f"`{d['member'].name}`" for d in osu_tracking.values()
                    if "member" in d and user_utils.is_playing(d["member"])]
-    await client.say(message, "Sent `{}` requests since the bot started ({}).\n"
-                              "Sent an average of `{}` requests per minute. \n"
-                              "Spent `{:.3f}` seconds last update.\n"
-                              "Last update happened at: {}\n"
-                              "Members registered as playing: {}\n"
-                              "Total members tracked: `{}`".format(
-                               api.requests_sent, client_time,
-                               utils.format_number(api.requests_sent /
-                                                   ((discord.utils.utcnow() -
-                                                     client.time_started).total_seconds() / 60.0), 2)
-                               if api.requests_sent > 0 else 0,
-                               osu_tracker.time_elapsed,
-                               f"<t:{int(osu_tracker.previous_update.timestamp())}:F>"
-                               if osu_tracker.previous_update else "Not updated yet.",
-                               ", ".join(member_list) if member_list else "None", len(osu_tracking)
-                               )
-                     )
+    average_requests = utils.format_number(api.requests_sent /
+                                           ((discord.utils.utcnow() - client.time_started).total_seconds() / 60.0), 2)\
+        if api.requests_sent > 0 else 0
+    last_update = f"<t:{int(osu_tracker.previous_update.timestamp())}:F>" \
+        if osu_tracker.previous_update else "Not updated yet."
+    await client.say(message, f"Sent `{api.requests_sent}` requests since the bot started ({client_time}).\n"
+                              f"Sent an average of `{average_requests}` requests per minute. \n"
+                              f"Spent `{osu_tracker.time_elapsed:.3f}` seconds last update.\n"
+                              f"Last update happened at: {last_update}\n"
+                              f"Members registered as playing: {', '.join(member_list) if member_list else 'None'}\n"
+                              f"Total members tracked: `{len(osu_tracking)}`")
