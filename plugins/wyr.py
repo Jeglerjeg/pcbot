@@ -21,17 +21,18 @@ recently_asked = {}
 
 def migrate():
     query_data = []
-    for question in db.data["questions"]:
-        query_data.append({"choice_1": question["choices"][0], "choice_2": question["choices"][1],
-                           "choice_1_answers": question["answers"][0], "choice_2_answers": question["answers"][1]})
-    with engine.connect() as connection:
-        transaction = connection.begin()
-        connection.execute(
-            text("INSERT INTO questions (choice_1, choice_2, choice_1_answers, choice_2_answers) "
-                 "VALUES (:choice_1, :choice_2, :choice_1_answers, :choice_2_answers)"),
-            query_data
-        )
-        transaction.commit()
+    if db.data["questions"]:
+        for question in db.data["questions"]:
+            query_data.append({"choice_1": question["choices"][0], "choice_2": question["choices"][1],
+                               "choice_1_answers": question["answers"][0], "choice_2_answers": question["answers"][1]})
+        with engine.connect() as connection:
+            transaction = connection.begin()
+            connection.execute(
+                text("INSERT INTO questions (choice_1, choice_2, choice_1_answers, choice_2_answers) "
+                     "VALUES (:choice_1, :choice_2, :choice_1_answers, :choice_2_answers)"),
+                query_data
+            )
+            transaction.commit()
     del db.data["questions"]
     db.save()
 

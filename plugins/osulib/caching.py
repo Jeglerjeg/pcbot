@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Union
 
 from plugins.osulib.db import insert_beatmap, get_beatmap, get_beatmapset, insert_beatmapset, delete_beatmap, \
     delete_beatmapset
@@ -36,7 +37,7 @@ def delete_cache(beatmapset: Beatmapset):
     delete_beatmapset(beatmapset.id)
 
 
-def validate_cache(beatmap: Beatmap | Beatmapset):
+def validate_cache(beatmap: Union[Beatmap, Beatmapset]):
     """ Check if the map cache is still valid. """
     if not beatmap:
         return False

@@ -83,11 +83,14 @@ def migrate_summary_data():
     with open("config/summary_data.json", encoding="utf-8") as f:
         data = json.load(f)
         query_data = []
-        for channel_id, messages in data["channels"].items():
-            for message in messages:
-                query_data.append({"content": message["content"], "channel_id": channel_id,
-                                   "author_id": message["author"], "is_bot": message["bot"]})
-        commit_message(query_data)
+        if data["channels"]:
+            for channel_id, messages in data["channels"].items():
+                for message in messages:
+                    if not message["content"]:
+                        continue
+                    query_data.append({"content": message["content"], "channel_id": channel_id,
+                                       "author_id": message["author"], "is_bot": message["bot"]})
+            commit_message(query_data)
     os.remove("config/summary_data.json")
 
 
