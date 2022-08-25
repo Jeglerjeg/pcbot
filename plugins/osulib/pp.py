@@ -27,7 +27,6 @@ PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs o
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars")
 
 cache_path = "plugins/osulib/mapcache"
-no_choke_cache = {}
 
 
 async def is_osu_file(url: str):
@@ -352,31 +351,27 @@ async def calculate_no_choke_top_plays(osu_scores: list, member_id: str):
     """ Calculates and returns a new list of unchoked plays. """
     mode = enums.GameMode.osu
     no_choke_list = []
-    if member_id not in no_choke_cache:
-        for osu_score in osu_scores:
-            if osu_score.legacy_perfect:
-                no_choke_list.append(osu_score)
-                continue
-            full_combo_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
-            score_pp = await get_score_pp(osu_score, mode)
-            if (score_pp.max_pp - osu_score.pp) > 10:
-                osu_score.new_pp = f"""{utils.format_number(osu_score.pp, 2)} => {utils.format_number(
-                    score_pp.max_pp, 2)}"""
-                osu_score.pp = score_pp.max_pp
-                osu_score.legacy_perfect = True
-                osu_score.accuracy = full_combo_acc
-                osu_score.max_combo = score_pp.max_combo
-                osu_score.statistics.great = osu_score.statistics.great +\
-                    osu_score.statistics.great
-                osu_score.statistics.miss = 0
-                osu_score.rank = score_utils.get_no_choke_scorerank(osu_score.mods, full_combo_acc)
-                osu_score.total_score = None
+    for osu_score in osu_scores:
+        if osu_score.legacy_perfect:
             no_choke_list.append(osu_score)
-        no_choke_list.sort(key=itemgetter("pp"), reverse=True)
-        for i, osu_score in enumerate(no_choke_list):
-            osu_score.position = i + 1
-        no_choke_cache[member_id] = no_choke_list
-        no_chokes = no_choke_cache[member_id]
-    else:
-        no_chokes = no_choke_cache[member_id]
-    return no_chokes
+            continue
+        full_combo_acc = misc_utils.calculate_acc(mode, osu_score, exclude_misses=True)
+        score_pp = await get_score_pp(osu_score, mode)
+        if (score_pp.max_pp - osu_score.pp) > 10:
+            osu_score.new_pp = f"""{utils.format_number(osu_score.pp, 2)} => {utils.format_number(
+                score_pp.max_pp, 2)}"""
+            osu_score.pp = score_pp.max_pp
+            osu_score.legacy_perfect = True
+            osu_score.accuracy = full_combo_acc
+            osu_score.max_combo = score_pp.max_combo
+            osu_score.statistics.great = osu_score.statistics.great + \
+                                         osu_score.statistics.great
+            osu_score.statistics.miss = 0
+            osu_score.rank = score_utils.get_no_choke_scorerank(osu_score.mods, full_combo_acc)
+            osu_score.total_score = None
+        no_choke_list.append(osu_score)
+    no_choke_list.sort(key=itemgetter("pp"), reverse=True)
+    for i, osu_score in enumerate(no_choke_list):
+        osu_score.position = i + 1
+
+    return no_choke_list
