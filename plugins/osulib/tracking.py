@@ -43,6 +43,18 @@ class MapEvent:
         return repr(self)
 
 
+async def wipe_user(member_id: str):
+    """ Deletes user data from tracking. """
+    if member_id in osu_tracking:
+        if "new" in osu_tracking[member_id] and \
+                score_utils.get_db_scores(osu_tracking[member_id]["new"]["id"]):
+            db.delete_user_scores(osu_tracking[member_id]["new"]["id"])
+        del osu_tracking[member_id]
+    if member_id in osu_profile_cache.data:
+        del osu_profile_cache.data[member_id]
+        await osu_profile_cache.asyncsave()
+
+
 class OsuTracker:
     def __init__(self):
         self.previous_update = None
@@ -109,25 +121,20 @@ class OsuTracker:
         member = discord.utils.get(client.get_all_members(), id=int(member_id))
         if user_utils.user_exists(member, member_id, profile) \
                 or user_utils.user_unlinked_during_iteration(member_id, osu_tracking):
-            if member_id in osu_tracking:
-                del osu_tracking[member_id]
-            if member_id in osu_profile_cache.data:
-                del osu_profile_cache.data[member_id]
+            await wipe_user(member_id)
             return
+
+        if member_id in osu_tracking and "scheduled_wipe" in osu_tracking and \
+                osu_tracking[member_id]["schedule_wipe"] is True:
+            osu_tracking[member_id]["schedule_wipe"] = False
+            await wipe_user(member_id)
 
         # Check if the member is tracked, add to cache and tracking if not
         if member_id not in osu_tracking:
             osu_tracking[member_id] = {}
+            osu_tracking[member_id]["schedule_wipe"] = False
             if cache_user_profiles:
                 osu_profile_cache.data[member_id] = {}
-
-        if "schedule_wipe" not in osu_tracking[member_id]:
-            osu_tracking[member_id]["schedule_wipe"] = False
-        elif osu_tracking[member_id]["schedule_wipe"] is True:
-            if score_utils.get_db_scores(int(profile)):
-                db.delete_user_scores(int(profile))
-            osu_tracking[member_id] = {}
-            osu_profile_cache.data[member_id] = {}
 
         # Add update ticks to member tracking
         if "ticks" not in osu_tracking[member_id]:

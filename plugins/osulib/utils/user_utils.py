@@ -6,6 +6,7 @@ from plugins.osulib.constants import host, minimum_pp_required
 from plugins.osulib.config import osu_config
 
 
+
 def get_missing_user_string(member: discord.Member):
     """ Format missing user text for all commands needing it. """
     return f"No osu! profile assigned to **{member.name}**! Please assign a profile using " \

@@ -32,7 +32,7 @@ from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
-from plugins.osulib.tracking import OsuTracker, osu_profile_cache, osu_tracking
+from plugins.osulib.tracking import OsuTracker, osu_profile_cache, osu_tracking, wipe_user
 from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
 
 client = plugins.client  # type: bot.Client
@@ -184,14 +184,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
             f"**Your pp in {mode.name} is less than the required {minimum_pp_required}pp.**"
 
     # Clear the scores when changing user
-    if str(message.author.id) in osu_tracking:
-        if "new" in osu_tracking[str(message.author.id)] and \
-                score_utils.get_db_scores(osu_tracking[str(message.author.id)]["new"]["id"]):
-            db.delete_user_scores(osu_tracking[str(message.author.id)]["new"]["id"])
-        del osu_tracking[str(message.author.id)]
-    if str(message.author.id) in osu_profile_cache.data:
-        del osu_profile_cache.data[str(message.author.id)]
-        await osu_profile_cache.asyncsave()
+    await wipe_user(str(message.author.id))
 
     user_id = osu_user["id"]
 
@@ -233,13 +226,7 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
     assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
 
     # Clear the tracking data when unlinking user
-    if str(member.id) in osu_tracking:
-        if score_utils.get_db_scores(osu_tracking[str(member.id)]["new"]["id"]):
-            db.delete_user_scores(osu_tracking[str(member.id)]["new"]["id"])
-        del osu_tracking[str(member.id)]
-    if str(member.id) in osu_profile_cache.data:
-        del osu_profile_cache.data[str(member.id)]
-        await osu_profile_cache.asyncsave()
+    await wipe_user(str(message.author.id))
 
     # Unlink the given member (usually the message author)
     del osu_config.data["profiles"][str(member.id)]
@@ -268,13 +255,7 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
     await osu_config.asyncsave()
 
     # Clear the scores when changing mode
-    if str(message.author.id) in osu_tracking:
-        if score_utils.get_db_scores(osu_tracking[str(message.author.id)]["new"]["id"]):
-            db.delete_user_scores(osu_tracking[str(message.author.id)]["new"]["id"])
-        del osu_tracking[str(message.author.id)]
-    if str(message.author.id) in osu_profile_cache.data:
-        del osu_profile_cache.data[str(message.author.id)]
-        await osu_profile_cache.asyncsave()
+    await wipe_user(str(message.author.id))
 
     await client.say(message, f"Set your gamemode to **{mode_name}**.")
 
