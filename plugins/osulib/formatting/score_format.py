@@ -166,7 +166,7 @@ async def format_minimal_score(osu_score: OsuScore, beatmap: Beatmap, member: di
     There should be a member name/mention in front of this string. """
     return (
         "[*{artist} - {title} [{version}]*]({url})\n"
-        "**{pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc} {scoreboard_rank}+{mods}**"
+        "**{score_pp}pp {stars}\u2605, {maxcombo}{max_combo} {rank} {acc} {scoreboard_rank}+{mods}**"
         "{live}"
     ).format(
         url=beatmap_utils.get_beatmap_url(osu_score.beatmap.id, osu_score.mode, beatmap.beatmapset_id),

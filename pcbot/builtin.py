@@ -61,8 +61,9 @@ async def help_(message: discord.Message, command: str.lower = None, *args):
 
         commands = ", ".join(sorted(commands))
 
-        m = "**Commands**: ```{0}```Use `{1}help <command>`, `{1}<command> {2}` or " \
-            "`{1}<command> {3}` for command specific help.".format(commands, command_prefix, *config.help_arg)
+        m = f"**Commands**: ```{commands}```Use `{command_prefix}help <command>`, " \
+            f"`{command_prefix}<command> {config.help_arg[0]}` or " \
+            f"`{command_prefix}<command> {config.help_arg[1]}` for command specific help."
         embed = discord.Embed(color=message.author.color)
         embed.description = m
         await client.send_message(message.channel, embed=embed)

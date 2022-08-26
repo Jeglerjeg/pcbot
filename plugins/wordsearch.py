@@ -115,10 +115,10 @@ async def start_wordsearch(channel: discord.TextChannel, host: discord.Member, w
     hint = ""
 
     while channel.id in wordsearch:
-        def check(message):
+        def check_channel(message):
             return message.channel == channel and valid_guess(message)
         try:
-            reply = await client.wait_for_message(timeout=60 * 30, check=check)
+            reply = await client.wait_for_message(timeout=60 * 30, check=check_channel)
         except asyncio.TimeoutError:
             reply = None
 

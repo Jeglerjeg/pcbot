@@ -62,14 +62,9 @@ def format_when(dt: pendulum.datetime, timezone: str = "UTC"):
     major_diff = dt.diff_for_humans(absolute=True)
     detailed_diff = diff.in_words().replace("-", "")
 
-    return "`{time} {tz}` {pronoun} **{major}{diff}{pronoun2}**.".format(
-        time=dt.strftime(dt_format),
-        tz=timezone,
-        pronoun="is in" if dt > now else "was",
-        major="~" + major_diff + "** / **" if major_diff not in detailed_diff else "",
-        diff=detailed_diff,
-        pronoun2=" ago" if dt < now else ""
-    )
+    return f'`{dt.strftime(dt_format)} {timezone}` {"is in" if dt > now else "was"} ' \
+           f'**{"~" + major_diff + "** / **" if major_diff not in detailed_diff else ""}' \
+           f'{detailed_diff}{" ago" if dt < now else ""}**.'
 
 
 @plugins.command(aliases="timezone")
@@ -183,8 +178,8 @@ async def countdown_list(message: discord.Message, author: discord.Member = None
     else:
         tags = (tag for tag in time_cfg.data["countdown"].keys())
 
-    await client.say(message, "**{}countdown tags**:```\n{}```".format(
-        f"{author.name}'s " if author else "", ", ".join(tags)))
+    author_name = f"{author.name}'s " if author else ""
+    await client.say(message, f'**{author_name}countdown tags**:```\n{", ".join(tags)}```')
 
 
 async def wait_for_reminder(cd, seconds):

@@ -146,7 +146,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 
 @event.listens_for(engine, "close")
-def set_sqlite_pragma(dbapi_connection, connection_record):
+def optimize_sqlite(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA analysis_limit=400")
     cursor.execute("PRAGMA optimize")

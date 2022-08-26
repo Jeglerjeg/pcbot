@@ -97,7 +97,7 @@ def check_recent_questions(question: dict, channel: discord.TextChannel):
 def check_duplicate_question(choices: list):
     if retrieve_question(choices[0], choices[1]):
         return False
-    elif retrieve_question(choices[1], choices[0]):
+    if retrieve_question(choices[1], choices[0]):
         return False
     return True
 

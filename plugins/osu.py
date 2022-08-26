@@ -27,12 +27,12 @@ import discord
 import bot
 import plugins
 from pcbot import utils, Annotate
-from plugins.osulib import api, pp, ordr, enums, db
+from plugins.osulib import api, pp, ordr, enums
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
-from plugins.osulib.tracking import OsuTracker, osu_profile_cache, osu_tracking, wipe_user
+from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user
 from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
 
 client = plugins.client  # type: bot.Client

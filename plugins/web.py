@@ -21,7 +21,7 @@ client = plugins.client  # type: bot.Client
 async def define(message: discord.Message, term: Annotate.LowerCleanContent):
     """ Defines a term using Urban Dictionary. """
     json = await utils.download_json("http://api.urbandictionary.com/v0/define", term=term)
-    assert json["list"], "Could not define `{}`.".format(term)
+    assert json["list"], f"Could not define `{term}`."
 
     definitions = json["list"]
     msg = ""
@@ -33,7 +33,7 @@ async def define(message: discord.Message, term: Annotate.LowerCleanContent):
             definition["example"] = f"```{definition['example']}```"
 
         # Format definition
-        msg = "**{word}**:\n{definition}{example}".format(**definition)
+        msg = f"**{definition['word']}**:\n{definition['definition']}{definition['example']}"
 
         # If this definition fits in a message, break the loop so that we can send it
         if len(msg) <= 4000:

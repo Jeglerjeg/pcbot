@@ -332,10 +332,9 @@ def format_help(cmd: Command, guild: discord.Guild, message: discord.Message, no
         # Don't add blank space unless necessary
         if not desc.strip().endswith("```"):
             alias_format += "\n"
-
-        alias_format += "**Aliases**: ```{}```".format(
-            ", ".join((command_prefix if identifier_prefix.match(alias[0]) and cmd.parent is None else "") +
-                      alias for alias in cmd.aliases))
+        formatted_aliases = ", ".join((command_prefix if identifier_prefix.match(alias[0]) and cmd.parent is None
+                                       else "") + alias for alias in cmd.aliases)
+        alias_format += f'**Aliases**: ```{formatted_aliases}```'
 
     return f"**Usage**: ```{usage}```**Description**: {desc}{alias_format}"
 
