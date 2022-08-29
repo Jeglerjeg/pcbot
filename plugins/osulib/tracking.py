@@ -60,7 +60,7 @@ class OsuTracker:
         self.previous_update = None
         self.time_elapsed = 0
         self.started = None
-        self.previous_score_updates = []
+        self.previous_score_updates = {}
         self.recent_map_events = []
 
         # Notify the owner when they have not set their API key
@@ -328,7 +328,10 @@ class OsuTracker:
                 osu_score = osu_scores["score"]  # type: OsuScore
                 osu_score.rank_global = osu_scores["position"]
 
-                if osu_score.best_id in self.previous_score_updates:
+                if member_id not in self.previous_score_updates:
+                    self.previous_score_updates[member_id] = []
+
+                if osu_score.best_id in self.previous_score_updates[member_id]:
                     continue
 
                 top100_best_id = []
@@ -338,7 +341,7 @@ class OsuTracker:
                 if osu_score.best_id in top100_best_id:
                     continue
 
-                self.previous_score_updates.append(osu_score.best_id)
+                self.previous_score_updates[member_id].append(osu_score.best_id)
 
                 beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
                 # Send the message to all guilds
@@ -385,11 +388,13 @@ class OsuTracker:
                 await asyncio.sleep(osu_config.data["score_update_delay"])
             else:
                 logging.info("%s (%s) gained PP, but no new score was found.", member.name, member_id)
+        if member_id not in self.previous_score_updates:
+            self.previous_score_updates[member_id] = []
         for osu_score in list(osu_scores):
-            if osu_score.best_id in self.previous_score_updates:
+            if osu_score.best_id in self.previous_score_updates[member_id]:
                 osu_scores.remove(osu_score)
                 continue
-            self.previous_score_updates.append(osu_score.best_id)
+            self.previous_score_updates[member_id].append(osu_score.best_id)
 
         if not osu_scores and not notify_empty_scores:
             return
