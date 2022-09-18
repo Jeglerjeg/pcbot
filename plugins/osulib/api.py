@@ -118,7 +118,7 @@ async def beatmap_lookup(map_id):
     valid_result = caching.validate_cache(result)
     if not valid_result:
         if result:
-            caching.delete_cache(Beatmapset(db.get_beatmapset(result.beatmapset_id)))
+            caching.delete_cache(Beatmapset(db.get_beatmapset(result.beatmapset_id), from_db=True))
         params = {
             "beatmap_id": map_id,
         }

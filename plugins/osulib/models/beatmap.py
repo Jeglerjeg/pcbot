@@ -197,7 +197,8 @@ class BeatmapsetCompact:
         else:
             self.artist = raw_data["artist"]
             self.artist_unicode = raw_data["artist_unicode"]
-            self.covers = BeatmapsetCovers(raw_data["covers"])
+            if raw_data["covers"]:
+                self.covers = BeatmapsetCovers(raw_data["covers"])
             self.creator = raw_data["creator"]
             self.favourite_count = raw_data["favourite_count"]
             self.id = raw_data["id"]
@@ -240,7 +241,9 @@ class Beatmapset(BeatmapsetCompact):
     def from_db(self, raw_data, beatmaps: bool):
         self.artist = raw_data.artist
         self.artist_unicode = raw_data.artist_unicode
-        self.covers = pickle.loads(raw_data.covers)
+        covers = pickle.loads(raw_data.covers)
+        if covers:
+            self.covers = covers
         self.creator = raw_data.creator
         self.favourite_count = raw_data.favourite_count
         self.id = raw_data.id
