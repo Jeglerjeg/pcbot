@@ -140,6 +140,8 @@ async def beatmapset_lookup(params):
         if result:
             caching.delete_cache(result)
         result = await request(**params)
+        if "{'error': None}" in str(result) or result is None:
+            return None
         caching.cache_beatmapset(result)
         result = Beatmapset(result)
     return result
