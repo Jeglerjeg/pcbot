@@ -499,8 +499,8 @@ async def score(message: discord.Message, *options):
                                                           time=bool(not mods))
     await client.send_message(message.channel, embed=embed)
 
-plugins.command(name="score", usage="[member] <url> +<mods>")(score)
-osu.command(name="score", usage="[member] <url> +<mods>")(score)
+plugins.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score)
+osu.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score)
 
 
 async def scores(message: discord.Message, *options):
