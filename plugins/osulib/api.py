@@ -10,6 +10,8 @@ import re
 from collections import namedtuple
 from datetime import datetime, timezone, timedelta
 
+from aiohttp import ClientConnectorError
+
 from plugins.osulib.models.beatmap import Beatmapset
 from plugins.osulib.models.score import OsuScore
 
@@ -56,8 +58,13 @@ async def get_access_token(client_id: str, client_secret: str):
         "client_secret": client_secret,
         "scope": "public"
     }
-
-    result = await utils.post_request("https://osu.ppy.sh/oauth/token", call=utils.convert_to_json, data=params)
+    try:
+        result = await utils.post_request("https://osu.ppy.sh/oauth/token", call=utils.convert_to_json, data=params)
+    except ClientConnectorError:
+        logging.warning("Couldn't connect to osu.ppy.sh to retrieve access token. Trying again in 10 seconds.")
+        await asyncio.sleep(10)
+        await get_access_token(client_id, client_secret)
+        return
     global requests_sent
     requests_sent += 1
     global access_token
