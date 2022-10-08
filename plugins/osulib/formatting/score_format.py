@@ -103,7 +103,7 @@ def get_formatted_score_time(osu_score: OsuScore):
 
 def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.GameMode):
     """" Returns formatted score statistics for each mode. """
-    sign = "!" if osu_score.accuracy == 1 else ("+" if osu_score.legacy_perfect and osu_score.passed else "-")
+    color = "\u001b[0;32m" if osu_score.legacy_perfect else "\u001b[0;31m"
     acc = f"{utils.format_number(osu_score.accuracy * 100, 2)}%"
     great = osu_score.statistics.great
     ok = osu_score.statistics.ok
@@ -112,21 +112,21 @@ def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.G
     maxcombo = osu_score.max_combo
     max_combo = f"/{beatmap.max_combo}" if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None else ""
     if mode is enums.GameMode.osu:
-        return "  acc    300s  100s  50s  miss  combo\n" \
-              f'{sign} {acc:<7}{great:<6}{ok:<6}{meh:<5}{miss:<6}{maxcombo}{max_combo}'
+        return "acc    300s  100s  50s  miss  combo\n" \
+              f'{color}{acc:<7}{great:<6}{ok:<6}{meh:<5}{miss:<6}{maxcombo}{max_combo}'
     if mode is enums.GameMode.taiko:
-        return "  acc    great  good  miss  combo\n" \
-              f"{sign} {acc:<7}{great:<7}{ok:<6}{miss:<6}{maxcombo}{max_combo}"
+        return "acc    great  good  miss  combo\n" \
+              f"{color}{acc:<7}{great:<7}{ok:<6}{miss:<6}{maxcombo}{max_combo}"
     if mode is enums.GameMode.mania:
         perfect = osu_score.statistics.perfect
         good = osu_score.statistics.good
-        return "  acc    max   300s  200s  100s  50s  miss\n" \
-               f"{sign} {acc:<7}{perfect:<6}{great:<6}{good:<6}{ok:<6}{meh:<5}{miss:<6}"
+        return "acc    max   300s  200s  100s  50s  miss\n" \
+               f"{color}{acc:<7}{perfect:<6}{great:<6}{good:<6}{ok:<6}{meh:<5}{miss:<6}"
     large_tick_hit = osu_score.statistics.large_tick_hit
     large_tick_miss = osu_score.statistics.large_tick_miss
     small_tick_miss = osu_score.statistics.small_tick_miss
-    return "  acc    fruits ticks drpm miss combo\n" \
-           f"{sign} {acc:<7}{great:<7}{large_tick_hit:<6}{small_tick_miss:<5}{miss+large_tick_miss:<5}{maxcombo}" \
+    return "acc    fruits ticks drpm miss combo\n" \
+           f"{color}{acc:<7}{great:<7}{large_tick_hit:<6}{small_tick_miss:<5}{miss+large_tick_miss:<5}{maxcombo}" \
            f"{max_combo}"
 
 
@@ -155,7 +155,7 @@ async def format_new_score(mode: enums.GameMode, osu_score: OsuScore, beatmap: B
     """ Format any score. There should be a member name/mention in front of this string. """
     return (
         f"{format_score_info(osu_score, beatmap)}"
-        "```diff\n"
+        "```ansi\n"
         f"{format_score_statistics(osu_score, beatmap, mode)}```"
         f"{await misc_format.format_stream(member, osu_score, beatmap) if member else ''}"
     )
