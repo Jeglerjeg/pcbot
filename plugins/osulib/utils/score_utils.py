@@ -2,6 +2,7 @@ import asyncio
 import logging
 import traceback
 from datetime import timezone, datetime
+from math import ceil
 from operator import itemgetter
 
 import aiohttp
@@ -207,4 +208,4 @@ async def get_new_score(member_id: str, osu_tracking: dict):
 
 
 def count_score_pages(osu_scores: list[OsuScore], scores_per_page: int):
-    return len([osu_scores[i:i+scores_per_page] for i in range(0, len(osu_scores), scores_per_page)])
+    return ceil(len(osu_scores) / scores_per_page)

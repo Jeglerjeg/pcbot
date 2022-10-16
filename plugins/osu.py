@@ -129,8 +129,9 @@ async def osu(message: discord.Message, *options):
     # Calculate whether the header color should be black or white depending on the background color.
     # Stupidly, the API doesn't accept True/False. It only looks for the &darkheaders keyword.
     # The silly trick done here is extracting either the darkheader param or nothing.
-    r, g, b = member.color.to_rgb()
-    dark = dict(darkheader="True") if (r * 0.299 + g * 0.587 + b * 0.144) > 186 else {}
+    dark = dict(darkheader="True") if (member_rgb[0] * 0.299
+                                       + member_rgb[1] * 0.587
+                                       + member_rgb[2] * 0.144) > 186 else {}
 
     # Download and upload the signature
     params = {
