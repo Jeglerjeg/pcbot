@@ -81,6 +81,8 @@ class Mods(Enum):
     def format_mod_settings(mods: list):
         """ Add mod settings to the acronym for formatting purposes"""
         for mod in mods:
+            if "settings" not in mod:
+                continue
             settings = []
             if mod["acronym"] == "DT" or mod["acronym"] == "NC" or mod["acronym"] == "HT" or mod["acronym"] == "DC":
                 if "speed_change" in mod["settings"]:
