@@ -87,23 +87,24 @@ def process_score_args(osu_score: OsuScore):
     ok = osu_score.statistics.ok
     miss = osu_score.statistics.miss
     acc = osu_score.accuracy
+    meh = osu_score.statistics.meh
 
     if osu_score.mode is enums.GameMode.osu:
         potential_acc = misc_utils.calculate_acc(osu_score.mode, osu_score, exclude_misses=True)
-        meh = osu_score.statistics.meh
         args_list = (f"{formatted_mods} {acc:.2%} {potential_acc:.2%}pot {great}x300 {ok}x100 {meh}x50 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
     elif osu_score.mode is enums.GameMode.taiko:
         args_list = (f"{formatted_mods} {acc:.2%} {great}x300 {ok}x100 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
     elif osu_score.mode is enums.GameMode.mania:
-        score = osu_score.max_combo
-        args_list = f"{formatted_mods} {score}score {get_score_object_count(osu_score)}objects".split()
+        args_list = f"{formatted_mods} {osu_score.statistics.perfect}xgeki {great}x300 {osu_score.statistics.good}xkatu "\
+                    f"{ok}x100 {meh}x50 "\
+                    f"{miss}m {get_score_object_count(osu_score)}objects".split()
     else:
         large_tick_hit = osu_score.statistics.large_tick_hit
         small_tick_hit = osu_score.statistics.small_tick_hit
         small_tick_miss = osu_score.statistics.small_tick_miss
-        args_list = (f"{formatted_mods} {great}x300 {large_tick_hit}x100 {small_tick_hit}x50 {small_tick_miss}dropmiss "
+        args_list = (f"{formatted_mods} {great}x300 {large_tick_hit}x100 {small_tick_hit}x50 {small_tick_miss}xkatu "
                      f"{miss}m {osu_score.max_combo}x").split()
     return args_list + process_mod_settings(osu_score)
 

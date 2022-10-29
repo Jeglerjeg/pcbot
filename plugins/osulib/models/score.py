@@ -102,7 +102,7 @@ class OsuScore:
         self.passed = data["passed"]
         self.pp = data["pp"] if data["pp"] is not None else 0.0
         self.rank = data["rank"]
-        self.ended_at = datetime.fromisoformat(data["ended_at"])
+        self.ended_at = datetime.fromisoformat(data["ended_at"][:-1]).replace(tzinfo=timezone.utc)
         self.replay = data["replay"]
         if "new_pp" in data:
             self.new_pp = data["new_pp"]

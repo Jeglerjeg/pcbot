@@ -124,22 +124,23 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
 
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
-    calculator = rosu_pp_py.Calculator(beatmap_path)
+    osu_map = rosu_pp_py.Beatmap(path=beatmap_path)
+
     if args.ar:
-        calculator.set_ar(args.ar)
+        osu_map.set_ar(args.ar)
     if args.od:
-        calculator.set_od(args.od)
+        osu_map.set_od(args.od)
     if args.hp:
-        calculator.set_hp(args.hp)
+        osu_map.set_hp(args.hp)
     if args.cs:
-        calculator.set_cs(args.cs)
-    score_params = rosu_pp_py.ScoreParams(mods=mods_bitmask, mode=mode.value)
+        osu_map.set_cs(args.cs)
+    calculator = rosu_pp_py.Calculator(mods=mods_bitmask, mode=mode.value)
     if args.clock_rate:
-        score_params.clockRate = args.clock_rate
+        calculator.set_clock_rate(args.clock_rate)
 
     # If the pp arg is given, return using the closest pp function
     if args.pp is not None and mode is enums.GameMode.osu:
-        return await find_closest_pp(calculator, score_params, args)
+        return await find_closest_pp(osu_map, calculator, args)
 
     # Calculate the pp
     max_pp = None
@@ -148,72 +149,79 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     # Calculate maximum stars and pp
     if failed or potential:
         if args.potential_acc:
-            score_params.acc = args.potential_acc
-        [potential_pp_info] = calculator.calculate(score_params)
-        max_combo = potential_pp_info.maxCombo
-        total_stars = potential_pp_info.stars
+            calculator.set_acc(args.potential_acc)
+        potential_pp_info = calculator.performance(osu_map)
+        max_combo = potential_pp_info.difficulty.max_combo
+        total_stars = potential_pp_info.difficulty.stars
         if mode is enums.GameMode.osu:
             max_pp = potential_pp_info.pp
 
     # Calculate actual stars and pp
-    score_params = get_score_params(score_params, args)
-    [pp_info] = calculator.calculate(score_params)
+    calculator = set_score_params(calculator, args)
+    pp_info = calculator.performance(osu_map)
     if not max_combo:
-        max_combo = pp_info.maxCombo
+        max_combo = pp_info.difficulty.max_combo
+
+    map_attributes = calculator.map_attributes(osu_map)
 
     pp = pp_info.pp
-    total_stars = total_stars if failed else pp_info.stars
-    partial_stars = pp_info.stars
-    ar = pp_info.ar
-    cs = pp_info.cs
-    od = pp_info.od
-    hp = pp_info.hp
-    bpm = pp_info.bpm
+    total_stars = total_stars if failed else pp_info.difficulty.stars
+    partial_stars = pp_info.difficulty.stars
+    ar = map_attributes.ar
+    cs = map_attributes.cs
+    od = map_attributes.od
+    hp = map_attributes.hp
+    bpm = map_attributes.bpm
     return PPStats(pp, total_stars, partial_stars, max_pp, max_combo, ar, cs, od, hp, bpm)
 
 
-def get_score_params(score_params: rosu_pp_py.ScoreParams, args):
+def set_score_params(calculator: rosu_pp_py.Calculator, args):
     if args.objects and args.objects > 0:
-        score_params.passedObjects = args.objects
+        calculator.set_passed_objects(args.objects)
     if args.combo:
-        score_params.combo = args.combo
+        calculator.set_combo(args.combo)
     if args.acc:
-        score_params.acc = args.acc
+        calculator.set_acc(args.acc)
     if args.c300:
-        score_params.n300 = args.c300
+        calculator.set_n300(args.c300)
     if args.c100:
-        score_params.n100 = args.c100
+        calculator.set_n100(args.c100)
     if args.c50:
-        score_params.n50 = args.c50
+        calculator.set_n50(args.c50)
+    if args.katu:
+        calculator.set_n_katu(args.katu)
+    if args.geki:
+        calculator.set_n_geki(args.geki)
     if args.misses:
-        score_params.nMisses = args.misses
-    if args.score:
-        score_params.score = args.score
-    if args.dropmiss:
-        score_params.nKatu = args.dropmiss
-    return score_params
+        calculator.set_n_misses(args.misses)
+    return calculator
 
 
-async def find_closest_pp(calculator, score_params, args):
+async def find_closest_pp(osu_map: rosu_pp_py.Beatmap, calculator: rosu_pp_py.Calculator, args):
     """ Find the accuracy required to get the given amount of pp from this map. """
     # Define a partial command for easily setting the pp value by 100s count
-    def calc(accuracy: float):
-        new_score_params = get_score_params(score_params, args)
-        new_score_params.acc = accuracy
-        [pp_info] = calculator.calculate(new_score_params)
+    def calc(accuracy: float, pp_info = None):
+        if pp_info:
+            calculator.set_acc(accuracy)
+            calculator.set_difficulty(pp_info.difficulty)
+            pp_info = calculator.performance(osu_map)
+        else:
+            new_calculator = set_score_params(calculator, args)
+            new_calculator.set_acc(accuracy)
+            pp_info = new_calculator.performance(osu_map)
 
         return pp_info
 
     # Find the smallest possible value rosu-pp is willing to give, below 16.67% acc returns infpp since
     # it's an impossible value.
-    min_pp = calc(accuracy=16.67)
+    min_pp = calc(accuracy=31.5)
 
     if args.pp <= min_pp.pp:
         raise ValueError(f"The given pp value is too low (calculator gives **{min_pp.pp:.02f}pp** as the "
                          "lowest possible).")
 
     # Calculate the max pp value by using 100% acc
-    previous_pp = calc(accuracy=100.0)
+    previous_pp = calc(100.0, min_pp)
 
     if args.pp >= previous_pp.pp:
         raise ValueError(f"PP value should be below **{previous_pp.pp:.02f}pp** for this map.")
@@ -221,7 +229,7 @@ async def find_closest_pp(calculator, score_params, args):
     dec = .05
     acc = 100.0 - dec
     while True:
-        current_pp = calc(accuracy=acc)
+        current_pp = calc(acc, min_pp)
 
         # Stop when we find a pp value between the current 100 count and the previous one
         if current_pp.pp <= args.pp <= previous_pp.pp:
@@ -231,7 +239,7 @@ async def find_closest_pp(calculator, score_params, args):
         acc -= dec
 
     # Calculate the star difficulty
-    totalstars = current_pp.stars
+    totalstars = current_pp.difficulty.stars
 
     # Find the closest pp of our two values, and return the amount of 100s
     closest_pp = min([previous_pp.pp, current_pp.pp], key=lambda v: abs(args.pp - v))
