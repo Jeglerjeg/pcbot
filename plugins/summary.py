@@ -89,7 +89,7 @@ def migrate_summary_data():
                     if not message["content"]:
                         continue
                     query_data.append({"content": message["content"], "channel_id": channel_id,
-                                       "author_id": message["author"], "is_bot": message["bot"]})
+                                       "author_id": message["author"], "bot": message["bot"]})
             commit_message(query_data)
     os.remove("config/summary_data.json")
 
