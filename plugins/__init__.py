@@ -92,7 +92,9 @@ def _parse_str_list(obj, name, cmd_name):
     """ Return the list from the parsed str or an empty list if object is None. """
     if isinstance(obj, str):
         return obj.split(" ")
-    if not isinstance(obj, list):
+    if isinstance(obj, list):
+        return obj
+    
     if obj is not None:
         logging.warning("Invalid parameter in command '%s': %s must be a str or a list", cmd_name, name)
     return []
