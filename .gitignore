@@ -19,6 +19,7 @@ plugins/osulib/mapcache
 plugins/osulib/mapdatacache
 plugins/osulib/setdatacache
 plugins/nltk_data
+local
 
 # Additional executable files
 *.bat

@@ -7,6 +7,7 @@ that would be executed.
 import asyncio
 import inspect
 import logging
+import os
 import sys
 import traceback
 from argparse import ArgumentParser
@@ -596,6 +597,10 @@ async def main():
 
         # Load all dynamic plugins
         plugins.load_plugins()
+
+        # Load local plugins if they exist
+        if os.path.exists("local"):
+            plugins.load_plugins("local")
 
         # Login with the specified token if specified
         token = start_args.token or input("Token: ")

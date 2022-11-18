@@ -573,16 +573,13 @@ def unload_plugin(name: str):
         logging.debug("Unloaded plugin %s", name)
 
 
-def load_plugins():
-    """ Perform load_plugin(name) on all plugins in plugins/ """
-    if not os.path.exists("plugins/"):
-        os.mkdir("plugins/")
-
-    for plugin_name in os.listdir("plugins/"):
+def load_plugins(directory: str = "plugins"):
+    """ Perform load_plugin(name, directory) on all plugins in the given directory. """
+    for plugin_name in os.listdir(f"{directory}/"):
         name = os.path.splitext(plugin_name)[0]
 
         if not name.endswith("lib"):  # Exclude libraries
-            load_plugin(name)
+            load_plugin(name, directory)
 
 
 async def save_plugin(name):
