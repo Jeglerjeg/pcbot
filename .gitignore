@@ -8,6 +8,7 @@
 
 # Python specific
 __pycache__
+.venv
 
 # Docs
 docs/_build
