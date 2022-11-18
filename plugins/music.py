@@ -231,7 +231,7 @@ async def disconnect(guild: discord.Guild):
 
 
 @music.command(aliases="p pl")
-async def play(message: discord.Message, song: Annotate.Content):
+async def play(message: discord.Message, song: Annotate.Content = None):
     """ Play a song in the guild voice channel. The given song could either be a URL or keywords
     to lookup videos in youtube. """
 
@@ -246,6 +246,10 @@ async def play(message: discord.Message, song: Annotate.Content):
     # Check that the member hasn't already requested enough songs
     songs_queued = sum(1 for s in state.queue if s.requester == message.author)
     assert songs_queued < max_songs_queued, "**You have queued enough songs for now.**"
+
+    if song is None:
+        assert len(message.attachments) > 0, "**An audio file must be provided when using this command without a song name or url.**"
+        song = message.attachments[0].url
 
     # Strip any embed characters, spaces or code symbols.
     song = song.strip("< >`")
