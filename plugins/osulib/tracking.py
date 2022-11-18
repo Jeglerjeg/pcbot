@@ -3,6 +3,7 @@ import copy
 import logging
 import traceback
 from datetime import datetime, timezone, timedelta
+from random import randint
 
 import aiohttp
 import discord
@@ -139,10 +140,14 @@ class OsuTracker:
 
         # Add update ticks to member tracking
         if "ticks" not in osu_tracking[member_id]:
-            osu_tracking[member_id]["ticks"] = -1
+            # Set ticks to a random digit to spread out tracking non-playing users
+            osu_tracking[member_id]["ticks"] = randint(0, not_playing_skip - 1)
+            
 
         osu_tracking[member_id]["member"] = member
         osu_tracking[member_id]["ticks"] += 1
+        if cache_user_profiles:
+                osu_profile_cache.data[member_id]["ticks"] = osu_tracking[member_id]["ticks"]
 
         # Only update members not tracked ingame every nth update
         if not user_utils.is_playing(member) and osu_tracking[member_id]["ticks"] % not_playing_skip > 0:
@@ -197,7 +202,6 @@ class OsuTracker:
         osu_tracking[member_id]["new"] = user_data
         if cache_user_profiles:
             osu_profile_cache.data[member_id]["new"] = copy.deepcopy(osu_tracking[member_id]["new"])
-            osu_profile_cache.data[member_id]["ticks"] = copy.deepcopy(osu_tracking[member_id]["ticks"])
 
     async def __notify_recent_events(self, member_id: str, data: dict):
         """ Notify any map updates, such as update, resurrect and qualified. """
