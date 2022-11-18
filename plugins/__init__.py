@@ -93,9 +93,9 @@ def _parse_str_list(obj, name, cmd_name):
     if isinstance(obj, str):
         return obj.split(" ")
     if not isinstance(obj, list):
-        if obj is not None:
-            logging.warning("Invalid parameter in command '%s': %s must be a str or a list", cmd_name, name)
-        return []
+    if obj is not None:
+        logging.warning("Invalid parameter in command '%s': %s must be a str or a list", cmd_name, name)
+    return []
 
 
 def _name_prefix(name, parent):
@@ -126,7 +126,7 @@ def command(**options):
         owner       : bool        : When True, only triggers for the owner.
         permissions : str / list  : Permissions required for this command as a str separated by whitespace or a list.
         roles       : str / list  : Roles required for this command as a str separated by whitespace or a list.
-        guilds     : str / list  : a str separated by whitespace or a list of valid guild ids.
+        guilds      : list[int]   : a list of valid guild ids.
         disabled_pm : bool        : Command is disabled in PMs when True.
     """
 
@@ -158,7 +158,6 @@ def command(**options):
         aliases = _parse_str_list(aliases, "aliases", name)
         permissions = _parse_str_list(permissions, "permissions", name)
         roles = _parse_str_list(roles, "roles", name)
-        guilds = _parse_str_list(guilds, "guilds", name)
 
         # Set the usage of this command
         usage_suffix = options.get("usage", _format_usage(func, pos_check))
