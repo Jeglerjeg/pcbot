@@ -405,7 +405,7 @@ async def queue(message: discord.Message):
 async def on_voice_state_update(member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
     """ Handle leaving channels. The bot will automatically
     leave the guild's voice channel when all members leave. """
-    channel = after.channel
+    channel = voice_states[member.guild].voice.channel if member.guild in voice_states and voice_states[member.guild].voice else None
     if not channel:
         return
 
