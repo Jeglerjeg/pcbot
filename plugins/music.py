@@ -34,11 +34,10 @@ import youtube_dl
 
 import bot
 import plugins
-from pcbot import utils, Annotate, Config
+from pcbot import utils, Annotate
 
 client = plugins.client  # type: bot.Client
 
-music_channels = Config("music_channels", data=[])
 voice_states = {}  # type: Dict[discord.Guild, VoiceState]
 ytdl_format_options = {
     'format': 'bestaudio/best',
@@ -93,7 +92,7 @@ def format_song(song: Song, url=True):
 
 class VoiceState:
     def __init__(self, voice):
-        self.voice = voice
+        self.voice = voice # type: discord.VoiceClient
         self._volume = default_volume
         self.current = None
         self.queue = deque()  # The queue contains items of type Song
@@ -177,22 +176,11 @@ async def music(message, _: utils.placeholder):
     """ Manage music. If a music channel is assigned, the bot will join
     whenever someone plays music. """
 
-
-def get_guild_channel(guild: discord.Guild):
-    """ Return the guild's music channel or None. """
-    for channel in guild.channels:
-        if str(channel.id) in music_channels.data:
-            return channel
-
-    return None
-
-
 def client_connected(guild: discord.Guild):
     """ Returns True or False whether the bot is client_connected to the
     Music channel in this guild. """
-    channel = get_guild_channel(guild)
     if guild.me.voice:
-        return guild.me.voice.channel == channel and guild in voice_states
+        return guild in voice_states
 
     return False
 
@@ -200,9 +188,8 @@ def client_connected(guild: discord.Guild):
 def assert_connected(member: discord.Member, checkbot=True):
     """ Throws an AssertionError exception when neither the bot nor
     the member is connected to the music channel."""
-    channel = get_guild_channel(member.guild)
     if member.voice:
-        assert member.voice.channel is channel, "**You are not connected to the music channel.**"
+        assert member.voice.channel and member.voice.channel is member.guild.me.voice.channel if member.guild.me.voice else True, "**You are not connected to the music channel.**"
     else:
         raise AssertionError("**You are not connected to the music channel.**")
     if checkbot:
@@ -212,9 +199,10 @@ def assert_connected(member: discord.Member, checkbot=True):
 async def join(message: discord.Message):
     """  Joins a voice channel  """
     guild = message.guild
-    channel = get_guild_channel(message.guild)
+    assert_connected(member=message.author, checkbot=False)
+    channel = message.author.voice.channel
 
-    if guild.voice_client is not None and not guild.me.voice.channel == get_guild_channel(guild):
+    if guild.voice_client is not None:
         voiceclient = await guild.voice_client.move_to(channel)
         voice_states[guild] = VoiceState(voiceclient)
         return
@@ -238,7 +226,7 @@ async def play(message: discord.Message, song: Annotate.Content = None):
     assert_connected(message.author, checkbot=False)
 
     # Connect to voice channel if not connected
-    if message.guild.voice_client is None or not message.guild.me.voice.channel == get_guild_channel(message.guild):
+    if message.guild.voice_client is None:
         await join(message)
 
     state = voice_states[message.guild]
@@ -304,7 +292,7 @@ async def skip(message: discord.Message):
     state.skip_votes.add(message.author)
 
     # In order to skip, everyone but the requester and the bot must vote
-    needed_to_skip = len(get_guild_channel(message.guild).members) - 2
+    needed_to_skip = len(state.voice.channel.members) - 2
     votes = len(state.skip_votes)
     if votes >= needed_to_skip:
         await client.say(message, "**Skipped song.**")
@@ -413,35 +401,11 @@ async def queue(message: discord.Message):
     await client.send_message(message.channel, embed=embed)
 
 
-@music.command(permissions="manage_guild")
-async def link(message: discord.Message, voice_channel: Annotate.VoiceChannel):
-    """ Link the Music bot to a voice channel in a guild. """
-    assert str(voice_channel.id) not in music_channels.data, "**This voice channel is already linked.**"
-    assert get_guild_channel(message.guild) is None, "**A voice channel is already linked to this guild.**"
-
-    # Link the channel
-    music_channels.data.append(str(voice_channel.id))
-    await music_channels.asyncsave()
-    await client.say(message, f"Voice channel **{voice_channel.name}** is now the music channel.")
-
-
-@music.command(permissions="manage_guild")
-async def unlink(message: discord.Message):
-    """ Unlink this guild's music channel. """
-    channel = get_guild_channel(message.guild)
-    assert channel, "**This guild has no voice channel linked.**"
-
-    # Unlink the channel
-    music_channels.data.remove(str(channel.id))
-    await music_channels.asyncsave()
-    await client.say(message, "This guild no longer has a music channel.")
-
-
 @plugins.event()
 async def on_voice_state_update(member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
     """ Handle leaving channels. The bot will automatically
     leave the guild's voice channel when all members leave. """
-    channel = get_guild_channel(member.guild)
+    channel = after.channel
     if not channel:
         return
 
