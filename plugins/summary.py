@@ -107,11 +107,13 @@ if os.path.exists("config/summary_data.json"):
     migrate_summary_data()
 
 
-def get_persistent_messages(channel_id: int, author_id: int = None, bots: bool = False):
+def get_persistent_messages(channel_id: int, author_id: int = None, bots: bool = False, phrase: str = None):
     table = db_metadata.tables["summary_messages"]
     statement = select(table.c.content).where((table.c.channel_id == channel_id)).whereclause
     if author_id:
         statement = select(table.c.content).where(statement & (table.c.author_id == author_id)).whereclause
+    if phrase:
+        statement = select(table.c.content).where(statement & (table.c.content.contains(phrase))).whereclause
     if not bots:
         statement = select(table.c.content).where(statement & (table.c.bot == bots)).whereclause
     with engine.connect() as connection:
@@ -450,20 +452,19 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
             "**You don't have permissions to send tts messages in this channel.**"
 
         if str(channel.id) in summary_options.data["persistent_channels"]:
-            messages = get_persistent_messages(channel.id, member.id if member else None, bots)
+            messages = get_persistent_messages(channel.id, member.id if member else None, bots, phrase)
             message_content = [str(message.content) for message in messages]
         else:
             await update_task.wait()
             await update_messages(channel)
             messages = stored_messages[str(channel.id)]
             message_content = filter_messages_by_arguments(messages, member, bots)
+            # Filter looking for phrases if specified
+            if phrase and not is_endswith(phrase):
+                message_content = list(filter_messages(message_content, phrase, regex, case))
 
         # Replace new lines with text to make them persist through splitting
         message_content = (s.replace("\n", NEW_LINE_IDENTIFIER) for s in message_content)
-
-        # Filter looking for phrases if specified
-        if phrase and not is_endswith(phrase):
-            message_content = list(filter_messages(message_content, phrase, regex, case))
 
         command_prefix = config.guild_command_prefix(message.guild)
         # Clean up by removing all commands from the summaries
