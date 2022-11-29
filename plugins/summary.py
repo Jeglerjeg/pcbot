@@ -115,8 +115,7 @@ def get_persistent_messages(channel_id: int, member_list: list[discord.Member] =
     if len(member_list) == 1:
         statement = select(table.c.content).where(statement & (table.c.author_id == member_list[0].id)).whereclause
     elif len(member_list) > 1:
-        for member in member_list:
-            statement = select(table.c.content).where(statement & (table.c.author_id == member.id)).whereclause
+            statement = select(table.c.content).where(statement & (table.c.author_id.in_(member.id for member in member_list))).whereclause
     if phrase:
         statement = select(table.c.content).where(statement & (table.c.content.contains(phrase))).whereclause
     if not bots:
