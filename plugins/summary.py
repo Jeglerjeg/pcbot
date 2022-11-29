@@ -107,11 +107,16 @@ if os.path.exists("config/summary_data.json"):
     migrate_summary_data()
 
 
-def get_persistent_messages(channel_id: int, author_id: int = None, bots: bool = False, phrase: str = None):
+def get_persistent_messages(channel_id: int, member_list: list[discord.Member] = None, bots: bool = False, phrase: str = None):
+    if member_list is None:
+        member_list = []
     table = db_metadata.tables["summary_messages"]
     statement = select(table.c.content).where((table.c.channel_id == channel_id)).whereclause
-    if author_id:
-        statement = select(table.c.content).where(statement & (table.c.author_id == author_id)).whereclause
+    if len(member_list) == 1:
+        statement = select(table.c.content).where(statement & (table.c.author_id == member_list[0].id)).whereclause
+    elif len(member_list) > 1:
+        for member in member_list:
+            statement = select(table.c.content).where(statement & (table.c.author_id == member.id)).whereclause
     if phrase:
         statement = select(table.c.content).where(statement & (table.c.content.contains(phrase))).whereclause
     if not bots:
@@ -186,7 +191,7 @@ def random_with_bias(messages: list, word: str):
     return random.choice(last_word_messages if random.randint(0, 5) == 0 else non_last_word_messages)
 
 
-def markov_messages(messages, coherent=False):
+def markov_messages(messages: list, coherent: bool=False):
     """ Generate some kind of markov chain that somehow works with discord.
     I found this makes better results than markovify would. """
     imitated = []
@@ -359,7 +364,7 @@ def is_valid_option(arg: str):
     return False
 
 
-def filter_messages_by_arguments(messages, member, bots):
+def filter_messages_by_arguments(messages: list, member: list, bots: bool):
     # Split the messages into content and filter member and phrase
     messages = (m for m in messages if not member or m["author"] in [str(mm.id) for mm in member])
 
@@ -373,12 +378,12 @@ def filter_messages_by_arguments(messages, member, bots):
     return (m["content"] for m in messages)
 
 
-def is_endswith(phrase):
+def is_endswith(phrase: str):
     return phrase.endswith("...") and len(phrase.split()) in (1, 2)
 
 
 @plugins.command(
-    usage="([*<num>] [@<user> ...] [#<channel>] [+re(gex)] [+case] [+tts] [+(no)bot] [+coherent] [+loose] "
+    usage="([*<num>] [@<user/role> ...] [#<channel>] [+re(gex)] [+case] [+tts] [+(no)bot] [+coherent] [+loose] "
           "[+bigram]) [phrase ...]",
     pos_check=is_valid_option, aliases="markov")
 async def summary(message: discord.Message, *options, phrase: Annotate.Content = None):
@@ -386,7 +391,7 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
     messages after first use. This command needs some time after the plugin reloads
     as it downloads the past 5000 messages in the given channel. """
     # This dict stores all parsed options as keywords
-    member, channel, num = None, None, None
+    member, channel, num = [], None, None
     regex, case, tts, coherent, strict, bigram = False, False, False, False, True, False
     bots = not summary_options.data["no_bot"]
 
@@ -400,13 +405,18 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
 
             member_match = valid_member.match(value)
             if member_match:
-                member = (message.guild.get_member(int(member_match.group("id"))))
+                member.append(message.guild.get_member(int(member_match.group("id"))))
                 continue
 
             member_match = valid_member_silent.match(value)
             if member_match:
-                member = (utils.find_member(message.guild, member_match.group("name")))
+                member.append(utils.find_member(message.guild, member_match.group("name")))
                 continue
+
+            role_match = valid_role.match(value)
+            if role_match:
+                role = discord.utils.get(message.guild.roles, id=int(role_match.group("id")))
+                member.extend(m for m in message.guild.members if role in m.roles)
 
             channel_match = valid_channel.match(value)
             if channel_match:
@@ -452,7 +462,7 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
             "**You don't have permissions to send tts messages in this channel.**"
 
         if str(channel.id) in summary_options.data["persistent_channels"]:
-            messages = get_persistent_messages(channel.id, member.id if member else None, bots, phrase)
+            messages = get_persistent_messages(channel.id, member, bots, phrase)
             message_content = [str(message.content) for message in messages]
         else:
             await update_task.wait()
