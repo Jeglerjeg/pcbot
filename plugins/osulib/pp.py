@@ -327,7 +327,7 @@ async def calculate_pp_for_beatmapset(beatmapset: Beatmapset, osu_config: Config
         diff.ar = pp_stats.ar
         diff.cs = pp_stats.cs
         diff.accuracy = pp_stats.od
-        diff.accuracy = pp_stats.hp
+        diff.drain = pp_stats.hp
         diff.add_new_bpm(pp_stats.bpm)
 
         if ignore_osu_cache:
