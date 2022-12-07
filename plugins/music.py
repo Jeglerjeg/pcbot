@@ -96,7 +96,6 @@ class VoiceState:
         self._volume = default_volume
         self.current = None
         self.queue = deque()  # The queue contains items of type Song
-        self.skip_votes = set()
 
     @property
     def volume(self):
@@ -116,7 +115,6 @@ class VoiceState:
     async def play_next(self):
         """ Play the next song if there are any. """
 
-        self.skip_votes.clear()
         if not self.queue:
             if self.voice.is_connected():
                 await disconnect(self.voice.guild)
@@ -230,10 +228,6 @@ async def play(message: discord.Message, song: Annotate.Content = None):
 
     state = voice_states[message.guild]
 
-    # Check that the member hasn't already requested enough songs
-    songs_queued = sum(1 for s in state.queue if s.requester == message.author)
-    assert songs_queued < max_songs_queued, "**You have queued enough songs for now.**"
-
     if song is None:
         assert len(message.attachments) > 0, "**An audio file must be provided when using this command without a song name or url.**"
         song = message.attachments[0].url
@@ -283,24 +277,9 @@ async def skip(message: discord.Message):
     assert_connected(message.author)
     state = voice_states[message.guild]
     assert state.voice.is_playing(), "**There is no song currently playing.**"
-    assert message.author not in state.skip_votes, "**You have already voted to skip this song.**"
 
-    # We want to skip immediately when the requester skips their own song.
-    if message.author == state.current.requester:
-        await client.say(message, "Skipped song on behalf of the requester.")
-        state.skip()
-        return
-
-    state.skip_votes.add(message.author)
-
-    # In order to skip, everyone but the requester and the bot must vote
-    needed_to_skip = len(state.voice.channel.members) - 2
-    votes = len(state.skip_votes)
-    if votes >= needed_to_skip:
-        await client.say(message, "**Skipped song.**")
-        state.skip()
-    else:
-        await client.say(message, f"Voted to skip the current song. `{votes}/{needed_to_skip}`")
+    await client.say(message, "**Skipped song.**")
+    state.skip()
 
 
 music.command(aliases="s next")(skip)
