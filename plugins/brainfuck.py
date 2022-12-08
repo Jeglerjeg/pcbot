@@ -146,7 +146,7 @@ async def brainfuck_in_channel(channel: discord.TextChannel, code, program_input
     except Exception as e:
         await client.send_message(channel, f"```\n{type(e).__name__}: {str(e)}```")
     else:
-        assert len(output) <= 4000, "**The output was too long.**"
+        assert len(output) <= 2000, "**The output was too long.**"
         await client.send_message(channel, f"```\n{output}```")
 
 
@@ -260,7 +260,7 @@ async def source(message: discord.message, name: snippet_name):
     code = cfg.data[name]["code"]
 
     m = f"```{code}```"
-    if len(m) > 4000:
-        await client.say(message, "The code for this entry exceeds 4000 characters.")
+    if len(m) > 2000:
+        await client.say(message, "The code for this entry exceeds 2000 characters.")
     else:
         await client.say(message, m)

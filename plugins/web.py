@@ -36,11 +36,11 @@ async def define(message: discord.Message, term: Annotate.LowerCleanContent):
         msg = f"**{definition['word']}**:\n{definition['definition']}{definition['example']}"
 
         # If this definition fits in a message, break the loop so that we can send it
-        if len(msg) <= 4000:
+        if len(msg) <= 2000:
             break
 
     # Cancel if the message is too long
-    assert len(msg) <= 4000, "Defining this word would be a bad idea."
+    assert len(msg) <= 2000, "Defining this word would be a bad idea."
 
     await client.say(message, msg)
 
