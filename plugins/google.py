@@ -43,7 +43,7 @@ async def img(message: discord.Message, query: Annotate.CleanContent):
     """ Retrieve an image from google. Safe search is enabled outside 
     age-restricted channels. 
     """
-    safe = not message.channel.nsfw
+    safe = not getattr(message.channel, "nsfw", False)
 
     # Only use cache for safe results in safe channels
     # Any unsafe queries will be re-cached if they return results
