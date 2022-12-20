@@ -1,4 +1,3 @@
-import logging
 import random
 
 import discord
@@ -16,10 +15,10 @@ client = plugins.client
 #   {"key": "def", "cx": "456"}
 # ]
 config = Config("google", data=dict(api_keys=[]), pretty=True)
-result_cache = {} 
+result_cache = {}
 blacklisted_url_keywords = [
-    "lookaside.fbsbx.com", # occurs frequently and images don't embed
-    ":///", # most commonly x-raw-image:///, but this should catch other non-hosted urls
+    "lookaside.fbsbx.com",  # occurs frequently and images don't embed
+    ":///",  # most commonly x-raw-image:///, but this should catch other non-hosted urls
 ]
 
 
@@ -33,9 +32,10 @@ async def on_reload(name):
 
 
 def get_auth():
-    assert "api_keys" in config.data and len(config.data["api_keys"]) > 0, "This command is not configured. An API key must be added to `google.json`"
+    assert "api_keys" in config.data and len(
+        config.data["api_keys"]) > 0, "This command is not configured. An API key must be added to `google.json`"
     key_pair = random.choice(config.data["api_keys"])
-    return (key_pair["key"], key_pair["cx"])
+    return key_pair["key"], key_pair["cx"]
 
 
 @plugins.command()
@@ -58,14 +58,14 @@ async def img(message: discord.Message, query: Annotate.CleanContent):
         key, cx = get_auth()
 
         json = await utils.download_json(
-                "https://customsearch.googleapis.com/customsearch/v1", 
-                key=key,
-                cx=cx,
-                q=query,
-                searchType="image",
-                safe="active" if safe else "off"
+            "https://customsearch.googleapis.com/customsearch/v1",
+            key=key,
+            cx=cx,
+            q=query,
+            searchType="image",
+            safe="active" if safe else "off"
         )
-        
+
         assert "error" not in json, "Search failed, try again"
         assert "items" in json, "No results for {}".format(query)
 
@@ -74,9 +74,9 @@ async def img(message: discord.Message, query: Annotate.CleanContent):
         json["index"] = 0
         json["safe"] = safe
         result_cache[query] = json
-    
+
     items = json["items"]
-    
+
     item = None
     while item is None:
         item = items[json["index"] % len(items)]
@@ -87,4 +87,3 @@ async def img(message: discord.Message, query: Annotate.CleanContent):
             item = None
 
     await client.say(message, item["link"])
-
