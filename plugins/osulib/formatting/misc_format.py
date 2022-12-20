@@ -55,7 +55,7 @@ def format_user_diff(mode: enums.GameMode, data_old: dict, data_new: dict):
     accuracy = misc_utils.get_diff(data_old, data_new, "hit_accuracy")
     pp_diff = misc_utils.get_diff(data_old, data_new, "pp")
     ranked_score = misc_utils.get_diff(data_old, data_new, "ranked_score")
-    rankings_url = f"{host}rankings/osu/performance"
+    rankings_url = f"{host}/rankings/osu/performance"
 
     # Find the performance page number of the respective ranks
 

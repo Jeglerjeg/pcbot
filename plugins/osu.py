@@ -279,7 +279,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
         e.set_footer(text="User data last updated:\n")
     else:
         e = discord.Embed(color=member.color)
-    e.set_author(name=member.display_name, icon_url=member.display_avatar.url, url="".join([host, "users/",
+    e.set_author(name=member.display_name, icon_url=member.display_avatar.url, url="".join([host, "/users/",
                                                                                             user_id]))
     e.add_field(name="Game Mode", value=misc_format.format_mode_name(mode))
     e.add_field(name="Notification Mode", value=update_mode.name)
@@ -597,7 +597,7 @@ async def mapinfo(message: discord.Message, beatmap_url: str, mods: str = "+Nomo
         return
 
     await pp.calculate_pp_for_beatmapset(beatmapset, osu_config, mods=mods)
-    status = "[**{artist} - {title}**]({host}beatmapsets/{id}) submitted by [**{name}**]({host}users/{user_id})"
+    status = "[**{artist} - {title}**]({host}/beatmapsets/{id}) submitted by [**{name}**]({host}/users/{user_id})"
     embed = await beatmap_format.format_map_status(status_format=status, beatmapset=beatmapset, minimal=False,
                                                    member=message.author, mods=mods)
     await client.send_message(message.channel, embed=embed)
@@ -645,6 +645,8 @@ async def top(message: discord.Message, *options):
     mode = user_utils.get_mode(str(member.id))
     assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
     assert str(member.id) in osu_tracking, \
+        "Scores have not been retrieved for this user yet. Please wait a bit and try again."
+    assert "new" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again."
     db_scores = score_utils.get_db_scores(osu_tracking[str(member.id)]["new"]["id"])
     assert db_scores, "Scores have not been retrieved for this user yet. Please wait a bit and try again."

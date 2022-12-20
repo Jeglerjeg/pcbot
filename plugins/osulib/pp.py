@@ -20,8 +20,6 @@ try:
 except ImportError:
     rosu_pp_py = None
 
-host = "https://osu.ppy.sh/"
-
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
 PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs od hp bpm")
 ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars")
@@ -56,7 +54,7 @@ async def download_beatmap(beatmap_url_or_id, beatmap_path: str, ignore_cache: b
 
         file_url = beatmap_url_or_id
     else:
-        file_url = host + "osu/" + str(beatmap_id)
+        file_url = "https://osu.ppy.sh/osu/" + str(beatmap_id)
 
     # Download the beatmap using the url
     beatmap_file = await utils.download_file(file_url)

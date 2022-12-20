@@ -24,12 +24,12 @@ except ImportError:
 import bot
 import plugins
 from plugins.osulib import enums, caching, db
-from plugins.osulib.constants import ratelimit
+from plugins.osulib.constants import ratelimit, host
 from pcbot import utils
 
 client = plugins.client  # type: bot.Client
 
-api_url = "https://osu.ppy.sh/api/v2/"
+api_url = f"{host}/api/v2/"
 access_token = ""
 expires = datetime.now(tz=timezone.utc)
 requests_sent = 0
@@ -230,10 +230,12 @@ async def get_user_recent_activity(user, params=None):
     return await request()
 
 
-beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
+beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old|lazer)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
 beatmapset_url_pattern_v2 = \
-    re.compile(r"https?://osu\.ppy\.sh/beatmapsets/(?P<beatmapset_id>\d+)/?(?:#(?P<mode>\w+)/(?P<beatmap_id>\d+))?")
-beatmap_url_pattern_v2 = re.compile(r"https?://osu\.ppy\.sh/beatmaps/(?P<beatmap_id>\d+)(?:\?mode=(?P<mode>\w+))?")
+    re.compile(r"https?://(osu|lazer)\.ppy\.sh/beatmapsets/(?P<beatmapset_id>\d+)/?(?:#(?P<mode>\w+)/("
+               r"?P<beatmap_id>\d+))?")
+beatmap_url_pattern_v2 = re.compile(r"https?://(osu|lazer)\.ppy\.sh/beatmaps/(?P<beatmap_id>\d+)(?:\?mode=("
+                                    r"?P<mode>\w+))?")
 
 BeatmapURLInfo = namedtuple("BeatmapURLInfo", "beatmapset_id beatmap_id gamemode")
 
@@ -319,7 +321,7 @@ async def beatmap_from_url(url: str, *, return_type: str = "beatmap"):
     if return_type == "id":
         return beatmap.id
     if return_type == "info":
-        beatmap_url = f"https://osu.ppy.sh/beatmaps/{beatmap.id}"
+        beatmap_url = f"{host}/beatmaps/{beatmap.id}"
         return parse_beatmap_url(beatmap_url)
     return beatmap
 
@@ -359,7 +361,7 @@ def rank_from_events(events: dict, beatmap_id: str, osu_score: OsuScore):
     """
     for event in events:
         if event["type"] == "rank":
-            beatmap_url = "https://osu.ppy.sh" + event["beatmap"]["url"]
+            beatmap_url = host + event["beatmap"]["url"]
             beatmap_info = parse_beatmap_url(beatmap_url)
             time_diff = osu_score.ended_at - datetime.fromisoformat(event["created_at"])
             if (beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == osu_score.rank) and \

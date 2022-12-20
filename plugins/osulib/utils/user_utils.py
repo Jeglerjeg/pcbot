@@ -103,7 +103,7 @@ def get_user_url(member_id: str):
     """ Return the user website URL. """
     user_id = osu_config.data["profiles"][member_id]
 
-    return "".join([host, "users/", user_id])
+    return "".join([host, "/users/", user_id])
 
 
 async def has_enough_pp(user: str, mode: enums.GameMode, **params):

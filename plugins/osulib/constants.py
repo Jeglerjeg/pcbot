@@ -2,7 +2,7 @@ import re
 
 from plugins.osulib import config
 
-host = "https://osu.ppy.sh/"
+host = "https://osu.ppy.sh"
 max_diff_length = 21  # The maximum amount of characters in a beatmap difficulty
 logging_interval = 30  # The time it takes before posting logging information to the console.
 update_interval = config.osu_config.data.get("update_interval", 30)

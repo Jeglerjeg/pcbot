@@ -14,8 +14,8 @@ import plugins
 from pcbot import Config
 from plugins.osulib import api, enums, pp, db
 from plugins.osulib.config import osu_config
-from plugins.osulib.constants import cache_user_profiles, not_playing_skip, event_repeat_interval, notify_empty_scores,\
-    score_request_limit, use_mentions_in_scores, update_interval
+from plugins.osulib.constants import cache_user_profiles, not_playing_skip, event_repeat_interval, notify_empty_scores, \
+    score_request_limit, use_mentions_in_scores, update_interval, host
 from plugins.osulib.enums import UpdateModes, Mods
 from plugins.osulib.formatting import embed_format, score_format, misc_format, beatmap_format
 from plugins.osulib.models.score import OsuScore
@@ -236,14 +236,14 @@ class OsuTracker:
             elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved":
                 status_format = "<title> by <name> has been loved!"
             elif event["type"] == "rank" and event["rank"] <= 50 and leaderboard_enabled:
-                beatmap_info = api.parse_beatmap_url("https://osu.ppy.sh" + event["beatmap"]["url"])
+                beatmap_info = api.parse_beatmap_url(host + event["beatmap"]["url"])
             else:  # We discard any other events
                 continue
 
             # Replace shortcuts with proper formats and add url formats
             if status_format:
-                status_format = status_format.replace("<name>", "[**{name}**]({host}users/{user_id})")
-                status_format = status_format.replace("<title>", "[**{artist} - {title}**]({host}beatmapsets/{id})")
+                status_format = status_format.replace("<name>", "[**{name}**]({host}/users/{user_id})")
+                status_format = status_format.replace("<title>", "[**{artist} - {title}**]({host}/beatmapsets/{id})")
 
                 # We'll sleep for a long while to let the beatmap API catch up with the change
                 await asyncio.sleep(45)
@@ -252,7 +252,7 @@ class OsuTracker:
                 # This might be needed when new maps are submitted
                 for _ in range(6):
                     beatmapset = await api.beatmapset_from_url(
-                        "".join(["https://osu.ppy.sh", event["beatmapset"]["url"]]),
+                        "".join([host, event["beatmapset"]["url"]]),
                         force_redownload=True)
                     if beatmapset:
                         break
