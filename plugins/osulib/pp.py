@@ -376,7 +376,5 @@ async def calculate_no_choke_top_plays(osu_scores: list):
             osu_score.total_score = None
         no_choke_list.append(osu_score)
     no_choke_list.sort(key=itemgetter("pp"), reverse=True)
-    for i, osu_score in enumerate(no_choke_list):
-        osu_score.position = i + 1
 
     return no_choke_list
