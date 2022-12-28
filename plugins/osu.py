@@ -19,6 +19,7 @@ TUTORIAL:
 import asyncio
 import importlib
 from datetime import datetime
+from dateutil import parser
 from operator import itemgetter
 from textwrap import wrap
 
@@ -271,7 +272,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     mode = user_utils.get_mode(str(member.id))
     update_mode = user_utils.get_update_mode(str(member.id))
     if str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)]:
-        timestamp = datetime.fromisoformat(osu_tracking[str(member.id)]["new"]["time_updated"])
+        timestamp = parser.isoparse(osu_tracking[str(member.id)]["new"]["time_updated"])
     else:
         timestamp = None
     if timestamp:

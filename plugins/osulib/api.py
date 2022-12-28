@@ -9,6 +9,7 @@ import re
 
 from collections import namedtuple
 from datetime import datetime, timezone, timedelta
+from dateutil import parser
 
 from aiohttp import ClientConnectorError
 
@@ -363,7 +364,7 @@ def rank_from_events(events: dict, beatmap_id: str, osu_score: OsuScore):
         if event["type"] == "rank":
             beatmap_url = host + event["beatmap"]["url"]
             beatmap_info = parse_beatmap_url(beatmap_url)
-            time_diff = osu_score.ended_at - datetime.fromisoformat(event["created_at"])
+            time_diff = osu_score.ended_at - parser.isoparse(event["created_at"])
             if (beatmap_info.beatmap_id == beatmap_id and event["scoreRank"] == osu_score.rank) and \
                     (time_diff.total_seconds() < 60):
                 return event["rank"]

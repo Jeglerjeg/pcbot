@@ -1,5 +1,6 @@
 import pickle
 from datetime import datetime, timezone
+from dateutil import parser
 from typing import Optional
 
 from plugins.osulib import db
@@ -121,13 +122,13 @@ class Beatmap:
         self.count_spinners = data["count_spinners"]
         self.cs = data["cs"]
         if "deleted_at" in data and data["deleted_at"]:
-            self.deleted_at = datetime.fromisoformat(data["deleted_at"][:-1]).replace(tzinfo=timezone.utc)
+            self.deleted_at = parser.isoparse(data["deleted_at"]).replace(tzinfo=timezone.utc)
         self.difficulty_rating = data["difficulty_rating"]
         self.drain = data["drain"]
         self.hit_length = data["hit_length"]
         self.id = data["id"]
         self.is_scoreable = data["is_scoreable"]
-        self.last_updated = datetime.fromisoformat(data["last_updated"][:-1]).replace(tzinfo=timezone.utc)
+        self.last_updated = parser.isoparse(data["last_updated"]).replace(tzinfo=timezone.utc)
         self.mode = GameMode.get_mode(data["mode"])
         self.mode_int = data["mode_int"]
         self.passcount = data["passcount"]

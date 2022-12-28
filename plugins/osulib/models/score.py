@@ -2,6 +2,8 @@ import pickle
 from datetime import datetime, timezone
 from typing import Optional
 
+from dateutil import parser
+
 from plugins.osulib.enums import GameMode
 from plugins.osulib.models.beatmap import Beatmap, BeatmapsetCompact
 
@@ -102,7 +104,7 @@ class OsuScore:
         self.passed = data["passed"]
         self.pp = data["pp"] if data["pp"] is not None else 0.0
         self.rank = data["rank"]
-        self.ended_at = datetime.fromisoformat(data["ended_at"][:-1]).replace(tzinfo=timezone.utc)
+        self.ended_at = parser.isoparse(data["ended_at"]).replace(tzinfo=timezone.utc)
         self.replay = data["replay"]
         if "new_pp" in data:
             self.new_pp = data["new_pp"]
