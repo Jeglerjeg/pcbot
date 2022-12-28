@@ -1,8 +1,8 @@
 import copy
 from enum import Enum
 
-from plugins.osulib.constants import mode_names
 from pcbot import utils
+from plugins.osulib.constants import mode_names
 
 
 class UpdateModes(Enum):

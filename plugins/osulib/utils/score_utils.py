@@ -107,8 +107,8 @@ def process_score_args(osu_score: OsuScore):
         args_list = (f"{formatted_mods} {acc:.2%} {great}x300 {ok}x100 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
     elif osu_score.mode is enums.GameMode.mania:
-        args_list = f"{formatted_mods} {osu_score.statistics.perfect}xgeki {great}x300 {osu_score.statistics.good}xkatu "\
-                    f"{ok}x100 {meh}x50 "\
+        args_list = f"{formatted_mods} {osu_score.statistics.perfect}xgeki {great}x300 " \
+                    f"{osu_score.statistics.good}xkatu {ok}x100 {meh}x50 "\
                     f"{miss}m {get_score_object_count(osu_score)}objects".split()
     else:
         large_tick_hit = osu_score.statistics.large_tick_hit
@@ -154,14 +154,6 @@ def add_score_position(osu_scores: list[OsuScore]):
     return osu_scores
 
 
-def get_db_scores(user_id: int):
-    score_list = []
-    db_scores = db.get_user_scores(user_id)
-    for osu_score in db_scores:
-        score_list.append(OsuScore(osu_score, db=True))
-    return score_list
-
-
 async def get_new_score(member_id: str, osu_tracking: dict):
     """ Compare old user scores with new user scores and return the discovered
     new score if there is any. When a score is returned, it's position in the
@@ -185,17 +177,17 @@ async def get_new_score(member_id: str, osu_tracking: dict):
     if fetched_scores is None:
         return None
 
-    old_score_ids = [osu_score.best_id for osu_score in get_db_scores(profile)]
+    recent_notifications = db.get_recent_events(profile)
+
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
-        if osu_score.best_id not in old_score_ids:
+        if osu_score.ended_at.timestamp() > recent_notifications["last_pp_notification"]:
             if (datetime.now(tz=timezone.utc) - osu_score.ended_at).total_seconds() > 3600*24:
                 continue
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,
-                                                        old_scores=get_db_scores(profile),
                                                         old=dict(osu_tracking[member_id]["old"]),
                                                         new=dict(osu_tracking[member_id]["new"]))
 
@@ -210,11 +202,7 @@ async def get_new_score(member_id: str, osu_tracking: dict):
 
     # Save the updated score list, and if there are new scores, update time_updated
     if new_scores:
-        db.delete_user_scores(profile)
-        query_data = []
-        for osu_score in fetched_scores["score_list"]:
-            query_data.append(osu_score.to_db_query())
-        db.insert_scores(query_data)
+        db.update_recent_events(profile, recent_notifications, pp=True)
     return new_scores
 
 

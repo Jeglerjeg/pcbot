@@ -189,7 +189,8 @@ def assert_connected(member: discord.Member, checkbot=True):
     """ Throws an AssertionError exception when neither the bot nor
     the member is connected to the music channel."""
     if member.voice:
-        assert member.voice.channel and member.voice.channel is member.guild.me.voice.channel if member.guild.me.voice else True, "**You are not connected to the music channel.**"
+        assert member.voice.channel and member.voice.channel is member.guild.me.voice.channel \
+            if member.guild.me.voice else True, "**You are not connected to the music channel.**"
     else:
         raise AssertionError("**You are not connected to the music channel.**")
     if checkbot:
@@ -236,7 +237,8 @@ async def play(message: discord.Message, song: Annotate.Content = None):
     assert songs_queued < max_songs_queued, "**You have queued enough songs for now.**"
 
     if song is None:
-        assert len(message.attachments) > 0, "**An audio file must be provided when using this command without a song name or url.**"
+        assert len(message.attachments) > 0,\
+            "**An audio file must be provided when using this command without a song name or url.**"
         song = message.attachments[0].url
 
     # Strip any embed characters, spaces or code symbols.
@@ -405,7 +407,8 @@ async def queue(message: discord.Message):
 async def on_voice_state_update(member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
     """ Handle leaving channels. The bot will automatically
     leave the guild's voice channel when all members leave. """
-    channel = voice_states[member.guild].voice.channel if member.guild in voice_states and voice_states[member.guild].voice else None
+    channel = voice_states[member.guild].voice.channel \
+        if member.guild in voice_states and voice_states[member.guild].voice else None
     if not channel:
         return
 

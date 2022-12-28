@@ -197,8 +197,9 @@ def set_score_params(calculator: rosu_pp_py.Calculator, args):
 
 async def find_closest_pp(osu_map: rosu_pp_py.Beatmap, calculator: rosu_pp_py.Calculator, args):
     """ Find the accuracy required to get the given amount of pp from this map. """
+
     # Define a partial command for easily setting the pp value by 100s count
-    def calc(accuracy: float, pp_info = None):
+    def calc(accuracy: float, pp_info=None):
         if pp_info:
             calculator.set_acc(accuracy)
             calculator.set_difficulty(pp_info.difficulty)

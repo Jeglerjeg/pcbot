@@ -2,8 +2,8 @@ import random
 
 import discord
 
-from pcbot import Annotate, utils, Config
 import plugins
+from pcbot import Annotate, utils, Config
 
 client = plugins.client
 

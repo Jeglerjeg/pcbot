@@ -1,7 +1,8 @@
 import pickle
 from datetime import datetime, timezone
-from dateutil import parser
 from typing import Optional
+
+from dateutil import parser
 
 from plugins.osulib import db
 from plugins.osulib.enums import GameMode

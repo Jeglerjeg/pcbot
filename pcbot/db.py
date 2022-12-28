@@ -1,6 +1,6 @@
 import asyncio
 
-from sqlalchemy import create_engine, MetaData, text, event, Table, Column, Integer, Boolean, String, Float, BLOB,\
+from sqlalchemy import create_engine, MetaData, text, event, Table, Column, Integer, Boolean, String, Float, BLOB, \
     DateTime
 
 engine = create_engine("sqlite+pysqlite:///bot.db", echo=False, future=True)
@@ -39,28 +39,12 @@ def get_wyr_db():
     )
 
 
-def get_osu_scores_db():
+def get_osu_events_db():
     Table(
-        "osu_scores",
+        "osu_recent_events",
         db_metadata,
-        Column("id", Integer, unique=True),
-        Column("best_id", Integer, unique=True),
-        Column("user_id", Integer),
-        Column("beatmap_id", Integer),
-        Column("accuracy", Float),
-        Column("mods", BLOB),
-        Column("total_score", Integer),
-        Column("max_combo", Integer),
-        Column("legacy_perfect", Boolean),
-        Column("statistics", BLOB),
-        Column("passed", Boolean),
-        Column("pp", Float),
-        Column("rank", String(2)),
-        Column("ended_at", DateTime),
-        Column("mode", Integer),
-        Column("replay", Boolean),
-        Column("position", Integer),
-        Column("weight", BLOB)
+        Column("id", Integer, nullable=False, unique=True),
+        Column("last_pp_notification", Integer, nullable=False),
     )
 
 
@@ -122,7 +106,7 @@ def create_tables():
     get_moderate_db()
     get_summary_db()
     get_wyr_db()
-    get_osu_scores_db()
+    get_osu_events_db()
     get_osu_beatmaps_db()
     get_osu_beatmapset_db()
     db_metadata.create_all(engine)

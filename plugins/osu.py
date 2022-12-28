@@ -19,11 +19,11 @@ TUTORIAL:
 import asyncio
 import importlib
 from datetime import datetime
-from dateutil import parser
 from operator import itemgetter
 from textwrap import wrap
 
 import discord
+from dateutil import parser
 
 import bot
 import plugins
@@ -587,14 +587,14 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
         # Add user to the score so formatting will work properly.
         matching_score["user"] = osu_tracking[str(member.id)]["new"]
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-        if beatmap_info.gamemode else mode, osu_tracking,
+                                                              if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add user to the score so formatting will work properly.
         osu_score.user = osu_tracking[str(member.id)]["new"]
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-        if beatmap_info.gamemode else mode, osu_tracking,
+                                                              if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
     else:
         osu_score_list = fetched_osu_scores["scores"]

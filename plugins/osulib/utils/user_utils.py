@@ -2,9 +2,8 @@ import discord
 
 from pcbot import config, utils
 from plugins.osulib import enums, api
-from plugins.osulib.constants import host, minimum_pp_required
 from plugins.osulib.config import osu_config
-
+from plugins.osulib.constants import host, minimum_pp_required
 
 
 def get_missing_user_string(member: discord.Member):

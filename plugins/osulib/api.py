@@ -6,12 +6,11 @@
 import asyncio
 import logging
 import re
-
 from collections import namedtuple
 from datetime import datetime, timezone, timedelta
-from dateutil import parser
 
 from aiohttp import ClientConnectorError
+from dateutil import parser
 
 from plugins.osulib.models.beatmap import Beatmapset
 from plugins.osulib.models.score import OsuScore
@@ -234,7 +233,8 @@ async def get_user_recent_activity(user, params=None):
     return await request()
 
 
-beatmap_url_pattern_v1 = re.compile(r"https?://(osu|old|lazer)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
+beatmap_url_pattern_v1 = \
+    re.compile(r"https?://(osu|old|lazer)\.ppy\.sh/(?P<type>[bs])/(?P<id>\d+)(?:\?m=(?P<mode>\d))?")
 beatmapset_url_pattern_v2 = \
     re.compile(r"https?://(osu|lazer)\.ppy\.sh/beatmapsets/(?P<beatmapset_id>\d+)/?(?:#(?P<mode>\w+)/("
                r"?P<beatmap_id>\d+))?")

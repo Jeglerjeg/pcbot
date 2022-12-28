@@ -14,8 +14,8 @@ import plugins
 from pcbot import Config
 from plugins.osulib import api, enums, pp, db
 from plugins.osulib.config import osu_config
-from plugins.osulib.constants import cache_user_profiles, not_playing_skip, event_repeat_interval, notify_empty_scores, \
-    score_request_limit, use_mentions_in_scores, update_interval, host
+from plugins.osulib.constants import cache_user_profiles, not_playing_skip, event_repeat_interval, \
+    notify_empty_scores, score_request_limit, use_mentions_in_scores, update_interval, host
 from plugins.osulib.enums import UpdateModes, Mods
 from plugins.osulib.formatting import embed_format, score_format, misc_format, beatmap_format
 from plugins.osulib.models.score import OsuScore
@@ -47,9 +47,8 @@ class MapEvent:
 async def wipe_user(member_id: str):
     """ Deletes user data from tracking. """
     if member_id in osu_tracking:
-        if "new" in osu_tracking[member_id] and \
-                score_utils.get_db_scores(osu_tracking[member_id]["new"]["id"]):
-            db.delete_user_scores(osu_tracking[member_id]["new"]["id"])
+        if db.get_recent_events(osu_tracking[member_id]["new"]["id"]):
+            db.delete_recent_events(osu_tracking[member_id]["new"]["id"])
         del osu_tracking[member_id]
     if member_id in osu_profile_cache.data:
         del osu_profile_cache.data[member_id]
@@ -142,12 +141,11 @@ class OsuTracker:
         if "ticks" not in osu_tracking[member_id]:
             # Set ticks to a random digit to spread out tracking non-playing users
             osu_tracking[member_id]["ticks"] = randint(0, not_playing_skip - 1)
-            
 
         osu_tracking[member_id]["member"] = member
         osu_tracking[member_id]["ticks"] += 1
         if cache_user_profiles:
-                osu_profile_cache.data[member_id]["ticks"] = osu_tracking[member_id]["ticks"]
+            osu_profile_cache.data[member_id]["ticks"] = osu_tracking[member_id]["ticks"]
 
         # Only update members not tracked ingame every nth update
         if not user_utils.is_playing(member) and osu_tracking[member_id]["ticks"] % not_playing_skip > 0:
@@ -177,15 +175,8 @@ class OsuTracker:
             else:
                 user_data["events"] = []
             # User is already tracked
-            if not score_utils.get_db_scores(user_data["id"]):
-                scores = await score_utils.retrieve_osu_scores(profile, mode, current_time)
-                if not scores or not scores["score_list"]:
-                    logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
-                    return
-                query_data = []
-                for osu_score in scores["score_list"]:
-                    query_data.append(osu_score.to_db_query())
-                db.insert_scores(query_data)
+            if not db.get_recent_events(user_data["id"]):
+                db.insert_recent_events(user_data["id"])
         except aiohttp.ServerDisconnectedError:
             return
         except asyncio.TimeoutError:
@@ -336,13 +327,6 @@ class OsuTracker:
                     self.previous_score_updates[member_id] = []
 
                 if osu_score.best_id in self.previous_score_updates[member_id]:
-                    continue
-
-                top100_best_id = []
-                for old_score in score_utils.get_db_scores(user_id):
-                    top100_best_id.append(old_score.best_id)
-
-                if osu_score.best_id in top100_best_id:
                     continue
 
                 self.previous_score_updates[member_id].append(osu_score.best_id)

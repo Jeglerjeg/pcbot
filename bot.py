@@ -166,7 +166,8 @@ def parse_arguments():
 
     parser.add_argument("--log-file", "-o", help="File to log to. Prints to terminal if omitted.")
 
-    parser.add_argument("--migrate", help="Migrate deprecated configuration values to supported version", action="store_true")
+    parser.add_argument("--migrate", help="Migrate deprecated configuration values to supported version",
+                        action="store_true")
     parsed_args = parser.parse_args()
     return parsed_args
 

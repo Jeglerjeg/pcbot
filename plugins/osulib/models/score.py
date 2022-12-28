@@ -1,4 +1,3 @@
-import pickle
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -78,33 +77,7 @@ class OsuScore:
     weight: Optional[dict]
     user: Optional[dict]
 
-    def __init__(self, data, db: bool = False):
-        if db:
-            self.from_db(data)
-        else:
-            self.from_api(data)
-
-    def from_db(self, data):
-        self.id = data.id
-        self.best_id = data.best_id
-        self.user_id = data.user_id
-        self.beatmap_id = data.beatmap_id
-        self.accuracy = data.accuracy
-        self.mods = pickle.loads(data.mods)
-        self.total_score = data.total_score
-        self.max_combo = data.max_combo
-        self.legacy_perfect = data.legacy_perfect
-        self.statistics = ScoreStatistics(pickle.loads(data.statistics))
-        self.passed = data.passed
-        self.pp = data.pp
-        self.rank = data.rank
-        self.ended_at = data.ended_at.replace(tzinfo=timezone.utc)
-        self.mode = GameMode(data.mode)
-        self.replay = data.replay
-        self.position = data.position
-        self.weight = pickle.loads(data.weight)
-
-    def from_api(self, data: dict):
+    def __init__(self, data):
         self.total_score = data["total_score"]
         self.legacy_perfect = data["legacy_perfect"]
         self.mode = GameMode(data["ruleset_id"])
@@ -167,14 +140,6 @@ class OsuScore:
 
     def __repr__(self):
         return str(self.to_dict())
-
-    def to_db_query(self):
-        return {"id": self.id, "best_id": self.best_id, "user_id": self.user_id, "beatmap_id": self.beatmap_id,
-                "accuracy": self.accuracy, "mods": pickle.dumps(self.mods), "total_score": self.total_score,
-                "max_combo": self.max_combo, "legacy_perfect": self.legacy_perfect,
-                "statistics": pickle.dumps(self.statistics.__dict__), "passed": self.passed, "pp": self.pp,
-                "rank": self.rank, "ended_at": self.ended_at, "mode": self.mode.value, "replay": self.replay,
-                "position": self.position, "weight": pickle.dumps(self.weight)}
 
     def to_dict(self):
         readable_dict = {}

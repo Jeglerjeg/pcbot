@@ -6,10 +6,10 @@ import random
 import re
 from functools import partial
 from io import BytesIO
+from typing import Any
 
 import discord
 from PIL import Image, ImageSequence, ImageOps
-from typing import Any
 
 import bot
 import plugins

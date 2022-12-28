@@ -20,12 +20,11 @@ import json
 import os
 
 import discord
+from sqlalchemy.sql import select, insert, update
 
 import bot
 import plugins
 from pcbot import utils, Annotate
-from sqlalchemy.sql import select, insert, update
-
 from pcbot.db import engine, db_metadata
 
 client = plugins.client  # type: bot.Client

@@ -107,7 +107,8 @@ if os.path.exists("config/summary_data.json"):
     migrate_summary_data()
 
 
-def get_persistent_messages(channel_id: int, member_list: list[discord.Member] = None, bots: bool = False, phrase: str = None):
+def get_persistent_messages(channel_id: int, member_list: list[discord.Member] = None, bots: bool = False,
+                            phrase: str = None):
     if member_list is None:
         member_list = []
     table = db_metadata.tables["summary_messages"]
@@ -115,7 +116,8 @@ def get_persistent_messages(channel_id: int, member_list: list[discord.Member] =
     if len(member_list) == 1:
         statement = select(table.c.content).where(statement & (table.c.author_id == member_list[0].id)).whereclause
     elif len(member_list) > 1:
-            statement = select(table.c.content).where(statement & (table.c.author_id.in_(member.id for member in member_list))).whereclause
+        statement = select(table.c.content).where(
+            statement & (table.c.author_id.in_(member.id for member in member_list))).whereclause
     if phrase:
         statement = select(table.c.content).where(statement & (table.c.content.contains(phrase))).whereclause
     if not bots:
@@ -190,7 +192,7 @@ def random_with_bias(messages: list, word: str):
     return random.choice(last_word_messages if random.randint(0, 5) == 0 else non_last_word_messages)
 
 
-def markov_messages(messages: list, coherent: bool=False):
+def markov_messages(messages: list, coherent: bool = False):
     """ Generate some kind of markov chain that somehow works with discord.
     I found this makes better results than markovify would. """
     imitated = []
