@@ -30,7 +30,8 @@ from pcbot import utils
 
 client = plugins.client  # type: bot.Client
 
-api_url = f"{host}/api/v2/"
+main_api_url = f"{host}/api/v2/"
+lazer_api_url = "https://lazer.ppy.sh/api/v2/"
 access_token = ""
 expires = datetime.now(tz=timezone.utc)
 requests_sent = 0
@@ -76,7 +77,7 @@ async def get_access_token(client_id: str, client_secret: str):
     expires = dt + td
 
 
-def def_section(api_name: str, first_element: bool = False):
+def def_section(api_name: str, first_element: bool = False, api_url: str = main_api_url):
     """ Add a section using a template to simplify adding API functions. """
     async def template(url=api_url, request_tries: int = 1, **params):
         if not limiter:
@@ -167,9 +168,9 @@ async def get_user(user, mode=None, params=None):
     return await request()
 
 
-async def get_user_scores(user_id, score_type, params=None):
+async def get_user_scores(user_id, score_type, params=None, lazer: bool = False):
     """ Returns a user's best, recent or #1 scores. """
-    request = def_section(f"users/{user_id}/scores/{score_type}")
+    request = def_section(f"users/{user_id}/scores/{score_type}", api_url=lazer_api_url if lazer else main_api_url)
     if params:
         result = await request(**params)
     else:
@@ -181,9 +182,10 @@ async def get_user_scores(user_id, score_type, params=None):
     return result
 
 
-async def get_user_beatmap_score(beatmap_id, user_id, params=None):
+async def get_user_beatmap_score(beatmap_id, user_id, params=None, lazer: bool = False):
     """ Returns a user's score on a beatmap. """
-    request = def_section(f"beatmaps/{beatmap_id}/scores/users/{user_id}")
+    request = def_section(f"beatmaps/{beatmap_id}/scores/users/{user_id}",
+                          api_url=lazer_api_url if lazer else main_api_url)
     if params:
         result = await request(**params)
     else:
@@ -195,9 +197,10 @@ async def get_user_beatmap_score(beatmap_id, user_id, params=None):
     return result
 
 
-async def get_user_beatmap_scores(beatmap_id: int, user_id: int, params=None):
+async def get_user_beatmap_scores(beatmap_id: int, user_id: int, params=None, lazer: bool = False):
     """ Returns all of a user's scores on a beatmap. """
-    request = def_section(f"beatmaps/{beatmap_id}/scores/users/{user_id}/all")
+    request = def_section(f"beatmaps/{beatmap_id}/scores/users/{user_id}/all",
+                          api_url=lazer_api_url if lazer else main_api_url)
     if params:
         result = await request(**params)
     else:

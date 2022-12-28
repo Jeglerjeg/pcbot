@@ -30,7 +30,7 @@ import plugins
 from pcbot import utils, Annotate
 from plugins.osulib import api, pp, ordr, enums
 from plugins.osulib.config import osu_config
-from plugins.osulib.constants import minimum_pp_required, host
+from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user
@@ -150,6 +150,11 @@ async def osu(message: discord.Message, *options):
                      url=user_utils.get_user_url(str(member.id)))
     embed.set_image(url=signature.url)
     await client.send_message(message.channel, embed=embed)
+
+
+@plugins.command(aliases="l")
+async def lazer(message: discord.Message, _: utils.placeholder):
+    """ osu! commands. now with lazer scores. """
 
 
 @osu.command(aliases="set")
@@ -370,8 +375,7 @@ plugins.command(name="pp", aliases="oppai")(pp_)
 osu.command(name="pp", aliases="oppai")(pp_)
 
 
-async def recent(message: discord.Message, user: str = None):
-    """ Display your or another member's most recent score. """
+async def recent_command(message: discord.Message, user: str = None, lazer_api: bool = False):
     if not user:
         member = message.author
     else:
@@ -389,7 +393,7 @@ async def recent(message: discord.Message, user: str = None):
         "limit": 1
     }
 
-    osu_scores = await api.get_user_scores(user_id, "recent", params=params)  # type: list[OsuScore]
+    osu_scores = await api.get_user_scores(user_id, "recent", params=params, lazer=lazer_api)  # type: list[OsuScore]
     assert osu_scores, "Found no recent score."
 
     osu_score = osu_scores[0]
@@ -401,8 +405,19 @@ async def recent(message: discord.Message, user: str = None):
     await client.send_message(message.channel, embed=embed)
 
 
+async def recent(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user)
+
+
 plugins.command(aliases="last new r rs")(recent)
 osu.command(aliases="last new r rs")(recent)
+
+
+@lazer.command(aliases="last new r rs")
+async def recent(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, True)
 
 
 @osu.command(usage="<replay>")
@@ -437,16 +452,14 @@ async def render(message: discord.Message, *options):
 
     if "renderID" not in render_job:
         await placeholder_msg.edit(content="\n".join(["An error occured when sending this replay.",
-                                                     ordr.get_render_error(int(render_job["errorCode"]))]))
+                                                      ordr.get_render_error(int(render_job["errorCode"]))]))
         return
 
     last_rendered[message.author.id] = datetime.utcnow()
     ordr.requested_renders[int(render_job["renderID"])] = dict(message=placeholder_msg, edited=datetime.utcnow())
 
 
-async def score(message: discord.Message, *options):
-    """ Display your own or the member's score on a beatmap. Add mods to simulate the beatmap score with those mods.
-    If URL is not provided it searches the last 10 messages for a URL. """
+async def score_command(message: discord.Message, *options, lazer_api: bool = False):
     member = None
     beatmap_url = None
     mods = None
@@ -481,7 +494,7 @@ async def score(message: discord.Message, *options):
     params = {
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
-    osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params)
+    osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params, lazer=lazer_api)
     assert osu_scores, f"Found no scores by **{osu_tracking[str(member.id)]['new']['username']}**."
 
     osu_score = osu_scores["score"]  # type: OsuScore
@@ -501,13 +514,25 @@ async def score(message: discord.Message, *options):
                                                           time=bool(not mods))
     await client.send_message(message.channel, embed=embed)
 
+
+async def score(message: discord.Message, *options):
+    """ Display your own or the member's score on a beatmap. Add mods to simulate the beatmap score with those mods.
+    If URL is not provided it searches the last 10 messages for a URL. """
+    await score_command(message, *options)
+
+
 plugins.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score)
 osu.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score)
 
 
-async def scores(message: discord.Message, *options):
-    """ Display all of your own or the member's scores on a beatmap. Add mods to only show the score with those mods.
+@lazer.command(aliases="c", usage="[member] <url> +<mods>")
+async def score(message: discord.Message, *options):
+    """ Display your own or the member's score on a beatmap. Add mods to simulate the beatmap score with those mods.
     If URL is not provided it searches the last 10 messages for a URL. """
+    await score_command(message, *options, lazer_api=True)
+
+
+async def scores_command(message: discord.Message, *options, lazer_api: bool = False):
     member = None
     beatmap_url = None
     mods = None
@@ -544,7 +569,8 @@ async def scores(message: discord.Message, *options):
     params = {
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
-    fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, user_id, params=params)
+    fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, user_id, params=params,
+                                                           lazer=lazer_api)
     assert fetched_osu_scores["scores"], f"Found no scores by **{osu_tracking[str(member.id)]['new']['username']}**."
 
     beatmap = await api.beatmap_lookup(map_id=beatmap_id)
@@ -561,14 +587,14 @@ async def scores(message: discord.Message, *options):
         # Add user to the score so formatting will work properly.
         matching_score["user"] = osu_tracking[str(member.id)]["new"]
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-                                                              if beatmap_info.gamemode else mode, osu_tracking,
+        if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add user to the score so formatting will work properly.
         osu_score.user = osu_tracking[str(member.id)]["new"]
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-                                                              if beatmap_info.gamemode else mode, osu_tracking,
+        if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
     else:
         osu_score_list = fetched_osu_scores["scores"]
@@ -584,8 +610,22 @@ async def scores(message: discord.Message, *options):
                                                      thumbnail_url=beatmap.beatmapset.covers.list2x)
     await client.send_message(message.channel, embed=embed)
 
+
+async def scores(message: discord.Message, *options):
+    """ Display all of your own or the member's scores on a beatmap. Add mods to only show the score with those mods.
+    If URL is not provided it searches the last 10 messages for a URL. """
+    await scores_command(message, *options)
+
+
 plugins.command(name="scores", usage="[member] <url> <+mods>")(scores)
 osu.command(name="scores", usage="[member] <url> <+mods>")(scores)
+
+
+@lazer.command(usage="[member] <url> <+mods>")
+async def scores(message: discord.Message, *options):
+    """ Display all of your own or the member's scores on a beatmap. Add mods to only show the score with those mods.
+    If URL is not provided it searches the last 10 messages for a URL. """
+    await scores_command(message, *options, lazer_api=True)
 
 
 @osu.command(aliases="map")
@@ -649,14 +689,22 @@ async def top(message: discord.Message, *options):
         "Scores have not been retrieved for this user yet. Please wait a bit and try again."
     assert "new" in osu_tracking[str(member.id)], \
         "Scores have not been retrieved for this user yet. Please wait a bit and try again."
-    db_scores = score_utils.get_db_scores(osu_tracking[str(member.id)]["new"]["id"])
-    assert db_scores, "Scores have not been retrieved for this user yet. Please wait a bit and try again."
+
+    params = {
+        "mode": mode.name,
+        "limit": score_request_limit,
+    }
+    fetched_scores = await api.get_user_scores(osu_tracking[str(member.id)]["new"]["id"], "best", params=params)
+    assert fetched_scores, "Failed to retrieve scores. Please try again."
+    for i, osu_score in enumerate(fetched_scores):
+        osu_score.add_position(i + 1)
+
     assert mode is enums.GameMode.osu if nochoke else True, \
         "No-choke lists are only supported for osu!standard."
     assert not list_type == "score" if nochoke else True, "No-choke lists can't be sorted by score."
     if nochoke:
         async with message.channel.typing():
-            osu_scores = await pp.calculate_no_choke_top_plays(db_scores)
+            osu_scores = await pp.calculate_no_choke_top_plays(fetched_scores)
             new_total_pp = pp.calculate_total_user_pp(osu_scores, str(member.id), osu_tracking)
             pp_difference = new_total_pp - osu_tracking[str(member.id)]["new"]["statistics"]["pp"]
             author_text = f'{osu_tracking[str(member.id)]["new"]["username"]} ' \
@@ -664,7 +712,7 @@ async def top(message: discord.Message, *options):
                           f'=> {utils.format_number(new_total_pp, 2)}, ' \
                           f'{utils.format_number(pp_difference, 2):+})'
     else:
-        osu_scores = db_scores
+        osu_scores = fetched_scores
         author_text = osu_tracking[str(member.id)]["new"]["username"]
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
     m = await score_format.get_formatted_score_list(mode, sorted_scores, 5, nochoke=nochoke)
@@ -681,6 +729,61 @@ async def top(message: discord.Message, *options):
 
 plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 osu.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
+
+
+@lazer.command(usage="[member] <sort_by>", aliases="osutop")
+async def top(message: discord.Message, *options):
+    """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
+     You can also add "nochoke" as an option to display a list of unchoked top scores instead.
+     Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
+    member = None
+    list_type = "pp"
+    for value in options:
+        if value in ("newest", "recent"):
+            list_type = "newest"
+        elif value == "oldest":
+            list_type = value
+        elif value == "acc":
+            list_type = value
+        elif value == "combo":
+            list_type = value
+        elif value == "score":
+            list_type = value
+        else:
+            member = user_utils.get_user(message, value, osu_tracking)
+
+    if not member:
+        member = message.author
+    mode = user_utils.get_mode(str(member.id))
+    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    assert str(member.id) in osu_tracking, \
+        "Scores have not been retrieved for this user yet. Please wait a bit and try again."
+    assert "new" in osu_tracking[str(member.id)], \
+        "Scores have not been retrieved for this user yet. Please wait a bit and try again."
+
+    params = {
+        "mode": mode.name,
+        "limit": score_request_limit,
+    }
+    fetched_scores = await api.get_user_scores(osu_tracking[str(member.id)]["new"]["id"], "best", params=params,
+                                               lazer=True)
+    assert fetched_scores, "Failed to retrieve scores. Please try again."
+    for i, osu_score in enumerate(fetched_scores):
+        osu_score.add_position(i + 1)
+
+    osu_scores = fetched_scores
+    author_text = osu_tracking[str(member.id)]["new"]["username"]
+    sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
+    m = await score_format.get_formatted_score_list(mode, sorted_scores, 5)
+    e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
+                                             osu_tracking[str(member.id)]["new"]["avatar_url"],
+                                             osu_tracking[str(member.id)]["new"]["avatar_url"])
+    view = score_format.PaginatedScoreList(sorted_scores, mode,
+                                           score_utils.count_score_pages(sorted_scores, 5), e)
+    e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
+    message = await client.send_message(message.channel, embed=e, view=view)
+    await view.wait()
+    await message.edit(embed=view.embed, view=None)
 
 
 @osu.command()
@@ -758,7 +861,7 @@ async def debug(message: discord.Message):
     member_list = [f"`{d['member'].name}`" for d in osu_tracking.values()
                    if "member" in d and user_utils.is_playing(d["member"])]
     average_requests = utils.format_number(api.requests_sent /
-                                           ((discord.utils.utcnow() - client.time_started).total_seconds() / 60.0), 2)\
+                                           ((discord.utils.utcnow() - client.time_started).total_seconds() / 60.0), 2) \
         if api.requests_sent > 0 else 0
     last_update = f"<t:{int(osu_tracker.previous_update.timestamp())}:F>" \
         if osu_tracker.previous_update else "Not updated yet."

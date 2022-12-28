@@ -104,7 +104,6 @@ def get_formatted_score_time(osu_score: OsuScore):
 
 def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.GameMode):
     """" Returns formatted score statistics for each mode. """
-    color = "\u001b[0;32m" if osu_score.legacy_perfect else "\u001b[0;31m"
     acc = f"{utils.format_number(osu_score.accuracy * 100, 2)}%"
     great = osu_score.statistics.great
     ok = osu_score.statistics.ok
@@ -113,6 +112,8 @@ def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.G
     maxcombo = osu_score.max_combo
     calculated_max_combo = get_maximum_score_combo(osu_score, beatmap)
     max_combo = f"/{calculated_max_combo}" if calculated_max_combo is not None else ""
+    color = "\u001b[0;32m" if osu_score.legacy_perfect \
+            or (maxcombo == calculated_max_combo if calculated_max_combo else 0) else "\u001b[0;31m"
     if mode is enums.GameMode.osu:
         return "acc    300s  100s  50s  miss  combo\n" \
               f'{color}{acc:<7}{great:<6}{ok:<6}{meh:<5}{miss:<6}{maxcombo}{max_combo}'
@@ -230,8 +231,8 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuSco
         time_since_string = f"<t:{int(osu_score.ended_at.timestamp())}:R>"
 
         # Add score position to the score
-        pos = f"{osu_score.position}." if not hasattr(osu_score, "pp_difference") else \
-            f"{osu_score.position}. ({utils.format_number(osu_score.pp_difference, 2):+}pp)"
+        pos = f"{osu_score.position}." if not hasattr(osu_score, "pp_difference") or not osu_score["pp_difference"] \
+            else f"{osu_score.position}. ({utils.format_number(osu_score.pp_difference, 2):+}pp)"
         m.append("".join([f"{pos}\n", await format_new_score(mode, osu_score, beatmap),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
                           "".join([time_since_string, "\n"]) if not no_time else "",
