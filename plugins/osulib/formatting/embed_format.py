@@ -58,7 +58,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
                                     user_utils.get_user_url(str(member.id)),
                                     osu_score.user["avatar_url"],
                                     osu_score.beatmapset.covers.list2x
-                                    if hasattr(osu_score, "beatmapset")
+                                    if hasattr(osu_score, "beatmapset") and osu_score["beatmapset"]
                                     else beatmap.beatmapset.covers.list2x,
                                     time=time_string,
                                     potential_string=score_format.format_potential_pp(

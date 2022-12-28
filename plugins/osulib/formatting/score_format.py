@@ -6,6 +6,7 @@ from plugins.osulib.formatting import misc_format
 from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import beatmap_utils, score_utils
+from plugins.osulib.utils.score_utils import get_maximum_score_combo
 
 try:
     import pendulum
@@ -110,7 +111,8 @@ def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.G
     meh = osu_score.statistics.meh
     miss = osu_score.statistics.miss
     maxcombo = osu_score.max_combo
-    max_combo = f"/{beatmap.max_combo}" if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None else ""
+    calculated_max_combo = get_maximum_score_combo(osu_score, beatmap)
+    max_combo = f"/{calculated_max_combo}" if calculated_max_combo is not None else ""
     if mode is enums.GameMode.osu:
         return "acc    300s  100s  50s  miss  combo\n" \
               f'{color}{acc:<7}{great:<6}{ok:<6}{meh:<5}{miss:<6}{maxcombo}{max_combo}'
@@ -134,7 +136,8 @@ def format_score_info(osu_score: OsuScore, beatmap: Beatmap):
     """ Return formatted beatmap information. """
     beatmap_url = beatmap_utils.get_beatmap_url(beatmap.id, osu_score.mode, beatmap.beatmapset_id)
     modslist = enums.Mods.format_mods(osu_score.mods, score_display=True)
-    score_pp = utils.format_number(osu_score.pp, 2) if not hasattr(osu_score, "new_pp") else osu_score.new_pp
+    score_pp = utils.format_number(osu_score.pp, 2) if not hasattr(osu_score, "new_pp") or not osu_score["new_pp"] \
+        else osu_score.new_pp
     ranked_score = f'{osu_score.total_score:,}' if osu_score.total_score else ""
     stars = utils.format_number(float(beatmap.difficulty_rating), 2)
     scoreboard_rank = f"#{osu_score.rank_global} " if hasattr(osu_score, "rank_global") \

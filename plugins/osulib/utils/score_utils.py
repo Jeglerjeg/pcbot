@@ -10,6 +10,7 @@ import aiohttp
 from plugins.osulib import enums, api, db
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import score_request_limit
+from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import user_utils, misc_utils
 
@@ -29,6 +30,15 @@ def get_sorted_scores(osu_scores: list[OsuScore], list_type: str):
     else:
         sorted_scores = osu_scores
     return sorted_scores
+
+
+def get_maximum_score_combo(osu_score: OsuScore, beatmap: Beatmap):
+    if hasattr(osu_score, "maximum_statistics") and osu_score.maximum_statistics:
+        combo = osu_score.maximum_statistics.great + osu_score.maximum_statistics.large_tick_hit + \
+            osu_score.maximum_statistics.legacy_combo_increase
+        if combo > 0:
+            return combo
+    return beatmap.max_combo if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None else None
 
 
 async def retrieve_osu_scores(profile: str, mode: enums.GameMode, timestamp: str):

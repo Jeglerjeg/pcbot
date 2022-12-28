@@ -36,6 +36,20 @@ class ScoreStatistics:
         return str(self.__dict__)
 
 
+class MaximumScoreStatistics:
+    great: int
+    large_tick_hit: int
+    legacy_combo_increase: int
+
+    def __init__(self, raw_data: dict):
+        self.great = raw_data["great"] if "great" in raw_data else 0
+        self.large_tick_hit = raw_data["large_tick_hit"] if "large_tick_hit" in raw_data else 0
+        self.legacy_combo_increase = raw_data["legacy_combo_increase"] if "legacy_combo_increase" in raw_data else 0
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+
 class OsuScore:
     id: int
     best_id: int
@@ -47,6 +61,7 @@ class OsuScore:
     max_combo: int
     legacy_perfect: bool
     statistics: ScoreStatistics
+    maximum_statistics: Optional[MaximumScoreStatistics]
     passed: bool
     pp: float
     rank: str
@@ -108,22 +123,44 @@ class OsuScore:
         self.replay = data["replay"]
         if "new_pp" in data:
             self.new_pp = data["new_pp"]
+        else:
+            self.new_pp = None
         if "position" in data:
             self.position = data["position"]
+        else:
+            self.position = None
         if "pp_difference" in data:
             self.pp_difference = data["pp_difference"]
+        else:
+            self.pp_difference = None
         if "beatmap" in data:
             self.beatmap = Beatmap(data["beatmap"])
+        else:
+            self.beatmap = None
         if "beatmapset" in data and data["beatmapset"]:
             self.beatmapset = BeatmapsetCompact(data["beatmapset"])
+        else:
+            self.beatmapset = None
+        if "maximum_statistics" in data:
+            self.maximum_statistics = MaximumScoreStatistics(data["maximum_statistics"])
+        else:
+            self.maximum_statistics = None
         if "rank_global" in data:
             self.rank_global = data["rank_global"]
+        else:
+            self.rank_global = None
         if "rank_country" in data:
             self.rank_country = data["rank_country"]
+        else:
+            self.rank_country = None
         if "weight" in data:
             self.weight = data["weight"]
+        else:
+            self.weight = None
         if "user" in data:
             self.user = data["user"]
+        else:
+            self.user = None
 
     def __getitem__(self, item):
         return getattr(self, item)
