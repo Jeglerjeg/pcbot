@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import update
 from sqlalchemy.sql import select, insert, delete
@@ -24,7 +24,7 @@ def get_recent_events(user_id: int):
 
 
 def insert_recent_events(user_id: int):
-    new_recent_events = {"id": user_id, "last_pp_notification": datetime.utcnow().timestamp()}
+    new_recent_events = {"id": user_id, "last_pp_notification": datetime.now(tz=timezone.utc)}
     with engine.connect() as connection:
         table = db_metadata.tables["osu_recent_events"]
         statement = insert(table).values(new_recent_events)
@@ -35,7 +35,7 @@ def insert_recent_events(user_id: int):
 
 def update_recent_events(user_id: int, old: dict, pp: bool = False):
     updated_recent_events = {"id": user_id,
-                             "last_pp_notification": datetime.utcnow().timestamp()
+                             "last_pp_notification": datetime.now(tz=timezone.utc)
                              if pp else old["last_pp_notification"]}
     with engine.connect() as connection:
         table = db_metadata.tables["osu_recent_events"]
