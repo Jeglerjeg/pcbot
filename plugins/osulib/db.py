@@ -40,8 +40,9 @@ def update_recent_events(user_id: int, old: dict, pp: bool = False):
     with engine.connect() as connection:
         table = db_metadata.tables["osu_recent_events"]
         statement = update(table).where(table.c.id == user_id).values(updated_recent_events)
-        result = connection.execute(statement)
-        return result.fetchone()
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
 
 
 def delete_recent_events(user_id: int):
