@@ -152,7 +152,7 @@ async def osu(message: discord.Message, *options):
     await client.send_message(message.channel, embed=embed)
 
 
-@plugins.command(aliases="l")
+# @plugins.command(aliases="l")
 async def lazer(message: discord.Message, _: utils.placeholder):
     """ osu! commands. now with lazer scores. """
 
@@ -414,7 +414,7 @@ plugins.command(aliases="last new r rs")(recent)
 osu.command(aliases="last new r rs")(recent)
 
 
-@lazer.command(aliases="last new r rs")
+# @lazer.command(aliases="last new r rs")
 async def recent(message: discord.Message, user: str = None):
     """ Display your or another member's most recent score. """
     await recent_command(message, user, True)
@@ -525,7 +525,7 @@ plugins.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score
 osu.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score)
 
 
-@lazer.command(aliases="c", usage="[member] <url> +<mods>")
+# @lazer.command(aliases="c", usage="[member] <url> +<mods>")
 async def score(message: discord.Message, *options):
     """ Display your own or the member's score on a beatmap. Add mods to simulate the beatmap score with those mods.
     If URL is not provided it searches the last 10 messages for a URL. """
@@ -621,7 +621,7 @@ plugins.command(name="scores", usage="[member] <url> <+mods>")(scores)
 osu.command(name="scores", usage="[member] <url> <+mods>")(scores)
 
 
-@lazer.command(usage="[member] <url> <+mods>")
+# @lazer.command(usage="[member] <url> <+mods>")
 async def scores(message: discord.Message, *options):
     """ Display all of your own or the member's scores on a beatmap. Add mods to only show the score with those mods.
     If URL is not provided it searches the last 10 messages for a URL. """
@@ -731,7 +731,7 @@ plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 osu.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 
 
-@lazer.command(usage="[member] <sort_by>", aliases="osutop")
+# @lazer.command(usage="[member] <sort_by>", aliases="osutop")
 async def top(message: discord.Message, *options):
     """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
      You can also add "nochoke" as an option to display a list of unchoked top scores instead.
