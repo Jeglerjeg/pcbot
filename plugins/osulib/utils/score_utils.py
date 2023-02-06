@@ -182,7 +182,7 @@ async def get_new_score(member_id: str, osu_tracking: dict):
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
-        if osu_score.ended_at > datetime.fromisoformat(recent_notifications.last_pp_notification):
+        if osu_score.ended_at > datetime.fromtimestamp(recent_notifications.last_pp_notification):
             if i == 0:
                 logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
                 osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,
