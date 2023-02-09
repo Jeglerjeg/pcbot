@@ -24,7 +24,7 @@ def get_recent_events(user_id: int):
 
 
 def insert_recent_events(user_id: int):
-    new_recent_events = {"id": user_id, "last_pp_notification": datetime.now(tz=timezone.utc)}
+    new_recent_events = {"id": user_id, "last_pp_notification": int(datetime.now(tz=timezone.utc).timestamp())}
     with engine.connect() as connection:
         table = db_metadata.tables["osu_recent_events"]
         statement = insert(table).values(new_recent_events)
@@ -35,7 +35,7 @@ def insert_recent_events(user_id: int):
 
 def update_recent_events(user_id: int, old: dict, pp: bool = False):
     updated_recent_events = {"id": user_id,
-                             "last_pp_notification": datetime.now(tz=timezone.utc)
+                             "last_pp_notification": int(datetime.now(tz=timezone.utc).timestamp())
                              if pp else old["last_pp_notification"]}
     with engine.connect() as connection:
         table = db_metadata.tables["osu_recent_events"]
