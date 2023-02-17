@@ -30,7 +30,7 @@ from collections import namedtuple, deque
 from typing import Dict
 
 import discord
-import youtube_dl
+import yt_dlp
 
 import bot
 import plugins
@@ -54,7 +54,7 @@ ffmpeg_options = {
     'options': '-vn',
 }
 
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+ytdl = yt_dlp.YoutubeDL(ytdl_format_options)
 
 max_songs_queued = 6  # How many songs each member are allowed in the queue at once
 max_song_length = 10 * 60 * 60  # The maximum song length in seconds
