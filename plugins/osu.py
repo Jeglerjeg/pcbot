@@ -375,7 +375,8 @@ plugins.command(name="pp", aliases="oppai")(pp_)
 osu.command(name="pp", aliases="oppai")(pp_)
 
 
-async def recent_command(message: discord.Message, user: str = None, lazer_api: bool = False):
+async def recent_command(message: discord.Message, user: str = None, lazer_api: bool = False,
+                         mode: enums.GameMode = None):
     if not user:
         member = message.author
     else:
@@ -385,7 +386,9 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
     assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
 
     user_id = osu_config.data["profiles"][str(member.id)]
-    mode = user_utils.get_mode(str(member.id))
+
+    if not mode:
+        mode = user_utils.get_mode(str(member.id))
 
     params = {
         "include_fails": 1,
@@ -410,14 +413,74 @@ async def recent(message: discord.Message, user: str = None):
     await recent_command(message, user)
 
 
-plugins.command(aliases="last new r rs")(recent)
-osu.command(aliases="last new r rs")(recent)
+plugins.command(aliases="last new r")(recent)
+osu.command(aliases="last new r")(recent)
 
 
-@lazer.command(aliases="last new r rs")
-async def recent(message: discord.Message, user: str = None):
+async def recent_standard(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, mode=enums.GameMode.osu)
+
+
+plugins.command(aliases="rs")(recent_standard)
+osu.command(aliases="rs")(recent_standard)
+
+
+async def recent_taiko(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, mode=enums.GameMode.taiko)
+
+
+plugins.command(aliases="rt")(recent_taiko)
+osu.command(aliases="rt")(recent_taiko)
+
+
+async def recent_catch(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, mode=enums.GameMode.fruits)
+
+
+plugins.command(aliases="rc")(recent_catch)
+osu.command(aliases="rc")(recent_catch)
+
+
+async def recent_mania(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, mode=enums.GameMode.mania)
+
+
+plugins.command(aliases="rm")(recent_mania)
+osu.command(aliases="rm")(recent_mania)
+
+
+@lazer.command(aliases="last new r")
+async def recent_lazer(message: discord.Message, user: str = None):
     """ Display your or another member's most recent score. """
     await recent_command(message, user, True)
+
+
+@lazer.command(name="rs")
+async def recent_standard_lazer(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, True, mode=enums.GameMode.osu)
+
+
+@lazer.command(name="rt")
+async def recent_taiko_lazer(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, True, mode=enums.GameMode.taiko)
+
+
+@lazer.command(name="rc")
+async def recent_catch_lazer(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, True, mode=enums.GameMode.fruits)
+
+
+@lazer.command(name="rm")
+async def recent_mania_lazer(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, True, mode=enums.GameMode.mania)
 
 
 @osu.command(usage="<replay>")
