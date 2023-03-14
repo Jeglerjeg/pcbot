@@ -215,17 +215,17 @@ class OsuTracker:
         for event in events:
             # Get and format the type of event
             if event["type"] == "beatmapsetUpload":
-                status_format = "<name> has submitted a new beatmap <title>"
+                status_format = "\N{GLOBE WITH MERIDIANS} <name> has submitted a new beatmap <title>"
             elif event["type"] == "beatmapsetUpdate":
-                status_format = "<name> has updated the beatmap <title>"
+                status_format = "\N{UP-POINTING SMALL RED TRIANGLE} <name> has updated the beatmap <title>"
             elif event["type"] == "beatmapsetRevive":
-                status_format = "<title> has been revived from eternal slumber by <name>"
+                status_format = "\N{PERSON WITH FOLDED HANDS} <title> has been revived from eternal slumber by <name>"
             elif event["type"] == "beatmapsetApprove" and event["approval"] == "qualified":
-                status_format = "<title> by <name> has been qualified!"
+                status_format = "\N{GROWING HEART} <title> by <name> has been qualified!"
             elif event["type"] == "beatmapsetApprove" and event["approval"] == "ranked":
-                status_format = "<title> by <name> has been ranked!"
+                status_format = "\N{SPORTS MEDAL} <title> by <name> has been ranked!"
             elif event["type"] == "beatmapsetApprove" and event["approval"] == "loved":
-                status_format = "<title> by <name> has been loved!"
+                status_format = "\N{HEAVY BLACK HEART} <title> by <name> has been loved!"
             elif event["type"] == "rank" and event["rank"] <= 50 and leaderboard_enabled:
                 beatmap_info = api.parse_beatmap_url(host + event["beatmap"]["url"])
             else:  # We discard any other events
