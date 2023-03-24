@@ -361,7 +361,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
                     "x50"):
                 options.remove(opt)
 
-        options.insert(0, f"{pp_stats.acc}%")
+        options.insert(0, f"{pp_stats.count_100}x100")
     for opt in options.copy():
         if opt.startswith("+"):
             options.append(opt.upper())

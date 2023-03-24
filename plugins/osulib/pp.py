@@ -22,7 +22,7 @@ except ImportError:
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
 PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs od hp bpm")
-ClosestPPStats = namedtuple("ClosestPPStats", "acc pp stars")
+ClosestPPStats = namedtuple("ClosestPPStats", "count_100 pp stars")
 
 cache_path = "plugins/osulib/mapcache"
 
@@ -199,51 +199,51 @@ async def find_closest_pp(osu_map: rosu_pp_py.Beatmap, calculator: rosu_pp_py.Ca
     """ Find the accuracy required to get the given amount of pp from this map. """
 
     # Define a partial command for easily setting the pp value by 100s count
-    def calc(accuracy: float, pp_info=None):
+    def calc(count_100: int, pp_info=None):
         if pp_info:
-            calculator.set_acc(accuracy)
+            calculator.set_n100(count_100)
             calculator.set_difficulty(pp_info.difficulty)
             pp_info = calculator.performance(osu_map)
         else:
             new_calculator = set_score_params(calculator, args)
-            new_calculator.set_acc(accuracy)
+            new_calculator.set_n100(count_100)
             pp_info = new_calculator.performance(osu_map)
 
         return pp_info
 
     # Find the smallest possible value rosu-pp is willing to give, below 16.67% acc returns infpp since
     # it's an impossible value.
-    min_pp = calc(accuracy=31.5)
+    map_attributes = calculator.map_attributes(osu_map)
+    object_count = map_attributes.n_circles + map_attributes.n_sliders + map_attributes.n_spinners
+    min_pp = calc(count_100=object_count)
 
     if args.pp <= min_pp.pp:
         raise ValueError(f"The given pp value is too low (calculator gives **{min_pp.pp:.02f}pp** as the "
                          "lowest possible).")
 
     # Calculate the max pp value by using 100% acc
-    previous_pp = calc(100.0, min_pp)
+    previous_pp = calc(0, min_pp)
 
     if args.pp >= previous_pp.pp:
         raise ValueError(f"PP value should be below **{previous_pp.pp:.02f}pp** for this map.")
 
-    dec = .05
-    acc = 100.0 - dec
+    count_100 = 0
     while True:
-        current_pp = calc(acc, min_pp)
+        current_pp = calc(count_100, min_pp)
 
         # Stop when we find a pp value between the current 100 count and the previous one
         if current_pp.pp <= args.pp <= previous_pp.pp:
             break
 
         previous_pp = current_pp
-        acc -= dec
+        count_100 += 1
 
     # Calculate the star difficulty
     totalstars = current_pp.difficulty.stars
 
     # Find the closest pp of our two values, and return the amount of 100s
     closest_pp = min([previous_pp.pp, current_pp.pp], key=lambda v: abs(args.pp - v))
-    acc = acc if closest_pp == current_pp.pp else acc + dec
-    return ClosestPPStats(round(acc, 2), closest_pp, totalstars)
+    return ClosestPPStats(count_100, closest_pp, totalstars)
 
 
 def get_beatmap_sr(score_pp: PPStats, beatmap: Beatmap, mods: str):
