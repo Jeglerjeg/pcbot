@@ -243,6 +243,7 @@ async def find_closest_pp(osu_map: rosu_pp_py.Beatmap, calculator: rosu_pp_py.Ca
 
     # Find the closest pp of our two values, and return the amount of 100s
     closest_pp = min([previous_pp.pp, current_pp.pp], key=lambda v: abs(args.pp - v))
+    count_100 = count_100 if closest_pp == current_pp.pp else count_100 - 1
     return ClosestPPStats(count_100, closest_pp, totalstars)
 
 
