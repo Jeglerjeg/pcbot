@@ -422,8 +422,8 @@ async def recent_standard(message: discord.Message, user: str = None):
     await recent_command(message, user, mode=enums.GameMode.osu)
 
 
-plugins.command(aliases="rs")(recent_standard)
-osu.command(aliases="rs")(recent_standard)
+plugins.command(name="rs")(recent_standard)
+osu.command(name="rs")(recent_standard)
 
 
 async def recent_taiko(message: discord.Message, user: str = None):
@@ -431,8 +431,8 @@ async def recent_taiko(message: discord.Message, user: str = None):
     await recent_command(message, user, mode=enums.GameMode.taiko)
 
 
-plugins.command(aliases="rt")(recent_taiko)
-osu.command(aliases="rt")(recent_taiko)
+plugins.command(name="rt")(recent_taiko)
+osu.command(name="rt")(recent_taiko)
 
 
 async def recent_catch(message: discord.Message, user: str = None):
@@ -440,8 +440,8 @@ async def recent_catch(message: discord.Message, user: str = None):
     await recent_command(message, user, mode=enums.GameMode.fruits)
 
 
-plugins.command(aliases="rc")(recent_catch)
-osu.command(aliases="rc")(recent_catch)
+plugins.command(name="rc")(recent_catch)
+osu.command(name="rc")(recent_catch)
 
 
 async def recent_mania(message: discord.Message, user: str = None):
@@ -449,8 +449,8 @@ async def recent_mania(message: discord.Message, user: str = None):
     await recent_command(message, user, mode=enums.GameMode.mania)
 
 
-plugins.command(aliases="rm")(recent_mania)
-osu.command(aliases="rm")(recent_mania)
+plugins.command(name="rm")(recent_mania)
+osu.command(name="rm")(recent_mania)
 
 
 @lazer.command(name="recent", aliases="last new r")
