@@ -453,7 +453,7 @@ plugins.command(aliases="rm")(recent_mania)
 osu.command(aliases="rm")(recent_mania)
 
 
-@lazer.command(aliases="last new r")
+@lazer.command(name="recent", aliases="last new r")
 async def recent_lazer(message: discord.Message, user: str = None):
     """ Display your or another member's most recent score. """
     await recent_command(message, user, True)
