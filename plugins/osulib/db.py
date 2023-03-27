@@ -4,6 +4,22 @@ from sqlalchemy import update
 from sqlalchemy.sql import select, insert, delete
 
 from pcbot.db import engine, db_metadata
+from plugins.osulib.config import osu_config
+from plugins.osulib.models.user import OsuUser
+
+
+def migrate_profile_cache():
+    if "profiles" in osu_config.data:
+        for key, value in osu_config.data["profiles"].items():
+            insert_linked_osu_profile(key, value, int(osu_config.data["primary_guild"][key]),
+                                      int(osu_config.data["mode"][key]),
+                                      osu_config.data["update_mode"][key] if key in osu_config.data["update_mode"]
+                                      else "Full")
+        del osu_config.data["profiles"]
+        del osu_config.data["primary_guild"]
+        del osu_config.data["mode"]
+        del osu_config.data["update_mode"]
+        osu_config.save()
 
 
 def insert_beatmap(query_data: list):
@@ -92,6 +108,104 @@ def delete_beatmapset(beatmapset_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["beatmapsets"]
         statement = delete(table).where(table.c.id == beatmapset_id)
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def get_linked_osu_profiles():
+    with engine.connect() as connection:
+        table = db_metadata.tables["linked_osu_profiles"]
+        statement = select(table)
+        result = connection.execute(statement)
+        return result.fetchall()
+
+
+def get_linked_osu_profile_accounts(osu_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["linked_osu_profiles"]
+        statement = select(table).where(table.c.osu_id == osu_id)
+        result = connection.execute(statement)
+        return result.fetchall()
+
+
+def get_linked_osu_profile(user_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["linked_osu_profiles"]
+        statement = select(table).where(table.c.id == user_id)
+        result = connection.execute(statement)
+        return result.fetchone()
+
+
+def insert_linked_osu_profile(discord_id: int, osu_id: int, home_guild: int, mode: int, update_mode: str = None):
+    new_linked_osu_proile = {"id": discord_id, "osu_id": osu_id, "home_guild": home_guild,
+                             "mode": mode, "update_mode": "Full" if not update_mode else update_mode}
+    with engine.connect() as connection:
+        table = db_metadata.tables["linked_osu_profiles"]
+        statement = insert(table).values(new_linked_osu_proile)
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def update_linked_osu_profile(discord_id: int, osu_id: int, home_guild: int, mode: int, update_mode: str):
+    updated_linked_osu_proile = {"id": discord_id, "osu_id": osu_id, "home_guild": home_guild, "mode": mode,
+                                 "update_mode": update_mode}
+    with engine.connect() as connection:
+        table = db_metadata.tables["linked_osu_profiles"]
+        statement = update(table).where(table.c.id == discord_id).values(updated_linked_osu_proile)
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def delete_linked_osu_profile(user_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["linked_osu_profiles"]
+        statement = delete(table).where(table.c.id == user_id)
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def get_osu_users():
+    with engine.connect() as connection:
+        table = db_metadata.tables["osu_users"]
+        statement = select(table)
+        result = connection.execute(statement)
+        return result.fetchall()
+
+
+def get_osu_user(user_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["osu_users"]
+        statement = select(table).where(table.c.id == user_id)
+        result = connection.execute(statement)
+        return result.fetchone()
+
+
+def insert_osu_user(user: OsuUser):
+    with engine.connect() as connection:
+        table = db_metadata.tables["osu_users"]
+        statement = insert(table).values(user.to_db_query(new_user=True))
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def update_osu_user(user: OsuUser, ticks: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["osu_users"]
+        statement = update(table).where(table.c.id == user.id).values(user.to_db_query(ticks=ticks))
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def delete_osu_user(user_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["osu_users"]
+        statement = delete(table).where(table.c.id == user_id)
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()

@@ -8,7 +8,6 @@ from operator import itemgetter
 import aiohttp
 
 from plugins.osulib import enums, api, db
-from plugins.osulib.config import osu_config
 from plugins.osulib.constants import score_request_limit
 from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore
@@ -154,12 +153,12 @@ def add_score_position(osu_scores: list[OsuScore]):
     return osu_scores
 
 
-async def get_new_score(member_id: str, osu_tracking: dict):
+async def get_new_score(member_id: str):
     """ Compare old user scores with new user scores and return the discovered
     new score if there is any. When a score is returned, it's position in the
     player's top plays can be retrieved with score["pos"]. """
     # Download a list of the user's scores
-    profile = osu_config.data["profiles"][member_id]
+    profile = db.get_linked_osu_profile(int(member_id)).osu_id
     mode = user_utils.get_mode(member_id)
     try:
         fetched_scores = await retrieve_osu_scores(profile, mode, datetime.now(tz=timezone.utc).isoformat())
@@ -183,12 +182,6 @@ async def get_new_score(member_id: str, osu_tracking: dict):
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores["score_list"]):
         if osu_score.ended_at.timestamp() > float(recent_notifications.last_pp_notification):
-            if i == 0:
-                logging.info("a #1 score was set: check plugins.osu.osu_tracking['%s']['debug']", member_id)
-                osu_tracking[member_id]["debug"] = dict(scores=fetched_scores,
-                                                        old=dict(osu_tracking[member_id]["old"]),
-                                                        new=dict(osu_tracking[member_id]["new"]))
-
             # Calculate the difference in pp from the score below
             if i < len(fetched_scores["score_list"]) - 2:
                 score_pp = float(osu_score.pp)

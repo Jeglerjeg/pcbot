@@ -11,11 +11,7 @@ osu_config = Config("osu", pretty=True, data=dict(
     update_interval=30,  # The sleep time in seconds between updates
     not_playing_skip=10,  # Number of rounds between every time someone not playing is updated
     map_event_repeat_interval=6,  # The time in hours before a map event will be treated as "new"
-    profiles={},  # Profile setup as member_id: osu_id
-    mode={},  # Member's game mode as member_id: gamemode_value
     guild={},  # Guild specific info for score- and map notification channels
-    update_mode={},  # Member's notification update mode as member_id: UpdateModes.name
-    primary_guild={},  # Member's primary guild; defines where they should be mentioned: member_id: guild_id
     map_cache={},  # Cache for map events, primarily used for calculating and caching pp of the difficulties
     score_update_delay=5,  # Seconds to wait to retry get_new_score if new score is not found
     ratelimit=60,  # Amount of API requests allowed per minute

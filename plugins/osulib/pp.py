@@ -255,7 +255,7 @@ def get_beatmap_sr(score_pp: PPStats, beatmap: Beatmap, mods: str):
     return difficulty_rating
 
 
-def calculate_total_user_pp(osu_scores: list[OsuScore], member_id: str, osu_tracking: dict):
+def calculate_total_user_pp(osu_scores: list[OsuScore], old_pp: float):
     """ Calculates the user's total PP. """
     total_pp = 0
     for i, osu_score in enumerate(osu_scores):
@@ -263,7 +263,7 @@ def calculate_total_user_pp(osu_scores: list[OsuScore], member_id: str, osu_trac
     total_pp_without_bonus_pp = 0
     for osu_score in osu_scores:
         total_pp_without_bonus_pp += osu_score.weight["pp"]
-    bonus_pp = osu_tracking[member_id]["new"]["statistics"]["pp"] - total_pp_without_bonus_pp
+    bonus_pp = old_pp - total_pp_without_bonus_pp
     return total_pp + bonus_pp
 
 

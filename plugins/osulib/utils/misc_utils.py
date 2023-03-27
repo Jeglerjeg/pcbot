@@ -5,6 +5,7 @@ from plugins.osulib import enums
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import timestamp_pattern, pp_threshold
 from plugins.osulib.models.score import OsuScore
+from plugins.osulib.models.user import OsuUser
 
 
 def get_diff(old: dict, new: dict, value: str):
@@ -85,14 +86,13 @@ async def init_guild_config(guild: discord.Guild):
         await osu_config.asyncsave()
 
 
-def check_for_pp_difference(data: dict):
+def check_for_pp_difference(new_osu_user: OsuUser, old_osu_user: OsuUser = None):
     """ Check if user has gained enough PP to notify a score. """
-    if "old" not in data:
+    if not old_osu_user:
         return False
 
     # Get the difference in pp since the old data
-    old, new = data["old"], data["new"]
-    pp_diff = get_diff(old, new, "pp")
+    pp_diff = new_osu_user.pp - old_osu_user.pp
 
     # If the difference is too small or nothing, move on
     if pp_threshold > pp_diff > -pp_threshold:

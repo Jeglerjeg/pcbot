@@ -1,9 +1,13 @@
+from datetime import datetime
+
 import discord
 
 from pcbot import config, utils
 from plugins.osulib import enums, api
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import host, minimum_pp_required
+from plugins.osulib.db import get_linked_osu_profile, get_osu_users, get_linked_osu_profile_accounts
+from plugins.osulib.enums import GameMode
 
 
 def get_missing_user_string(member: discord.Member):
@@ -12,13 +16,21 @@ def get_missing_user_string(member: discord.Member):
            f"**{config.guild_command_prefix(member.guild)}osu link <username>**"
 
 
-def get_user(message: discord.Message, username: str, osu_tracking: dict):
+def get_user(message: discord.Message, username: str):
     """ Get member by discord username or osu username. """
     member = utils.find_member(guild=message.guild, name=username)
     if not member:
-        for key, value in osu_tracking.items():
-            if value["new"]["username"].lower() == username.lower():
-                member = discord.utils.get(message.guild.members, id=int(key))
+        osu_users = get_osu_users()
+        for osu_user in osu_users:
+            if osu_user.username.lower() == username.lower():
+                linked_profiles = get_linked_osu_profile_accounts(osu_user.id)
+                for linked_profile in linked_profiles:
+                    member = discord.utils.get(message.guild.members, id=int(linked_profile.id))
+                    if not member:
+                        continue
+                if not member:
+                    continue
+
     return member
 
 
@@ -29,19 +41,7 @@ async def retrieve_user_proile(profile: str, mode: enums.GameMode, timestamp: st
     user_data = await api.get_user(profile, mode.name, params=params)
     if not user_data:
         return None
-    user_data["time_updated"] = timestamp
-    if "monthly_playcounts" in user_data:
-        del user_data["monthly_playcounts"]
-    if "page" in user_data:
-        del user_data["page"]
-    if "replays_watched_counts" in user_data:
-        del user_data["replays_watched_counts"]
-    if "user_achievements" in user_data:
-        del user_data["user_achievements"]
-    if "rankHistory" in user_data:
-        del user_data["rankHistory"]
-    if "rank_history" in user_data:
-        del user_data["rank_history"]
+    user_data.set_time_cached(datetime.fromisoformat(timestamp))
     return user_data
 
 
@@ -74,52 +74,45 @@ def get_beatmap_update_status(member_id: str):
     return not bool(osu_config.data["opt_in_beatmaps"])
 
 
-def get_primary_guild(member_id: str):
-    """ Return the primary guild for a member or None. """
-    return osu_config.data["primary_guild"].get(member_id, None)
-
-
 def get_mode(member_id: str):
     """ Return the enums.GameMode for the member with this id. """
-    if member_id not in osu_config.data["mode"]:
+    linked_profile = get_linked_osu_profile(int(member_id))
+    if not linked_profile:
         mode = enums.GameMode.osu
         return mode
 
-    value = int(osu_config.data["mode"][member_id])
-    mode = enums.GameMode(value)
-    return mode
+    return GameMode(linked_profile.mode)
 
 
 def get_update_mode(member_id: str):
     """ Return the member's update mode. """
-    if member_id not in osu_config.data["update_mode"]:
+    linked_profile = get_linked_osu_profile(int(member_id))
+    if not linked_profile or not linked_profile.update_mode:
         return enums.UpdateModes.Full
 
-    return enums.UpdateModes.get_mode(osu_config.data["update_mode"][member_id])
+    return enums.UpdateModes.get_mode(linked_profile.update_mode)
 
 
 def get_user_url(member_id: str):
     """ Return the user website URL. """
-    user_id = osu_config.data["profiles"][member_id]
+    user_id = get_linked_osu_profile(int(member_id)).osu_id
 
-    return "".join([host, "/users/", user_id])
+    return "".join([host, "/users/", str(user_id)])
 
 
 async def has_enough_pp(user: str, mode: enums.GameMode, **params):
     """ Lookup the given member and check if they have enough pp to register.
     params are just like api.get_user. """
     osu_user = await api.get_user(user, mode, params=params)
-    return osu_user["statistics"]["pp"] >= minimum_pp_required
+    return osu_user.pp >= minimum_pp_required
 
 
 def user_exists(member: discord.Member, member_id: str, profile: str):
     """ Check if the bot can see a member, and that the member exists in config files. """
-    return (member is None or member_id not in osu_config.data["profiles"]
-            or profile not in osu_config.data["profiles"][member_id])
+    linked_profile = get_linked_osu_profile(int(member_id))
+    return member is None or not linked_profile or int(profile) != linked_profile.osu_id
 
 
-def user_unlinked_during_iteration(member_id: str, data: dict):
+def user_unlinked_during_iteration(member_id: int):
     """ Check if the member was unlinked after iteration started. """
-    return (member_id in data and "new" in data[member_id] and data[member_id]["new"]
-            and "id" in data[member_id]["new"]
-            and str(data[member_id]["new"]["id"]) not in osu_config.data["profiles"][member_id])
+    return not bool(get_linked_osu_profile(member_id))

@@ -23,7 +23,6 @@ from operator import itemgetter
 from textwrap import wrap
 
 import discord
-from dateutil import parser
 
 import bot
 import plugins
@@ -31,15 +30,18 @@ from pcbot import utils, Annotate
 from plugins.osulib import api, pp, ordr, enums
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
+from plugins.osulib.db import insert_linked_osu_profile, get_osu_user, get_linked_osu_profile, delete_osu_user, \
+    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
-from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user
+from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user, OsuUser
 from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
 
 client = plugins.client  # type: bot.Client
 
 last_rendered = {}  # Saves when the member last rendered a replay
 osu_tracker = OsuTracker()
+migrate_profile_cache()
 
 
 async def on_ready():
@@ -107,7 +109,7 @@ async def osu(message: discord.Message, *options):
     mode = None
 
     for value in options:
-        member = user_utils.get_user(message, value, osu_tracking)
+        member = user_utils.get_user(message, value)
         if member:
             continue
 
@@ -117,9 +119,10 @@ async def osu(message: discord.Message, *options):
         member = message.author
 
     # Make sure the member is assigned
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    linked_profile = get_linked_osu_profile(member.id)
+    assert linked_profile, user_utils.get_missing_user_string(member)
 
-    user_id = osu_config.data["profiles"][str(member.id)]
+    user_id = linked_profile.osu_id
     mode = user_utils.get_mode(str(member.id)) if mode is None else mode
 
     member_rgb = member.color.to_rgb()
@@ -166,12 +169,10 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     osu_user = await api.get_user(name, params=params)
 
     # Check if the osu! user exists
-    assert "id" in osu_user, f"osu! user `{name}` does not exist."
-    user_id = osu_user["id"]
-    mode = enums.GameMode.get_mode(osu_user["playmode"])
+    assert osu_user, f"osu! user `{name}` does not exist."
 
     # Make sure the user has more pp than the minimum limit defined in config
-    if float(osu_user["statistics"]["pp"]) < minimum_pp_required:
+    if osu_user.pp < minimum_pp_required:
         # Perhaps the user wants to display another gamemode
         await client.say(message,
                          f"**You have less than the required {minimum_pp_required}pp.\nIf you have enough in "
@@ -187,20 +188,15 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
         mode = enums.GameMode.get_mode(reply.content)
         assert mode is not None, "**The given gamemode is invalid.**"
-        assert await user_utils.has_enough_pp(user=user_id, mode=mode.name), \
+        assert await user_utils.has_enough_pp(user=osu_user.id, mode=mode.name), \
             f"**Your pp in {mode.name} is less than the required {minimum_pp_required}pp.**"
 
     # Clear the scores when changing user
-    await wipe_user(str(message.author.id))
-
-    user_id = osu_user["id"]
+    await wipe_user(message.author.id)
 
     # Assign the user using their unique user_id
-    osu_config.data["profiles"][str(message.author.id)] = str(user_id)
-    osu_config.data["mode"][str(message.author.id)] = mode.value
-    osu_config.data["primary_guild"][str(message.author.id)] = str(message.guild.id)
-    await osu_config.asyncsave()
-    await client.say(message, f"Set your osu! profile to `{osu_user['username']}`.")
+    insert_linked_osu_profile(message.author.id, osu_user.id, message.guild.id, osu_user.mode.value)
+    await client.say(message, f"Set your osu! profile to `{osu_user.username}`.")
 
 
 @osu.command(hidden=True, owner=True)
@@ -230,14 +226,13 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
         member = message.author
 
     # The member might not be linked to any profile
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(member)
 
     # Clear the tracking data when unlinking user
-    await wipe_user(str(message.author.id))
+    await wipe_user(message.author.id)
 
     # Unlink the given member (usually the message author)
-    del osu_config.data["profiles"][str(member.id)]
-    await osu_config.asyncsave()
+    delete_linked_osu_profile(member.id)
     await client.say(message, f"Unlinked **{member.name}'s** osu! profile.")
 
 
@@ -249,20 +244,21 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
     """ Sets the command executor's gamemode.
 
     Gamemodes are: `{modes}`. """
-    assert str(message.author.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(message.author)
+    linked_profile = get_linked_osu_profile(message.author.id)
+    assert linked_profile, user_utils.get_missing_user_string(message.author)
 
-    user_id = osu_config.data["profiles"][str(message.author.id)]
+    user_id = linked_profile.osu_id
 
     mode_name = misc_format.format_mode_name(mode)
 
     assert await user_utils.has_enough_pp(user=user_id, mode=mode.name), \
         f"**Your pp in {mode_name} is less than the required {minimum_pp_required}pp.**"
 
-    osu_config.data["mode"][str(message.author.id)] = mode.value
-    await osu_config.asyncsave()
+    update_linked_osu_profile(linked_profile.id, linked_profile.osu_id, linked_profile.home_guild, mode.value,
+                              linked_profile.update_mode)
 
     # Clear the scores when changing mode
-    await wipe_user(str(message.author.id))
+    await wipe_user(message.author.id)
 
     await client.say(message, f"Set your gamemode to **{mode_name}**.")
 
@@ -271,22 +267,31 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
 async def info(message: discord.Message, member: discord.Member = Annotate.Self):
     """ Display configuration info. """
     # Make sure the member is assigned
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    linked_profile = get_linked_osu_profile(member.id)
+    assert linked_profile, user_utils.get_missing_user_string(member)
 
-    user_id = osu_config.data["profiles"][str(member.id)]
+    user_id = linked_profile.osu_id
     mode = user_utils.get_mode(str(member.id))
     update_mode = user_utils.get_update_mode(str(member.id))
-    if str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)]:
-        timestamp = parser.isoparse(osu_tracking[str(member.id)]["new"]["time_updated"])
+
+    db_user = get_osu_user(int(user_id))
+    if db_user:
+        osu_profile = OsuUser(db_user)
+    else:
+        osu_profile = None
+
+    if osu_profile:
+        timestamp = osu_profile.time_cached
     else:
         timestamp = None
+
     if timestamp:
         e = discord.Embed(color=member.color, timestamp=timestamp)
         e.set_footer(text="User data last updated:\n")
     else:
         e = discord.Embed(color=member.color)
     e.set_author(name=member.display_name, icon_url=member.display_avatar.url, url="".join([host, "/users/",
-                                                                                            user_id]))
+                                                                                            str(user_id)]))
     e.add_field(name="Game Mode", value=misc_format.format_mode_name(mode))
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if user_utils.is_playing(member) else "NO")
@@ -307,14 +312,17 @@ async def notify(message: discord.Message, mode: enums.UpdateModes.get_mode):
     how much text is in each update, or if you want to disable them completely.
 
     Update modes are: `{modes}`. """
-    assert str(message.author.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(message.author)
+    linked_profile = get_linked_osu_profile(message.author.id)
+    assert linked_profile, user_utils.get_missing_user_string(message.author)
 
-    osu_config.data["update_mode"][str(message.author.id)] = mode.name
-    await osu_config.asyncsave()
+    update_linked_osu_profile(linked_profile.id, linked_profile.osu_id, linked_profile.home_guild, linked_profile.mode,
+                              mode.name)
+
+    user_id = get_linked_osu_profile(message.author.id).osu_id
 
     # Clear the scores when disabling mode
-    if str(message.author.id) in osu_tracking and mode == enums.UpdateModes.Disabled:
-        del osu_tracking[str(message.author.id)]
+    if get_osu_user(user_id) and mode == enums.UpdateModes.Disabled:
+        delete_osu_user(user_id)
 
     await client.say(message, f"Set your update notification mode to **{mode.name.lower()}**.")
 
@@ -324,7 +332,7 @@ async def url(message: discord.Message, member: discord.Member = Annotate.Self,
               section: str.lower = None):
     """ Display the member's osu! profile URL. """
     # Member might not be registered
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(member)
 
     # Send the URL since the member is registered
     await client.say(message, f"**{member.display_name}'s profile:** "
@@ -380,12 +388,13 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
     if not user:
         member = message.author
     else:
-        member = user_utils.get_user(message, user, osu_tracking)
+        member = user_utils.get_user(message, user)
     if not member:
         member = message.author
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    linked_profile = get_linked_osu_profile(member.id)
+    assert linked_profile, user_utils.get_missing_user_string(member)
 
-    user_id = osu_config.data["profiles"][str(member.id)]
+    user_id = linked_profile.osu_id
 
     if not mode:
         mode = user_utils.get_mode(str(member.id))
@@ -533,12 +542,13 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
         elif value.startswith("+"):
             mods = value.replace("+", "").upper()
         else:
-            member = user_utils.get_user(message, value, osu_tracking)
+            member = user_utils.get_user(message, value)
 
     if not member:
         member = message.author
 
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    linked_profile = get_linked_osu_profile(member.id)
+    assert linked_profile, user_utils.get_missing_user_string(member)
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -552,13 +562,13 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
             await client.say(message, str(e))
             return
 
-    user_id = osu_config.data["profiles"][str(member.id)]
+    user_id = linked_profile.osu_id
     mode = user_utils.get_mode(str(member.id))
     params = {
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
     osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params, lazer=lazer_api)
-    assert osu_scores, f"Found no scores by **{osu_tracking[str(member.id)]['new']['username']}**."
+    assert osu_scores, f"Found no scores by **{member.display_name}**."
 
     osu_score = osu_scores["score"]  # type: OsuScore
     if mods:
@@ -606,13 +616,17 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
         elif value.startswith("+"):
             mods = value.replace("+", "").upper()
         else:
-            member = user_utils.get_user(message, value, osu_tracking)
+            member = user_utils.get_user(message, value)
     if not member:
         member = message.author
 
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
-    assert str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)], \
+    linked_profile = get_linked_osu_profile(member.id)
+    assert linked_profile, user_utils.get_missing_user_string(member)
+
+    db_user = get_osu_user(linked_profile.osu_id)
+    assert db_user, \
         "This command requires user data to have been fetched. Please wait a bit and try again."
+    osu_user = OsuUser(db_user)
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -626,15 +640,14 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
             await client.say(message, str(e))
             return
 
-    user_id = osu_config.data["profiles"][str(member.id)]
     beatmap_id = beatmap_info.beatmap_id
     mode = user_utils.get_mode(str(member.id))
     params = {
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
-    fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, user_id, params=params,
-                                                           lazer=lazer_api)
-    assert fetched_osu_scores["scores"], f"Found no scores by **{osu_tracking[str(member.id)]['new']['username']}**."
+    fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, linked_profile.osu_id,
+                                                           params=params, lazer=lazer_api)
+    assert fetched_osu_scores, f"Found no scores by **{osu_user.username}**."
 
     beatmap = await api.beatmap_lookup(map_id=beatmap_id)
     if mods:
@@ -648,14 +661,14 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
             return
 
         # Add user to the score so formatting will work properly.
-        matching_score["user"] = osu_tracking[str(member.id)]["new"]
-        embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
+        matching_score.user = osu_user
+        embed = await embed_format.create_score_embed_with_pp(member, matching_score, beatmap, beatmap_info.gamemode
                                                               if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add user to the score so formatting will work properly.
-        osu_score.user = osu_tracking[str(member.id)]["new"]
+        osu_score.user = osu_user
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
                                                               if beatmap_info.gamemode else mode, osu_tracking,
                                                               time=bool(not mods))
@@ -667,9 +680,9 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
                                                                                                  sorted_scores, 5,
                                                                                                  beatmap_id),
                                                      member.color,
-                                                     osu_tracking[str(member.id)]["new"]["username"],
+                                                     osu_user.username,
                                                      user_utils.get_user_url(str(member.id)),
-                                                     osu_tracking[str(member.id)]["new"]["avatar_url"],
+                                                     osu_user.avatar_url,
                                                      thumbnail_url=beatmap.beatmapset.covers.list2x)
     await client.send_message(message.channel, embed=embed)
 
@@ -742,22 +755,25 @@ async def top(message: discord.Message, *options):
         elif value == "nochoke":
             nochoke = True
         else:
-            member = user_utils.get_user(message, value, osu_tracking)
+            member = user_utils.get_user(message, value)
 
     if not member:
         member = message.author
     mode = user_utils.get_mode(str(member.id))
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
-    assert str(member.id) in osu_tracking, \
-        "Scores have not been retrieved for this user yet. Please wait a bit and try again."
-    assert "new" in osu_tracking[str(member.id)], \
-        "Scores have not been retrieved for this user yet. Please wait a bit and try again."
+
+    linked_profile = get_linked_osu_profile(member.id)
+    assert linked_profile, user_utils.get_missing_user_string(member)
+
+    db_user = get_osu_user(linked_profile.osu_id)
+    assert db_user, \
+        "This command requires user data to have been fetched. Please wait a bit and try again."
+    osu_user = OsuUser(db_user)
 
     params = {
         "mode": mode.name,
         "limit": score_request_limit,
     }
-    fetched_scores = await api.get_user_scores(osu_tracking[str(member.id)]["new"]["id"], "best", params=params)
+    fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params)
     assert fetched_scores, "Failed to retrieve scores. Please try again."
     for i, osu_score in enumerate(fetched_scores):
         osu_score.add_position(i + 1)
@@ -768,20 +784,20 @@ async def top(message: discord.Message, *options):
     if nochoke:
         async with message.channel.typing():
             osu_scores = await pp.calculate_no_choke_top_plays(fetched_scores)
-            new_total_pp = pp.calculate_total_user_pp(osu_scores, str(member.id), osu_tracking)
-            pp_difference = new_total_pp - osu_tracking[str(member.id)]["new"]["statistics"]["pp"]
-            author_text = f'{osu_tracking[str(member.id)]["new"]["username"]} ' \
-                          f'({utils.format_number(osu_tracking[str(member.id)]["new"]["statistics"]["pp"], 2)} ' \
+            new_total_pp = pp.calculate_total_user_pp(osu_scores, osu_user.pp)
+            pp_difference = new_total_pp - osu_user.pp
+            author_text = f'{osu_user.username} ' \
+                          f'({utils.format_number(osu_user.pp, 2)} ' \
                           f'=> {utils.format_number(new_total_pp, 2)}, ' \
                           f'{utils.format_number(pp_difference, 2):+})'
     else:
         osu_scores = fetched_scores
-        author_text = osu_tracking[str(member.id)]["new"]["username"]
+        author_text = osu_user.username
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
     m = await score_format.get_formatted_score_list(mode, sorted_scores, 5, nochoke=nochoke)
     e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
-                                             osu_tracking[str(member.id)]["new"]["avatar_url"],
-                                             osu_tracking[str(member.id)]["new"]["avatar_url"])
+                                             osu_user.avatar_url,
+                                             osu_user.avatar_url)
     view = score_format.PaginatedScoreList(sorted_scores, mode,
                                            score_utils.count_score_pages(sorted_scores, 5), e, nochoke)
     e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
@@ -813,34 +829,36 @@ async def top(message: discord.Message, *options):
         elif value == "score":
             list_type = value
         else:
-            member = user_utils.get_user(message, value, osu_tracking)
+            member = user_utils.get_user(message, value)
 
     if not member:
         member = message.author
-    mode = user_utils.get_mode(str(member.id))
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
-    assert str(member.id) in osu_tracking, \
-        "Scores have not been retrieved for this user yet. Please wait a bit and try again."
-    assert "new" in osu_tracking[str(member.id)], \
-        "Scores have not been retrieved for this user yet. Please wait a bit and try again."
 
+    linked_profile = get_linked_osu_profile(member.id)
+    assert linked_profile, user_utils.get_missing_user_string(member)
+    db_user = get_osu_user(linked_profile.osu_id)
+    assert db_user, \
+        "This command requires user data to have been fetched. Please wait a bit and try again."
+    osu_user = OsuUser(db_user)
+
+    mode = user_utils.get_mode(str(member.id))
     params = {
         "mode": mode.name,
         "limit": score_request_limit,
     }
-    fetched_scores = await api.get_user_scores(osu_tracking[str(member.id)]["new"]["id"], "best", params=params,
+    fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params,
                                                lazer=True)
     assert fetched_scores, "Failed to retrieve scores. Please try again."
     for i, osu_score in enumerate(fetched_scores):
         osu_score.add_position(i + 1)
 
     osu_scores = fetched_scores
-    author_text = osu_tracking[str(member.id)]["new"]["username"]
+    author_text = osu_user.username
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
     m = await score_format.get_formatted_score_list(mode, sorted_scores, 5)
     e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
-                                             osu_tracking[str(member.id)]["new"]["avatar_url"],
-                                             osu_tracking[str(member.id)]["new"]["avatar_url"])
+                                             osu_user.avatar_url,
+                                             osu_user.avatar_url)
     view = score_format.PaginatedScoreList(sorted_scores, mode,
                                            score_utils.count_score_pages(sorted_scores, 5), e)
     e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
@@ -859,7 +877,7 @@ async def beatmap_updates(message: discord.Message, notify_setting: str):
     """ When beatmap updates are enabled, the bot will post updates to your beatmaps. """
     member = message.author
     # Make sure the member is assigned
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(member)
 
     if notify_setting.lower() == "on":
         osu_config.data["beatmap_updates"][str(member.id)] = True
@@ -879,7 +897,7 @@ async def leaderboard_scores(message: discord.Message, notify_setting: str):
     it's in your top100 PP scores. """
     member = message.author
     # Make sure the member is assigned
-    assert str(member.id) in osu_config.data["profiles"], user_utils.get_missing_user_string(member)
+    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(member)
 
     if notify_setting.lower() == "on":
         osu_config.data["leaderboard"][str(member.id)] = True
@@ -921,8 +939,13 @@ async def maps(message: discord.Message, *channels: discord.TextChannel):
 async def debug(message: discord.Message):
     """ Display some debug info. """
     client_time = f"<t:{int(client.time_started.timestamp())}:F>"
-    member_list = [f"`{d['member'].name}`" for d in osu_tracking.values()
-                   if "member" in d and user_utils.is_playing(d["member"])]
+    linked_profiles = get_linked_osu_profiles()
+    member_list = []
+    for linked_profile in linked_profiles:
+        member = discord.utils.get(client.get_all_members(), id=linked_profile.id)
+        if member and user_utils.is_playing(member):
+            member_list.append(f"`{member.name}`")
+
     average_requests = utils.format_number(api.requests_sent /
                                            ((discord.utils.utcnow() - client.time_started).total_seconds() / 60.0), 2) \
         if api.requests_sent > 0 else 0
@@ -933,4 +956,4 @@ async def debug(message: discord.Message):
                               f"Spent `{osu_tracker.time_elapsed:.3f}` seconds last update.\n"
                               f"Last update happened at: {last_update}\n"
                               f"Members registered as playing: {', '.join(member_list) if member_list else 'None'}\n"
-                              f"Total members tracked: `{len(osu_tracking)}`")
+                              f"Total members tracked: `{len(linked_profiles)}`")

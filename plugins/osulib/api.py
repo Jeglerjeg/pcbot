@@ -14,6 +14,7 @@ from dateutil import parser
 
 from plugins.osulib.models.beatmap import Beatmapset
 from plugins.osulib.models.score import OsuScore
+from plugins.osulib.models.user import OsuUser
 
 try:
     import pyrate_limiter
@@ -161,10 +162,16 @@ async def get_user(user, mode=None, params=None):
         request = def_section(f"users/{user}/{mode}")
     else:
         request = def_section(f"users/{user}")
-    if params:
-        return await request(**params)
 
-    return await request()
+    if params:
+        result = await request(**params)
+    else:
+        result = await request()
+
+    if "{'error': None}" in str(result) or result is None:
+        return None
+    user = OsuUser(result, from_db=False)
+    return user
 
 
 async def get_user_scores(user_id, score_type, params=None, lazer: bool = False):

@@ -8,7 +8,7 @@ from plugins.osulib import enums
 from plugins.osulib.constants import host
 from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore
-from plugins.osulib.utils import misc_utils
+from plugins.osulib.models.user import OsuUser
 from plugins.twitchlib import twitch
 
 
@@ -44,23 +44,23 @@ def format_mode_name(mode: enums.GameMode, short_name: bool = False, abbreviatio
     return name
 
 
-def format_user_diff(mode: enums.GameMode, data_old: dict, data_new: dict):
+def format_user_diff(mode: enums.GameMode, new_osu_user: OsuUser, old_osu_user: OsuUser):
     """ Get a bunch of differences and return a formatted string to send.
     iso is the country code. """
-    pp_rank = int(data_new["statistics"]["global_rank"]) if data_new["statistics"]["global_rank"] else 0
-    pp_country_rank = int(data_new["statistics"]["country_rank"]) if data_new["statistics"]["country_rank"] else 0
-    iso = data_new["country"]["code"]
-    rank = -int(misc_utils.get_diff(data_old, data_new, "global_rank"))
-    country_rank = -int(misc_utils.get_diff(data_old, data_new, "country_rank"))
-    accuracy = misc_utils.get_diff(data_old, data_new, "hit_accuracy")
-    pp_diff = misc_utils.get_diff(data_old, data_new, "pp")
-    ranked_score = misc_utils.get_diff(data_old, data_new, "ranked_score")
+    pp_rank = new_osu_user.global_rank
+    pp_country_rank = new_osu_user.country_rank
+    iso = new_osu_user.country_code
+    rank = -(new_osu_user.global_rank - old_osu_user.global_rank)
+    country_rank = -(new_osu_user.country_rank - old_osu_user.country_rank)
+    accuracy = new_osu_user.accuracy - old_osu_user.accuracy
+    pp_diff = new_osu_user.pp - old_osu_user.pp
+    ranked_score = new_osu_user.ranked_score - old_osu_user.ranked_score
     rankings_url = f"{host}/rankings/osu/performance"
 
     # Find the performance page number of the respective ranks
 
     formatted = [f"\u2139`{format_mode_name(mode, abbreviation=True)} "
-                 f"{utils.format_number(data_new['statistics']['pp'], 2)}pp "
+                 f"{utils.format_number(new_osu_user.pp, 2)}pp "
                  f"{utils.format_number(pp_diff, 2):+}pp`",
                  f" [\U0001f30d]({rankings_url}?page="
                  f"{pp_rank // 50 + 1})`#{pp_rank:,}{'' if int(rank) == 0 else f' {int(rank):+}'}`",
@@ -75,10 +75,10 @@ def format_user_diff(mode: enums.GameMode, data_old: dict, data_new: dict):
     else:
         formatted.append("\n\U0001f3af")  # Dart
 
-    formatted.append(f"`{utils.format_number(data_new['statistics']['hit_accuracy'], 3)}%"
+    formatted.append(f"`{utils.format_number(new_osu_user.accuracy, 3)}%"
                      f"{'' if rounded_acc == 0 else f' {rounded_acc:+}%'}`")
 
-    formatted.append(f' \U0001f522`{data_new["statistics"]["ranked_score"]:,}'
+    formatted.append(f' \U0001f522`{new_osu_user.ranked_score:,}'
                      f'{"" if ranked_score == 0 else f" {int(ranked_score):+,}"}`')
 
     return "".join(formatted)

@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -5,6 +6,7 @@ from dateutil import parser
 
 from plugins.osulib.enums import GameMode
 from plugins.osulib.models.beatmap import Beatmap, BeatmapsetCompact
+from plugins.osulib.models.user import OsuUser
 
 
 class ScoreStatistics:
@@ -75,7 +77,7 @@ class OsuScore:
     rank_country: Optional[int]
     rank_global: Optional[int]
     weight: Optional[dict]
-    user: Optional[dict]
+    user: Optional[OsuUser]
 
     def __init__(self, data):
         self.total_score = data["total_score"]

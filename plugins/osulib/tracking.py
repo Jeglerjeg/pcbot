@@ -3,7 +3,6 @@ import copy
 import logging
 import traceback
 from datetime import datetime, timezone, timedelta
-from random import randint
 
 import aiohttp
 import discord
@@ -19,6 +18,7 @@ from plugins.osulib.constants import cache_user_profiles, not_playing_skip, even
 from plugins.osulib.enums import UpdateModes, Mods
 from plugins.osulib.formatting import embed_format, score_format, misc_format, beatmap_format
 from plugins.osulib.models.score import OsuScore
+from plugins.osulib.models.user import OsuUser
 from plugins.osulib.utils import user_utils, score_utils, misc_utils
 
 osu_profile_cache = Config("osu_profile_cache", data={})
@@ -44,15 +44,14 @@ class MapEvent:
         return repr(self)
 
 
-async def wipe_user(member_id: str):
+async def wipe_user(member_id: int):
     """ Deletes user data from tracking. """
-    if member_id in osu_tracking:
-        if db.get_recent_events(osu_tracking[member_id]["new"]["id"]):
-            db.delete_recent_events(osu_tracking[member_id]["new"]["id"])
-        del osu_tracking[member_id]
-    if member_id in osu_profile_cache.data:
-        del osu_profile_cache.data[member_id]
-        await osu_profile_cache.asyncsave()
+    linked_profile = db.get_linked_osu_profile(member_id)
+    if linked_profile:
+        if db.get_recent_events(linked_profile.osu_id):
+            db.delete_recent_events(linked_profile.osu_id)
+        if db.get_osu_user(linked_profile.osu_id):
+            db.delete_osu_user(linked_profile.osu_id)
 
 
 class OsuTracker:
@@ -80,12 +79,23 @@ class OsuTracker:
         self.started = datetime.now()
 
         try:
-            for member_id, profile in list(osu_config.data["profiles"].items()):
+            member_list = db.get_linked_osu_profiles()
+            for linked_profile in member_list:
+                old_db_user = db.get_osu_user(linked_profile.osu_id)
                 # First, update the user's data
-                await self.__update_user_data(member_id, profile)
-                if str(member_id) in osu_tracking:
-                    data = osu_tracking[str(member_id)]
-                    client.loop.create_task(self.__notify(member_id, data))
+                await self.__update_user_data(str(linked_profile.id), linked_profile.osu_id)
+                new_db_user = db.get_osu_user(linked_profile.osu_id)
+                if new_db_user:
+                    if old_db_user:
+                        old_osu_user = OsuUser(old_db_user)
+                    else:
+                        old_osu_user = None
+                    new_osu_user = OsuUser(new_db_user)
+                    if str(linked_profile.id) in osu_tracking:
+                        data = osu_tracking[str(linked_profile.id)]
+                    else:
+                        data = {}
+                    client.loop.create_task(self.__notify(linked_profile.id, data, new_osu_user, old_osu_user))
             if cache_user_profiles:
                 await osu_profile_cache.asyncsave()
         except KeyError as e:
@@ -99,84 +109,90 @@ class OsuTracker:
     async def wait_for_ready(self):
         await client.wait_until_ready()
 
-    async def __notify(self, member_id: str, data: dict):
+    async def __notify(self, member_id: int, data: dict, new_osu_user: OsuUser, old_osu_user: OsuUser = None):
         # Next, check for any differences in pp between the "old" and the "new" subsections
         # and notify any guilds
-        if misc_utils.check_for_pp_difference(data):
-            await self.__notify_pp(str(member_id), data)
+        if misc_utils.check_for_pp_difference(new_osu_user, old_osu_user):
+            await self.__notify_pp(str(member_id), data["new"], new_osu_user, old_osu_user)
         # Check for any differences in the users' events and post about map updates
         if misc_utils.check_for_new_recent_events(data):
             await self.__notify_recent_events(str(member_id), data)
 
     @staticmethod
-    async def __update_user_data(member_id: str, profile: str):
+    async def __update_user_data(member_id: str, profile: int):
         """ Go through all registered members playing osu!, and update their data. """
         # Go through each member playing and give them an "old" and a "new" subsection
         # for their previous and latest user data
         # Skip members who disabled tracking
 
-        if user_utils.get_update_mode(member_id) is enums.UpdateModes.Disabled:
+        if user_utils.get_update_mode(str(member_id)) is enums.UpdateModes.Disabled:
             return
 
         member = discord.utils.get(client.get_all_members(), id=int(member_id))
-        if user_utils.user_exists(member, member_id, profile) \
-                or user_utils.user_unlinked_during_iteration(member_id, osu_tracking):
-            await wipe_user(member_id)
+        if user_utils.user_exists(member, member_id, str(profile)) \
+                or user_utils.user_unlinked_during_iteration(int(member_id)):
+            await wipe_user(int(member_id))
             return
 
-        if member_id in osu_tracking and "scheduled_wipe" in osu_tracking and \
-                osu_tracking[member_id]["schedule_wipe"] is True:
-            osu_tracking[member_id]["schedule_wipe"] = False
-            await wipe_user(member_id)
-
         # Check if the member is tracked, add to cache and tracking if not
-        if member_id not in osu_tracking:
+        current_time = datetime.now(tz=timezone.utc).isoformat()
+        mode = user_utils.get_mode(member_id)
+        db_user = db.get_osu_user(profile)
+        if not db_user or member_id not in osu_tracking:
             osu_tracking[member_id] = {}
             osu_tracking[member_id]["schedule_wipe"] = False
             if cache_user_profiles:
                 osu_profile_cache.data[member_id] = {}
                 osu_profile_cache.data[member_id]["schedule_wipe"] = False
+            api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
+            db.insert_osu_user(api_user_data)
 
-        # Add update ticks to member tracking
-        if "ticks" not in osu_tracking[member_id]:
-            # Set ticks to a random digit to spread out tracking non-playing users
-            osu_tracking[member_id]["ticks"] = randint(0, not_playing_skip - 1)
+            if user_utils.get_leaderboard_update_status(str(member_id)) \
+                    or user_utils.get_beatmap_update_status(str(member_id)):
+                params = {
+                    "limit": 20
+                }
+                recent_events = await api.get_user_recent_activity(profile, params=params)
+                if recent_events is not None:
+                    tracking_data = {"events": recent_events}
+                    osu_tracking[member_id]["new"] = {}
+                    osu_tracking[member_id]["new"] = tracking_data
+                else:
+                    logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
+                    return
+                return
 
-        osu_tracking[member_id]["member"] = member
-        osu_tracking[member_id]["ticks"] += 1
-        if cache_user_profiles:
-            osu_profile_cache.data[member_id]["ticks"] = osu_tracking[member_id]["ticks"]
+        osu_user = OsuUser(db_user)
+        osu_user.add_tick()
 
         # Only update members not tracked ingame every nth update
-        if not user_utils.is_playing(member) and osu_tracking[member_id]["ticks"] % not_playing_skip > 0:
-            # Update their old data to match their new one in order to avoid duplicate posts
-            if "new" in osu_tracking[member_id]:
-                osu_tracking[member_id]["old"] = osu_tracking[str(member_id)]["new"]
+        if not user_utils.is_playing(member) and osu_user.ticks % not_playing_skip > 0:
             return
 
+        tracking_data = {}
         # Get the user data for the player
-        current_time = datetime.now(tz=timezone.utc).isoformat()
-        mode = user_utils.get_mode(member_id)
         try:
-            user_data = await user_utils.retrieve_user_proile(profile, mode, current_time)
-            if user_data is None:
+            api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
+            if api_user_data is None:
                 logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
                 return
+            db.update_osu_user(api_user_data, osu_user.ticks)
             params = {
                 "limit": 20
             }
-            if user_utils.get_leaderboard_update_status(member_id) or user_utils.get_beatmap_update_status(member_id):
+            if user_utils.get_leaderboard_update_status(str(member_id)) or user_utils.get_beatmap_update_status(
+                    str(member_id)):
                 recent_events = await api.get_user_recent_activity(profile, params=params)
                 if recent_events is not None:
-                    user_data["events"] = recent_events
+                    tracking_data["events"] = recent_events
                 else:
                     logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
                     return
             else:
-                user_data["events"] = []
+                tracking_data["events"] = []
             # User is already tracked
-            if not db.get_recent_events(user_data["id"]):
-                db.insert_recent_events(user_data["id"])
+            if not db.get_recent_events(osu_user.id):
+                db.insert_recent_events(osu_user.id)
         except aiohttp.ServerDisconnectedError:
             return
         except asyncio.TimeoutError:
@@ -185,12 +201,13 @@ class OsuTracker:
         except ValueError:
             logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
             return
+
         # Update the "new" data
         if "new" in osu_tracking[member_id]:
             # Move the "new" data into the "old" data of this user
             osu_tracking[member_id]["old"] = osu_tracking[member_id]["new"]
 
-        osu_tracking[member_id]["new"] = user_data
+        osu_tracking[member_id]["new"] = tracking_data
         if cache_user_profiles:
             osu_profile_cache.data[member_id]["new"] = copy.deepcopy(osu_tracking[member_id]["new"])
 
@@ -310,7 +327,7 @@ class OsuTracker:
                         else:
                             new_event.messages.append(msg)
             elif beatmap_info is not None:
-                user_id = osu_config.data["profiles"][member_id]
+                user_id = db.get_linked_osu_profile(int(member_id)).osu_id
                 mode = beatmap_info.gamemode
 
                 params = {
@@ -353,12 +370,10 @@ class OsuTracker:
                         except discord.Forbidden:
                             pass
 
-    async def __notify_pp(self, member_id: str, data: dict):
+    async def __notify_pp(self, member_id: str, new: dict, new_osu_user: OsuUser, old_osu_user: OsuUser = None):
         """ Notify any differences in pp and post the scores + rank/pp gained. """
+        member = discord.utils.get(client.get_all_members(), id=int(member_id))
 
-        old, new = data["old"], data["new"]
-
-        member = data["member"]
         mode = user_utils.get_mode(member_id)
         update_mode = user_utils.get_update_mode(member_id)
         m = []
@@ -370,7 +385,7 @@ class OsuTracker:
         # If there is a score, there is also a beatmap
         if update_mode is not UpdateModes.PP:
             for i in range(3):
-                osu_scores = await score_utils.get_new_score(member_id, osu_tracking)
+                osu_scores = await score_utils.get_new_score(member_id)
                 if osu_scores:
                     break
                 await asyncio.sleep(osu_config.data["score_update_delay"])
@@ -392,7 +407,7 @@ class OsuTracker:
             osu_score = osu_scores[0]
             beatmap = await api.beatmap_lookup(map_id=osu_score.beatmap_id)
             thumbnail_url = beatmap.beatmapset.covers.list2x
-            author_text = f"{data['new']['username']} set a new best (#{osu_score.position}/{score_request_limit} " \
+            author_text = f"{new_osu_user.username} set a new best (#{osu_score.position}/{score_request_limit} " \
                           f"+{osu_score.pp_difference:.2f}pp)"
 
             # There might not be any events
@@ -418,13 +433,13 @@ class OsuTracker:
             m.append(await score_format.get_formatted_score_list(mode, osu_scores,
                                                                  limit=len(osu_scores) if len(osu_scores) <= 5 else 5,
                                                                  no_time=True))
-            thumbnail_url = data["new"]["avatar_url"]
-            author_text = f"""{data["new"]["username"]} set new best scores"""
+            thumbnail_url = new_osu_user.avatar_url
+            author_text = f"""{new_osu_user.username} set new best scores"""
         else:
-            author_text = data["new"]["username"]
+            author_text = new_osu_user.username
 
         # Always add the difference in pp along with the ranks
-        m.append(misc_format.format_user_diff(mode, old, new))
+        m.append(misc_format.format_user_diff(mode, new_osu_user, old_osu_user))
 
         # Send the message to all guilds
         for guild in member.mutual_guilds:
@@ -433,7 +448,7 @@ class OsuTracker:
                 continue
             member = guild.get_member(int(member_id))
 
-            primary_guild = user_utils.get_primary_guild(str(member.id))
+            primary_guild = db.get_linked_osu_profile(int(member_id)).home_guild
             is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
             potential_string = score_format.format_potential_pp(score_pp if score_pp is not None
                                                                 and not bool(osu_score.legacy_perfect
@@ -442,7 +457,7 @@ class OsuTracker:
                                                                 osu_score)
             embed = embed_format.get_embed_from_template("".join(m), member.color, author_text,
                                                          user_utils.get_user_url(str(member.id)),
-                                                         data["new"]["avatar_url"], thumbnail_url,
+                                                         new_osu_user.avatar_url, thumbnail_url,
                                                          potential_string=potential_string)
             for i, channel in enumerate(channels):
                 try:

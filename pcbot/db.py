@@ -39,6 +39,38 @@ def get_wyr_db():
     )
 
 
+def get_linked_osu_profiles_db():
+    Table(
+        "linked_osu_profiles",
+        db_metadata,
+        Column("id", Integer, nullable=False, primary_key=True, autoincrement=False),
+        Column("osu_id", Integer, nullable=False),
+        Column("home_guild", Integer, nullable=False),
+        Column("mode", Integer, nullable=False),
+        Column("update_mode", String, nullable=False),
+    )
+
+
+def get_osu_users_db():
+    Table(
+        "osu_users",
+        db_metadata,
+        Column("id", Integer, nullable=False, autoincrement=False),
+        Column("username", String, nullable=False),
+        Column("avatar_url", String, nullable=False),
+        Column("country_code", String, nullable=False),
+        Column("mode", Integer, nullable=False),
+        Column("pp", Float, nullable=False),
+        Column("accuracy", Float, nullable=False),
+        Column("country_rank", Integer, nullable=False),
+        Column("global_rank", Integer, nullable=False),
+        Column("max_combo", Integer, nullable=False),
+        Column("ranked_score", Integer, nullable=False),
+        Column("ticks", Integer, nullable=False),
+        Column("time_cached", Integer, nullable=False),
+    )
+
+
 def get_osu_events_db():
     Table(
         "osu_recent_events",
@@ -109,6 +141,8 @@ def create_tables():
     get_osu_events_db()
     get_osu_beatmaps_db()
     get_osu_beatmapset_db()
+    get_linked_osu_profiles_db()
+    get_osu_users_db()
     db_metadata.create_all(engine)
 
 
