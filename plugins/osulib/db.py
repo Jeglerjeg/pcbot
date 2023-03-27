@@ -176,6 +176,14 @@ def get_osu_users():
         return result.fetchall()
 
 
+def delete_osu_users():
+    with engine.connect() as connection:
+        table = db_metadata.tables["osu_users"]
+        statement = delete(table).returning(table.c.id)
+        result = connection.execute(statement)
+        return result.fetchall()
+
+
 def get_osu_user(user_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["osu_users"]

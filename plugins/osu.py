@@ -31,7 +31,8 @@ from plugins.osulib import api, pp, ordr, enums
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
 from plugins.osulib.db import insert_linked_osu_profile, get_osu_user, get_linked_osu_profile, delete_osu_user, \
-    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache, get_osu_users
+    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache, get_osu_users, \
+    delete_osu_users
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user, OsuUser
@@ -205,19 +206,21 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 @osu.command(hidden=True, owner=True)
 async def wipe_tracking(message: discord.Message, member: discord.Member = None):
     """ Wipe all tracked members or just the specified member, as well as the map cache in osu.json. """
-    osu_config.data["map_cache"] = {}
-    await osu_config.asyncsave()
     if member:
-        if str(member.id) in osu_tracking:
-            osu_tracking[str(member.id)]["schedule_wipe"] = True
-            await client.say(message, f"Scheduled wipe from tracking for {member.name} during the next update.")
+        linked_profile = get_linked_osu_profile(member.id)
+        if linked_profile:
+            if get_osu_user(linked_profile.osu_id):
+                delete_osu_user(linked_profile.osu_id)
+                await client.say(message, "Wiped user's tracking data.")
+            else:
+                await client.say(message, "User not tracked.")
         else:
-            await client.say(message, "User not in tracking.")
+            await client.say(message, "User not linked.")
     else:
-        tracking_length = len(osu_tracking)
-        for entry in list(osu_tracking):
-            osu_tracking[entry]["schedule_wipe"] = True
-        await client.say(message, f"Scheduled {tracking_length} entries for wiping during the next update.")
+        osu_config.data["map_cache"] = {}
+        await osu_config.asyncsave()
+        wiped_users = delete_osu_users()
+        await client.say(message, f"Wiped {len(wiped_users)} entries.")
 
 
 @osu.command(aliases="unset")
