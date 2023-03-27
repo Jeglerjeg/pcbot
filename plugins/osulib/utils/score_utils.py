@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import traceback
-from datetime import timezone, datetime
 from math import ceil
 from operator import itemgetter
 
@@ -40,7 +39,7 @@ def get_maximum_score_combo(osu_score: OsuScore, beatmap: Beatmap):
     return beatmap.max_combo if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None else None
 
 
-async def retrieve_osu_scores(profile: str, mode: enums.GameMode, timestamp: str):
+async def retrieve_osu_scores(profile: str, mode: enums.GameMode):
     """ Retrieves"""
     params = {
         "mode": mode.name,
@@ -50,12 +49,7 @@ async def retrieve_osu_scores(profile: str, mode: enums.GameMode, timestamp: str
     if fetched_scores is not None:
         for i, osu_score in enumerate(fetched_scores):
             osu_score.add_position(i + 1)
-            osu_score.beatmapset = None
-            osu_score.user = None
-        user_scores = (dict(score_list=fetched_scores, time_updated=timestamp))
-    else:
-        user_scores = None
-    return user_scores
+    return fetched_scores
 
 
 def get_no_choke_scorerank(mods: list, acc: float):
@@ -161,7 +155,7 @@ async def get_new_score(member_id: str):
     profile = db.get_linked_osu_profile(int(member_id)).osu_id
     mode = user_utils.get_mode(member_id)
     try:
-        fetched_scores = await retrieve_osu_scores(profile, mode, datetime.now(tz=timezone.utc).isoformat())
+        fetched_scores = await retrieve_osu_scores(profile, mode)
     except aiohttp.ServerDisconnectedError:
         return None
     except asyncio.TimeoutError:

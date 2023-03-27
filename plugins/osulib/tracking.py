@@ -63,7 +63,7 @@ async def add_new_user(member_id: int, profile: int):
     if cache_user_profiles:
         osu_profile_cache.data[str(member_id)] = {}
         osu_profile_cache.data[str(member_id)]["schedule_wipe"] = False
-    current_time = datetime.now(tz=timezone.utc).isoformat()
+    current_time = datetime.now(tz=timezone.utc)
     mode = user_utils.get_mode(str(member_id))
     api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
     db.insert_osu_user(api_user_data)
@@ -167,8 +167,6 @@ class OsuTracker:
             return
 
         # Check if the member is tracked, add to cache and tracking if not
-        current_time = datetime.now(tz=timezone.utc).isoformat()
-        mode = user_utils.get_mode(str(member_id))
         db_user = db.get_osu_user(profile)
         if not db_user:
             await add_new_user(member_id, profile)
@@ -179,11 +177,14 @@ class OsuTracker:
 
         # Only update members not tracked ingame every nth update
         if not user_utils.is_playing(member) and osu_user.ticks % not_playing_skip > 0:
+            db.update_osu_user(osu_user, osu_user.ticks)
             return
 
         tracking_data = {}
         # Get the user data for the player
         try:
+            current_time = datetime.now(tz=timezone.utc)
+            mode = user_utils.get_mode(str(member_id))
             api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
             if api_user_data is None:
                 logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
@@ -202,9 +203,6 @@ class OsuTracker:
                     return
             else:
                 tracking_data["events"] = []
-            # User is already tracked
-            if not db.get_recent_events(osu_user.id):
-                db.insert_recent_events(osu_user.id)
         except aiohttp.ServerDisconnectedError:
             return
         except asyncio.TimeoutError:
