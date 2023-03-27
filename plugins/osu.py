@@ -195,7 +195,10 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     await wipe_user(message.author.id)
 
     # Assign the user using their unique user_id
+    if get_linked_osu_profile(message.author.id):
+        delete_linked_osu_profile(message.author.id)
     insert_linked_osu_profile(message.author.id, osu_user.id, message.guild.id, osu_user.mode.value)
+
     await client.say(message, f"Set your osu! profile to `{osu_user.username}`.")
 
 
