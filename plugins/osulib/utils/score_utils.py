@@ -174,12 +174,12 @@ async def get_new_score(member_id: str):
 
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
-    for i, osu_score in enumerate(fetched_scores["score_list"]):
+    for i, osu_score in enumerate(fetched_scores):
         if osu_score.ended_at.timestamp() > float(recent_notifications.last_pp_notification):
             # Calculate the difference in pp from the score below
-            if i < len(fetched_scores["score_list"]) - 2:
+            if i < len(fetched_scores) - 2:
                 score_pp = float(osu_score.pp)
-                diff = score_pp - float(fetched_scores["score_list"][i + 1].pp)
+                diff = score_pp - float(fetched_scores[i + 1].pp)
             else:
                 diff = 0
             osu_score.pp_difference = diff
