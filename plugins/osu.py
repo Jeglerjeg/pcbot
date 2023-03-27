@@ -31,7 +31,7 @@ from plugins.osulib import api, pp, ordr, enums
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
 from plugins.osulib.db import insert_linked_osu_profile, get_osu_user, get_linked_osu_profile, delete_osu_user, \
-    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache
+    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache, get_osu_users
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user, OsuUser
@@ -940,11 +940,13 @@ async def debug(message: discord.Message):
     """ Display some debug info. """
     client_time = f"<t:{int(client.time_started.timestamp())}:F>"
     linked_profiles = get_linked_osu_profiles()
+    tracked_profiles = get_osu_users()
     member_list = []
     for linked_profile in linked_profiles:
-        member = discord.utils.get(client.get_all_members(), id=linked_profile.id)
-        if member and user_utils.is_playing(member):
-            member_list.append(f"`{member.name}`")
+        if any(linked_profile.osu_id == osu_user.id for osu_user in tracked_profiles):
+            member = discord.utils.get(client.get_all_members(), id=linked_profile.id)
+            if member and user_utils.is_playing(member):
+                member_list.append(f"`{member.name}`")
 
     average_requests = utils.format_number(api.requests_sent /
                                            ((discord.utils.utcnow() - client.time_started).total_seconds() / 60.0), 2) \
@@ -956,4 +958,4 @@ async def debug(message: discord.Message):
                               f"Spent `{osu_tracker.time_elapsed:.3f}` seconds last update.\n"
                               f"Last update happened at: {last_update}\n"
                               f"Members registered as playing: {', '.join(member_list) if member_list else 'None'}\n"
-                              f"Total members tracked: `{len(linked_profiles)}`")
+                              f"Total members tracked: `{len(tracked_profiles)}`")
