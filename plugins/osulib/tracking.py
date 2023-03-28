@@ -303,7 +303,7 @@ class OsuTracker:
                 self.recent_map_events.append(new_event)
 
                 # Send the message to all guilds
-                member = data["member"]
+                member = discord.utils.get(client.get_all_members(), id=int(member_id))
                 if not member:
                     continue
                 for guild in member.mutual_guilds:
@@ -360,7 +360,7 @@ class OsuTracker:
 
                 beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
                 # Send the message to all guilds
-                member = data["member"]
+                member = discord.utils.get(client.get_all_members(), id=int(member_id))
                 if not member:
                     continue
                 for guild in member.mutual_guilds:
