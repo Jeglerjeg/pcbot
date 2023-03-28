@@ -35,7 +35,7 @@ from plugins.osulib.db import insert_linked_osu_profile, get_osu_user, get_linke
     delete_osu_users
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
-from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user, OsuUser
+from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user, OsuUser, add_new_user
 from plugins.osulib.utils import misc_utils, beatmap_utils, score_utils, user_utils
 
 client = plugins.client  # type: bot.Client
@@ -199,6 +199,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     if get_linked_osu_profile(message.author.id):
         delete_linked_osu_profile(message.author.id)
     insert_linked_osu_profile(message.author.id, osu_user.id, message.guild.id, osu_user.mode.value)
+    await add_new_user(message.author.id, osu_user.id)
 
     await client.say(message, f"Set your osu! profile to `{osu_user.username}`.")
 
