@@ -45,7 +45,7 @@ async def generate_pasta(name: str):
 
     # Add the url to the message content itself when it's not an image
     content = None
-    if embed.url and embed.image.url == embed.Empty:
+    if embed.url and embed.image.url is None:
         content = embed.url + (" \N{EN DASH} " + embed.description if embed.description else "")
         embed = None  # Remove the embed as the image wouldn't embed otherwise
 
