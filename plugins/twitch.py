@@ -20,7 +20,7 @@ from plugins.twitchlib import twitch
 client = plugins.client  # type: bot.Client
 
 
-twitch_config = Config("twitch-config", data=dict(guilds={}))
+twitch_config = Config("twitch-config", data={"guilds": {}})
 
 # Keep track of all {member.id: date} that are streaming
 stream_history = {}

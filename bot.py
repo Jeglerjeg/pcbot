@@ -128,9 +128,7 @@ class Client(discord.Client):
         won't accept messages from bot accounts, where if bot=True it doesn't care. """
 
         def new_check(m):
-            return (
-                       check(m) and (True if bot else not m.author.bot)
-            )
+            return check(m) and (True if bot else not m.author.bot)
 
         return await super().wait_for("message", check=new_check, timeout=timeout)
 
@@ -416,7 +414,7 @@ async def parse_command_args(command: plugins.Command, cmd_args: list, message: 
     if has_pos:
         num_given -= (num_pos_args - 1) if not num_pos_args == 0 else 0
 
-    complete = (num_given == num_args)
+    complete = num_given == num_args
 
     # The command is incomplete if positional arguments are forced
     if complete and command.pos_check is True and num_pos_args == 0:
@@ -575,14 +573,14 @@ async def main():
             discord_logger.setLevel(start_args.log_level if start_args.log_level >= logging.INFO else logging.INFO)
 
         # Setup some config for more customization
-        bot_meta = config.Config("bot_meta", pretty=True, data=dict(
-            name="PCBOT",
-            command_prefix=config.default_command_prefix,
-            case_sensitive_commands=config.default_case_sensitive_commands,
-            github_repo="pckv/pcbot/",
-            display_owner_error_in_chat=False,
-            send_owner_error_messages=False
-        ))
+        bot_meta = config.Config("bot_meta", pretty=True, data = {
+            "name": "PCBOT",
+            "command_prefix": config.default_command_prefix,
+            "case_sensitive_commands": config.default_case_sensitive_commands,
+            "github_repo": "Jeglerjeg/pcbot/",
+            "display_owner_error_in_chat": False,
+            "send_owner_error_messages": False
+        })
         config.name = bot_meta.data["name"]
         config.github_repo = bot_meta.data["github_repo"]
         config.default_command_prefix = bot_meta.data["command_prefix"]

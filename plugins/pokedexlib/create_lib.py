@@ -4,11 +4,11 @@ from operator import itemgetter
 
 import csv
 
-pokedex = dict(
-    pokemon={},
-    generations=[],
-    types={}
-)
+pokedex = {
+    "pokemon": {},
+    "generations": [],
+    "types": {}
+}
 
 
 def get_pokemon_name(pokemon_id: int):
@@ -32,33 +32,33 @@ def get_type_name(type_id: int):
 def main():
     print("Initializing...")
 
-    with open("csv/pokemon_species.csv") as f:
+    with open("csv/pokemon_species.csv", encoding="utf-8") as f:
         r = csv.DictReader(f)
         for row in r:
             gen = int(row["generation_id"])
 
-            pokedex["pokemon"][row["identifier"]] = dict(
-                id=int(row["id"]),
-                name=row["identifier"],
-                generation=gen,
-                evolution_id=int(row["evolution_chain_id"]),
-                evolves_from_id=int(row["evolves_from_species_id"] or 0)
-            )
+            pokedex["pokemon"][row["identifier"]] = {
+                "id": int(row["id"]),
+                "name": row["identifier"],
+                "generation": gen,
+                "evolution_id": int(row["evolution_chain_id"]),
+                "evolves_from_id": int(row["evolves_from_species_id"] or 0)
+            }
 
             if gen not in pokedex["generations"]:
                 pokedex["generations"].append(gen)
 
-    with open("csv/pokemon.csv") as f:
+    with open("csv/pokemon.csv", encoding="utf-8") as f:
         r = csv.DictReader(f)
         for row in r:
             name = get_pokemon_name(int(row["id"]))
             if name not in pokedex["pokemon"]:
                 continue
 
-            pokedex["pokemon"][name].update(dict(
-                height=float(row["height"]) / 10,
-                weight=float(row["weight"]) / 10
-            ))
+            pokedex["pokemon"][name].update({
+                "height": float(row["height"]) / 10,
+                "weight": float(row["weight"]) / 10
+            })
 
     # HUGE and confusing way to create our evolutions! Basically, they are all
     # chained and they are all lists.
@@ -94,12 +94,12 @@ def main():
         mon["evolution"] = evolution[mon["evolution_id"]]
 
     types = {}
-    with open("csv/types.csv") as f:
+    with open("csv/types.csv", encoding="utf-8") as f:
         r = csv.DictReader(f)
         for row in r:
             types[int(row["id"])] = row["identifier"]
 
-    with open("csv/pokemon_types.csv") as f:
+    with open("csv/pokemon_types.csv", encoding="utf-8") as f:
         r = csv.DictReader(f)
         for row in r:
             name = get_pokemon_name(int(row["pokemon_id"]))
@@ -114,11 +114,11 @@ def main():
                 pokedex["pokemon"][name]["types"] = [type_name_]
 
             if name not in pokedex["types"]:
-                pokedex["types"][type_name_] = dict(
-                    id=int(row["type_id"]),
-                    name=type_name_,
-                    damage_factor={}
-                )
+                pokedex["types"][type_name_] = {
+                    "id": int(row["type_id"]),
+                    "name": type_name_,
+                    "damage_factor": {}
+                }
 
     with open("csv/pokemon_species_names.csv", encoding="utf-8") as f:
         r = csv.DictReader(f)
@@ -139,7 +139,7 @@ def main():
 
             pokedex["pokemon"][name]["description"] = row["flavor_text"].replace("\n", " ").replace("\u2019", "'")
 
-    with open("csv/pokemon_go.csv") as f:
+    with open("csv/pokemon_go.csv", encoding="utf-8") as f:
         r = csv.DictReader(f)
         for row in r:
             name = get_pokemon_name(int(row["id"]))
@@ -153,27 +153,27 @@ def main():
                 pokedex["pokemon"][name]["hatches_from"] = int(row["hatches_from"])
 
     # Add missingno (id 0)
-    pokedex["pokemon"]["missingno"] = dict(
-        id=0,
-        name="missingno",
-        locale_name="missingno.",
-        weight=1590.5,
-        height=3.0,
-        evolution=[["missingno"]],
-        evolves_from_id=0,
-        evolution_id=0,
-        genus="???",
-        types=["normal", "999"],
-        description="Ç̻̼͚͔̤̎ͧ̅̈́o̧̫̫̖̠͉̹ͤ͗m͂͐̾͐͢͠ͅm̶̲̬̰̦̘͍̄̃̌͗͊͋͡ę̬̜̩̙̍͊̉ṇ̨̡̻̪̰̏̉͢t͂̓̑ͩ͋ͮ"
+    pokedex["pokemon"]["missingno"] = {
+        "id": 0,
+        "name": "missingno",
+        "locale_name": "missingno.",
+        "weight": 1590.5,
+        "height": 3.0,
+        "evolution": [["missingno"]],
+        "evolves_from_id": 0,
+        "evolution_id": 0,
+        "genus": "???",
+        "types": ["normal", "999"],
+        "description": "Ç̻̼͚͔̤̎ͧ̅̈́o̧̫̫̖̠͉̹ͤ͗m͂͐̾͐͢͠ͅm̶̲̬̰̦̘͍̄̃̌͗͊͋͡ę̬̜̩̙̍͊̉ṇ̨̡̻̪̰̏̉͢t͂̓̑ͩ͋ͮ"
                     "̯̪̉̂͊s̳̭͓͇̤͛ͧ̀́͋͑͛ͨ̋ ̷͓̱̝͔ͥ͑͝d̤͖̫͙̝͙̱̍̓̑̃ͪ̇́͜u̸͎͚͇̲̮̳̰͎ͬ͌̑͒ͣ͋ͯͦͥ͘r͐͊͐̆"
                     "̭̲̳͍̲̏ͫͩ̐i̶̳͕͕̹̟̠͙̞͗ͤ̍̍n̮̙̼̬̦̫̞̟̣ͤ̏̑ͬ̏̋̉̄̕͟ğ̡͇̼͇͔̼̙̞͂͗̍͆̾ͦ ̨̧̭͎̺͖̰̬̦̬ͧ̽́̈̐ͫ̽ͭͭ͟c̈́"
                     "̛̼̾̍̍̐̃́r̠͉͇ͦ̀ͨ̀͂͟ͅe̡̡̻̞͇͎̠̘ͤ̐͑̋̆ͪͮ̋̃ạ̵͙̤̲̪̩͇̋̄̋ͤͥ̽̕͟t̴ͨ͒ͮ͛͑ͦ̀"
                     "̖̪̼͙͇̖̼͕ǐ̴̧͚̂ͫͬ̆̓͂ǫ̸̜̺̎̃̀ṇ͈̦́̃͟.̟̼̠̭̩ͫͭ̒̃͆̐͑͞",
-        generation=1
-    )
+        "generation": 1
+    }
 
     # Add type efficacy information (super effective/not very effective)
-    with open("csv/type_efficacy.csv") as f:
+    with open("csv/type_efficacy.csv", encoding="utf-8") as f:
         r = csv.DictReader(f)
         for row in r:
             name = get_type_name(int(row["damage_type_id"]))
@@ -188,7 +188,7 @@ def main():
             #     pokedex["types"][name]["ineffective"].append(name_target)
 
     # SAVE JSON
-    with open("pokedex.json", "w") as f:
+    with open("pokedex.json", "w", encoding="utf-8") as f:
         json.dump(pokedex, f, sort_keys=True, indent=4)
 
     print("Library created.")

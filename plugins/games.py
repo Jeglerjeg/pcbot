@@ -256,7 +256,7 @@ class Typing(Game):
         timeout = self.calculate_timeout()
 
         # We'll wait for a message from all of our participants
-        for i in range(len(self.participants)):
+        for _ in range(len(self.participants)):
             def check(message):
                 return message.channel == self.channel and self.is_participant(message) is True
 

@@ -10,7 +10,7 @@ except ImportError:
 
 from pcbot import Config
 
-twitch_config = Config("twitch-api", data=dict(ids={}, client_id=None, client_secret=None))
+twitch_config = Config("twitch-api", data={"ids": {}, "client_id": None, "client_secret": None})
 
 # Define twitch API info
 client_id = twitch_config.data["client_id"] or ""

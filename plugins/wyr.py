@@ -13,7 +13,7 @@ from pcbot.db import engine
 
 client = plugins.client  # type: bot.Client
 
-db = Config("would-you-rather", data=dict(timeout=10, responses=["**{name}** would **{choice}**!"]))
+db = Config("would-you-rather", data={"timeout": 10, "responses": ["**{name}** would **{choice}**!"]})
 command_pattern = re.compile(r"(.+)(?:\s+or|\s*,)\s+([^?]+)\?*")
 
 recently_asked = {}

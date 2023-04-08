@@ -31,8 +31,8 @@ from plugins.osulib import api, pp, ordr, enums
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
 from plugins.osulib.db import insert_linked_osu_profile, get_osu_user, get_linked_osu_profile, delete_osu_user, \
-    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache, get_osu_users, \
-    delete_osu_users
+    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache,\
+    get_osu_users, delete_osu_users
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.tracking import OsuTracker, osu_tracking, wipe_user, OsuUser, add_new_user
@@ -134,9 +134,9 @@ async def osu(message: discord.Message, *options):
     # Calculate whether the header color should be black or white depending on the background color.
     # Stupidly, the API doesn't accept True/False. It only looks for the &darkheaders keyword.
     # The silly trick done here is extracting either the darkheader param or nothing.
-    dark = dict(darkheader="True") if (member_rgb[0] * 0.299
-                                       + member_rgb[1] * 0.587
-                                       + member_rgb[2] * 0.144) > 186 else {}
+    dark = {"darkheader": "True"} if (member_rgb[0] * 0.299
+                                      + member_rgb[1] * 0.587
+                                      + member_rgb[2] * 0.144) > 186 else {}
 
     # Download and upload the signature
     params = {
@@ -246,7 +246,7 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
 gamemodes = ', '.join(misc_format.format_mode_name(gm) for gm in enums.GameMode)
 
 
-@osu.command(aliases="mode m track", error=f"Valid gamemodes: `{gamemodes}`", doc_args=dict(modes=gamemodes))
+@osu.command(aliases="mode m track", error=f"Valid gamemodes: `{gamemodes}`", doc_args={"modes": gamemodes})
 async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
     """ Sets the command executor's gamemode.
 
@@ -313,7 +313,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
 doc_modes = ", ".join(m.name.lower() for m in enums.UpdateModes)
 
 
-@osu.command(aliases="n updatemode", error=f"Valid modes: `{doc_modes}`", doc_args=dict(modes=doc_modes))
+@osu.command(aliases="n updatemode", error=f"Valid modes: `{doc_modes}`", doc_args={"modes": doc_modes})
 async def notify(message: discord.Message, mode: enums.UpdateModes.get_mode):
     """ Sets the command executor's update notification mode. This changes
     how much text is in each update, or if you want to disable them completely.
@@ -535,7 +535,7 @@ async def render(message: discord.Message, *options):
         return
 
     last_rendered[message.author.id] = datetime.utcnow()
-    ordr.requested_renders[int(render_job["renderID"])] = dict(message=placeholder_msg, edited=datetime.utcnow())
+    ordr.requested_renders[int(render_job["renderID"])] = {"message": placeholder_msg, "edited": datetime.utcnow()}
 
 
 async def score_command(message: discord.Message, *options, lazer_api: bool = False):
@@ -605,8 +605,8 @@ plugins.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score
 osu.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score)
 
 
-@lazer.command(aliases="c", usage="[member] <url> +<mods>")
-async def score(message: discord.Message, *options):
+@lazer.command(name="score", aliases="c", usage="[member] <url> +<mods>")
+async def lazer_score(message: discord.Message, *options):
     """ Display your own or the member's score on a beatmap. Add mods to simulate the beatmap score with those mods.
     If URL is not provided it searches the last 10 messages for a URL. """
     await score_command(message, *options, lazer_api=True)
@@ -704,8 +704,8 @@ plugins.command(name="scores", usage="[member] <url> <+mods>")(scores)
 osu.command(name="scores", usage="[member] <url> <+mods>")(scores)
 
 
-@lazer.command(usage="[member] <url> <+mods>")
-async def scores(message: discord.Message, *options):
+@lazer.command(name="scores", usage="[member] <url> <+mods>")
+async def lazer_scores(message: discord.Message, *options):
     """ Display all of your own or the member's scores on a beatmap. Add mods to only show the score with those mods.
     If URL is not provided it searches the last 10 messages for a URL. """
     await scores_command(message, *options, lazer_api=True)
@@ -817,8 +817,8 @@ plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 osu.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 
 
-@lazer.command(usage="[member] <sort_by>", aliases="osutop")
-async def top(message: discord.Message, *options):
+@lazer.command(name="top", usage="[member] <sort_by>", aliases="osutop")
+async def lazer_top(message: discord.Message, *options):
     """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
      You can also add "nochoke" as an option to display a list of unchoked top scores instead.
      Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """

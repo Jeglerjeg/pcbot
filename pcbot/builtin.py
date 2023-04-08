@@ -20,7 +20,7 @@ client = plugins.client  # type: bot.Client
 
 sub = asyncio.subprocess
 lambdas = Config("lambdas", data={})
-lambda_config = Config("lambda-config", data=dict(imports=[], blacklist=[]))
+lambda_config = Config("lambda-config", data={"imports": [], "blacklist": []})
 
 code_globals = {}
 
@@ -158,8 +158,8 @@ async def send_result(channel: discord.TextChannel, result, time_elapsed: timede
 @plugins.command(owner=True)
 async def do(message: discord.Message, python_code: Annotate.Code):
     """ Execute python code. """
-    code_globals.update(dict(message=message, client=client,
-                             author=message.author, guild=message.guild, channel=message.channel))
+    code_globals.update({"message": message, "client": client,
+                         "author": message.author, "guild": message.guild, "channel": message.channel})
 
     # Create an async function so that we can await it using the result of eval
     python_code = "async def do_session():\n    " + "\n    ".join(line for line in python_code.split("\n"))
@@ -184,8 +184,8 @@ async def eval_(message: discord.Message, python_code: Annotate.Code):
     """ Evaluate a python expression. Can be any python code on one
     line that returns something. Coroutine generators will by awaited.
     """
-    code_globals.update(dict(message=message, client=client,
-                             author=message.author, guild=message.guild, channel=message.channel))
+    code_globals.update({"message": message, "client": client,
+                         "author": message.author, "guild": message.guild, "channel": message.channel})
 
     before = datetime.now()
     try:
@@ -469,11 +469,11 @@ def init():
             """ Backwards compatibility for old plugin(name) method. """
             return plugins.get_plugin(item)
 
-    code_globals.update(dict(
-        utils=utils, datetime=datetime, timedelta=timedelta,
-        random=random, asyncio=asyncio, plugins=plugins,
-        plugin=Plugin(), command=plugins.get_command, execute=plugins.execute
-    ))
+    code_globals.update({
+        "utils": utils, "datetime": datetime, "timedelta": timedelta,
+        "random": random, "asyncio": asyncio, "plugins": plugins,
+        "plugin": Plugin(), "command": plugins.get_command, "execute": plugins.execute
+    })
 
     # Import modules for "do", "eval" and "lambda" commands
     for module, attr in lambda_config.data["imports"]:
@@ -506,8 +506,8 @@ async def on_message(message: discord.Message):
 
             return default
 
-        code_globals.update(dict(arg=arg, args=args, message=message, client=client,
-                                 author=message.author, guild=message.guild, channel=message.channel))
+        code_globals.update({"arg": arg, "args": args, "message": message, "client": client,
+                             "author": message.author, "guild": message.guild, "channel": message.channel})
         python_code = lambdas.data[args[0]]
 
         # Create an async function so that we can await it using the result of eval

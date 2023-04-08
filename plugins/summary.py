@@ -59,7 +59,8 @@ valid_options = ("+re", "+regex", "+case", "+tts", "+nobot", "+bot", "+coherent"
 on_no_messages = "**There were no messages to generate a summary from, {0.author.name}.**"
 on_fail = "**I was unable to construct a summary, {0.author.name}.**"
 
-summary_options = Config("summary_options", data=dict(no_bot=False, no_self=False, persistent_channels=[]), pretty=True)
+summary_options = Config("summary_options", data={"no_bot": False, "no_self": False, "persistent_channels": []},
+                         pretty=True)
 
 
 def generate_query_data(messages: list[discord.Message]):
@@ -128,7 +129,7 @@ def get_persistent_messages(channel_id: int, member_list: list[discord.Member] =
 
 
 def to_persistent(message: discord.Message):
-    return dict(content=message.clean_content, author=str(message.author.id), bot=message.author.bot)
+    return {"content": message.clean_content, "author": str(message.author.id), "bot": message.author.bot}
 
 
 async def update_messages(channel: discord.TextChannel):
@@ -289,7 +290,7 @@ def generate_message(message: discord.Message, message_content: list, phrase: st
         bigram = False
 
     # Generate the summary, or num summaries
-    for i in range(num):
+    for _ in range(num):
         if strict and markovify_model:
             if phrase and is_endswith(phrase):
                 try:

@@ -7,14 +7,14 @@ from pcbot import Annotate, utils, Config
 
 client = plugins.client
 
-# api_keys is a list of objects with keys "key" and "cx" 
+# api_keys is a list of objects with keys "key" and "cx"
 #
-# e.g 
+# e.g
 # "api_keys": [
 #   {"key": "abc", "cx": "123"},
 #   {"key": "def", "cx": "456"}
 # ]
-config = Config("google", data=dict(api_keys=[]), pretty=True)
+config = Config("google", data={"api_keys": []}, pretty=True)
 result_cache = {}
 blacklisted_url_keywords = [
     "lookaside.fbsbx.com",  # occurs frequently and images don't embed
@@ -67,7 +67,7 @@ async def img(message: discord.Message, query: Annotate.CleanContent):
         )
 
         assert "error" not in json, "Search failed, try again"
-        assert "items" in json, "No results for {}".format(query)
+        assert "items" in json, f"No results for {query}"
 
         # Assign an index so that multiple searches with the same query
         # cycles through the cache

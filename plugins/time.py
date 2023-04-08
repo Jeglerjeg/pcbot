@@ -18,7 +18,7 @@ from pcbot import Config, Annotate
 
 client = plugins.client  # type: bot.Client
 
-time_cfg = Config("time", data=dict(countdown={}, timezone={}))
+time_cfg = Config("time", data={"countdown": {}, "timezone": {}})
 dt_format = "%A, %d %B %Y %H:%M:%S"
 
 
@@ -142,8 +142,8 @@ async def create(message: discord.Message, tag: tag_arg, *time, timezone: tz_arg
     seconds = (dt.diff(pendulum.now(timezone)).in_seconds())
     assert dt > pendulum.now(timezone), "A countdown has to be set in the future."
 
-    cd = dict(time=dt.to_datetime_string(), tz=timezone, tz_name=timezone_name, tag=tag,
-              author=str(message.author.id), channel=str(message.channel.id))
+    cd = {"time": dt.to_datetime_string(), "tz": timezone, "tz_name": timezone_name, "tag": tag,
+          "author": str(message.author.id), "channel": str(message.channel.id)}
     time_cfg.data["countdown"][tag] = cd
     await time_cfg.asyncsave()
     await client.say(message, f"Added countdown with tag `{tag}`.")

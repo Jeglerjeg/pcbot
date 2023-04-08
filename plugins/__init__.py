@@ -94,7 +94,7 @@ def _parse_str_list(obj, name, cmd_name):
         return obj.split(" ")
     if isinstance(obj, list):
         return obj
-    
+
     if obj is not None:
         logging.warning("Invalid parameter in command '%s': %s must be a str or a list", cmd_name, name)
     return []
@@ -166,9 +166,11 @@ def command(**options):
 
         # Convert to a function that uses the name_prefix
         if usage_suffix is not None:
-            def usage(guild): return name_prefix(guild) + " " + usage_suffix
+            def usage(guild):
+                return name_prefix(guild) + " " + usage_suffix
         else:
-            def usage(guild): return None
+            def usage(guild):
+                return None
 
         # Properly format description when using docstrings
         # Kinda like markdown; new line = (blank line) or (/ at end of line)

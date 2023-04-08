@@ -168,6 +168,3 @@ texinfo_documents = [
      author, 'PCBOT', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-

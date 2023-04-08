@@ -58,7 +58,7 @@ async def dice(message: discord.Message, num_and_sides: dice_roll = (1, 6)):
     rolls = []
     num, sides = num_and_sides
 
-    for i in range(num):
+    for _ in range(num):
         rolls.append(random.randint(1, sides))
 
     await client.say(message, f"**{message.author.display_name}** rolls `[{', '.join(str(r)for r in rolls)}]`")

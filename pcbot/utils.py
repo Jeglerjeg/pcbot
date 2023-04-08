@@ -408,11 +408,11 @@ def format_exception(e: Exception):
     return type(e).__name__ + ": " + str(e)
 
 
-def format_syntax_error(e: Exception):
+def format_syntax_error(e: SyntaxError):
     """ Returns a formatted string of a SyntaxError.
     Stolen from https://github.com/Rapptz/RoboDanny/blob/master/cogs/repl.py#L24-L25
     """
-    return "{0.text}\n{1:>{0.offset}}\n{2}: {0}".format(e, "^", type(e).__name__).replace("\n\n", "\n")
+    return f"{e.text}\n{'^':>{e.offset}}\n{type(e).__name__}: {e}".replace("\n\n", "\n")
 
 
 def format_objects(*objects, attr=None, dec: str = "", sep: str = None):

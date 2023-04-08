@@ -33,12 +33,11 @@ async def alias(message: discord.Message, *options: str.lower, trigger: str, tex
         aliases.data[str(message.author.id)] = {}
 
     # Set options
-    aliases.data[str(message.author.id)][trigger if case_sensitive else trigger.lower()] = dict(
-        text=text,
-        anywhere=anywhere,
-        case_sensitive=case_sensitive,
-        delete_message=delete_message
-    )
+    aliases.data[str(message.author.id)][trigger if case_sensitive else trigger.lower()] = {
+        "text": text,
+        "anywhere": anywhere,
+        "case_sensitive": case_sensitive,
+        "delete_message": delete_message}
     await aliases.asyncsave()
 
     m = "**Alias assigned.** Type `{}`{} to trigger the alias."

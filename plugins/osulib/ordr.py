@@ -17,57 +17,57 @@ requested_renders = {}
 
 ordr_client = socketio.AsyncClient()
 
-ordr_config = Config("ordr", pretty=True, data=dict(
-    verificationKey="change to your API key",
-    resolution="1280x720",  # The resolution of the replay
-    globalVolume=80,  # The global volume of the replay
-    musicVolume=80,  # The music volume of the replay
-    hitsoundVolume=80,  # The hitsound volume of the replay
-    showHitErrorMeter="true",  # Whether or not to show the hiterror meter
-    showUnstableRate="true",  # Whether or not to display the UR
-    showScore="true",  # Whether or not to display the score
-    showHPbar="true",  # Whether or not to display the HP bar
-    showComboCounter="true",  # Whether or not to display the combo counter
-    showPPCounter="true",  # Whether or not to display the PP counter
-    showScoreboard="false",  # Whether or not to display the scoreboard (This might
-    showBorders="false",  # Whether or not to display playfield borders
-    showMods="true",  # Whether or not to display mod icons
-    showResultScreen="false",  # Whether or not to show the results screen
-    skin="heckin",  # The name or ID of the skin to use
-    useSkinCursor="true",  # Whether or not to use the skin cursor
-    useBeatmapColors="false",  # Whether or not to use beatmap colors instead of skin colors
-    useSkinColors="true",  # Whether or not to use skin colors instead of beatmap colors
-    useSkinHitsounds="false",  # Whether or not to use skin hitsounds instead of beatmap hitsounds
-    cursorScaleToCS="false",  # Whether or not the cursor should scale with CS
-    cursorRainbow="false",  # Whether or not the cursor should rainbow, only works if useSkinCursor is False
-    cursorTrailGlow="false",  # Whether or not the cursor trail should have a glow
-    drawFollowPoints="true",  # Whether or not followpoints should be shown
-    scaleToTheBeat="false",  # Whether or not objects should scale to the beat
-    sliderMerge="false",  # Whether or not sliders should be merged
-    objectsRainbow="false",  # Whether or not objects should rainbow. This overrides beatmap or skin colors
-    objectsFlashToTheBeat="false",  # Whether or not objects should flash to the beat
-    useHitCircleColor="false",  # Whether or not the slider body should have the same color as the hitcircles
-    seizureWarning="false",  # Whether or not to display the 5 second seizure warning before the render
-    loadStoryboard="false",  # Whether or not to load the beatmap storyshow
-    loadVideo="false",  # Whether or not to load the beatmap video
-    introBGDim=80,  # How dimmed the intro BG should be in percentage from 0 to 100
-    inGameBGDim=90,  # How dimmed the ingame BG should be in percentage from 0 to 100
-    breakBGDim=80,  # How dimmed the break BG should be in percentage from 0 to 100
-    BGParallax="false",  # Whether or not the BG should have parralax
-    showDanserLogo="true",  # Whether or not to show the danser logo before the render
-    skip="false",  # Whether or not to skip the intro
-    cursorRipples="false",  # Whether or not to show cursor ripples
-    cursorSize=1,  # The size of the cursor from 0.5 to 2
-    cursorTrail="true",  # Whether or not to show the cursortrail
-    drawComboNumbers="true",  # Whether or not to show combo number in hitcircles
-    sliderSnakingIn="true",  # Whether or not sliders should snake in
-    sliderSnakingOut="false",  # Whether or not sliders should snake out
-    showHitCounter="true",  # Whether or not the hit counter (100s, 50s, misses) should be shown
-    showKeyOverlay="true",  # Whether or not the key overlay should be shown
-    showAvatarsOnScoreboard="false",  # Whether or not to show avatars on the scoreboard. May break some skins
-    showAimErrorMeter="false",  # Whether or not to show an aim error meter
-    playNightcoreSamples="true",  # Whether or not to play nightcore hitsounds
-))
+ordr_config = Config("ordr", pretty=True, data={
+    "verificationKey": "change to your API key",
+    "resolution": "1280x720",  # The resolution of the replay
+    "globalVolume": 80,  # The global volume of the replay
+    "musicVolume": 80,  # The music volume of the replay
+    "hitsoundVolume": 80,  # The hitsound volume of the replay
+    "showHitErrorMeter": "true",  # Whether or not to show the hiterror meter
+    "showUnstableRate": "true",  # Whether or not to display the UR
+    "showScore": "true",  # Whether or not to display the score
+    "showHPbar": "true",  # Whether or not to display the HP bar
+    "showComboCounter": "true",  # Whether or not to display the combo counter
+    "showPPCounter": "true",  # Whether or not to display the PP counter
+    "showScoreboard": "false",  # Whether or not to display the scoreboard (This might
+    "showBorders": "false",  # Whether or not to display playfield borders
+    "showMods": "true",  # Whether or not to display mod icons
+    "showResultScreen": "false",  # Whether or not to show the results screen
+    "skin": "heckin",  # The name or ID of the skin to use
+    "useSkinCursor": "true",  # Whether or not to use the skin cursor
+    "useBeatmapColors": "false",  # Whether or not to use beatmap colors instead of skin colors
+    "useSkinColors": "true",  # Whether or not to use skin colors instead of beatmap colors
+    "useSkinHitsounds": "false",  # Whether or not to use skin hitsounds instead of beatmap hitsounds
+    "cursorScaleToCS": "false",  # Whether or not the cursor should scale with CS
+    "cursorRainbow": "false",  # Whether or not the cursor should rainbow, only works if useSkinCursor is False
+    "cursorTrailGlow": "false",  # Whether or not the cursor trail should have a glow
+    "drawFollowPoints": "true",  # Whether or not followpoints should be shown
+    "scaleToTheBeat": "false",  # Whether or not objects should scale to the beat
+    "sliderMerge": "false",  # Whether or not sliders should be merged
+    "objectsRainbow": "false",  # Whether or not objects should rainbow. This overrides beatmap or skin colors
+    "objectsFlashToTheBeat": "false",  # Whether or not objects should flash to the beat
+    "useHitCircleColor": "false",  # Whether or not the slider body should have the same color as the hitcircles
+    "seizureWarning": "false",  # Whether or not to display the 5 second seizure warning before the render
+    "loadStoryboard": "false",  # Whether or not to load the beatmap storyshow
+    "loadVideo": "false",  # Whether or not to load the beatmap video
+    "introBGDim": 80,  # How dimmed the intro BG should be in percentage from 0 to 100
+    "inGameBGDim": 90,  # How dimmed the ingame BG should be in percentage from 0 to 100
+    "breakBGDim": 80,  # How dimmed the break BG should be in percentage from 0 to 100
+    "BGParallax": "false",  # Whether or not the BG should have parralax
+    "showDanserLogo": "true",  # Whether or not to show the danser logo before the render
+    "skip": "false",  # Whether or not to skip the intro
+    "cursorRipples": "false",  # Whether or not to show cursor ripples
+    "cursorSize": 1,  # The size of the cursor from 0.5 to 2
+    "cursorTrail": "true",  # Whether or not to show the cursortrail
+    "drawComboNumbers": "true",  # Whether or not to show combo number in hitcircles
+    "sliderSnakingIn": "true",  # Whether or not sliders should snake in
+    "sliderSnakingOut": "false",  # Whether or not sliders should snake out
+    "showHitCounter": "true",  # Whether or not the hit counter (100s, 50s, misses) should be shown
+    "showKeyOverlay": "true",  # Whether or not the key overlay should be shown
+    "showAvatarsOnScoreboard": "false",  # Whether or not to show avatars on the scoreboard. May break some skins
+    "showAimErrorMeter": "false",  # Whether or not to show an aim error meter
+    "playNightcoreSamples": "true",  # Whether or not to play nightcore hitsounds
+})
 
 
 def get_render_error(error_code: int):
@@ -177,7 +177,7 @@ async def disconnect():
 
 
 @ordr_client.event()
-async def connect_error(data):
+async def connect_error(_):
     logging.info("Connection to ordr websocket failed.")
 
 

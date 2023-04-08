@@ -92,7 +92,7 @@ def def_section(api_name: str, first_element: bool = False, api_url: str = main_
             }
 
             # Download using a URL of the given API function name
-            for i in range(request_tries):
+            for _ in range(request_tries):
                 try:
                     response = await utils.download_json(url + api_name, headers=headers, **params)
 

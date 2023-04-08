@@ -212,7 +212,7 @@ async def add(message: discord.Message, name: snippet_name, code: Annotate.Code)
     with `{pre}brainfuck run`."""
     assert name not in cfg.data, f"Entry `{name}` already exists."
 
-    cfg.data[name] = dict(author=str(str(message.author.id)), code=code)
+    cfg.data[name] = {"author": str(str(message.author.id)), "code": code}
     await cfg.asyncsave()
     await client.say(message, f"Entry `{name}` created.")
 
