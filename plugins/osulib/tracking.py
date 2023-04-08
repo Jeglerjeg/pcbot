@@ -148,7 +148,7 @@ class OsuTracker:
             await self.__notify_pp(str(member_id), data["new"], new_osu_user, old_osu_user)
         # Check for any differences in the users' events and post about map updates
         if misc_utils.check_for_new_recent_events(data):
-            await self.__notify_recent_events(str(member_id), data)
+            await self.__notify_recent_events(str(member_id), data, new_osu_user)
 
     @staticmethod
     async def __update_user_data(member_id: int, profile: int):
@@ -221,7 +221,7 @@ class OsuTracker:
         if cache_user_profiles:
             osu_profile_cache.data[str(member_id)]["new"] = copy.deepcopy(osu_tracking[str(member_id)]["new"])
 
-    async def __notify_recent_events(self, member_id: str, data: dict):
+    async def __notify_recent_events(self, member_id: str, data: dict, new_osu_user: OsuUser):
         """ Notify any map updates, such as update, resurrect and qualified. """
 
         old, new = data["old"]["events"], data["new"]["events"]
@@ -337,7 +337,7 @@ class OsuTracker:
                         else:
                             new_event.messages.append(msg)
             elif beatmap_info is not None:
-                user_id = db.get_linked_osu_profile(int(member_id)).osu_id
+                user_id = new_osu_user.id
                 mode = beatmap_info.gamemode
 
                 params = {
@@ -371,8 +371,8 @@ class OsuTracker:
 
                     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode,
                                                                           osu_tracking, twitch_link=True)
-                    embed.set_author(name=f"{data['new']['username']} set a new leaderboard score",
-                                     icon_url=data["new"]["avatar_url"], url=user_utils.get_user_url(str(member.id)))
+                    embed.set_author(name=f"{new_osu_user.username} set a new leaderboard score",
+                                     icon_url=new_osu_user.avatar_url, url=user_utils.get_user_url(str(member.id)))
 
                     for channel in channels:
                         try:
