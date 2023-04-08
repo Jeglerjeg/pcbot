@@ -27,6 +27,7 @@ help_arg = ("?", "help")
 version = ""
 name = "PCBOT"  # Placebo name, should be changed on_ready
 owner_error = False  # Whether the bot owner should receive error messages in chat
+owner_dm = False # Whether the bot owner should receive error messages in their dms
 
 
 def set_version(ver: str):

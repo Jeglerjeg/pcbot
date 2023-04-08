@@ -220,6 +220,8 @@ async def execute_command(command: plugins.Command, message: discord.Message, *a
         logging.error(traceback.format_exc())
         if plugins.is_owner(message.author) and config.owner_error:
             await client.say(message, utils.format_code(traceback.format_exc()))
+        elif not plugins.is_owner(message.author) and config.owner_dm:
+            await client.send_message(app_info.owner, utils.format_code(traceback.format_exc()))
         else:
             await client.say(message, f"An error occurred while executing this command. If the error persists, "
                                       f"please send a PM to {app_info.owner}.")
@@ -578,13 +580,15 @@ async def main():
             command_prefix=config.default_command_prefix,
             case_sensitive_commands=config.default_case_sensitive_commands,
             github_repo="pckv/pcbot/",
-            display_owner_error_in_chat=False
+            display_owner_error_in_chat=False,
+            send_owner_error_messages=False
         ))
         config.name = bot_meta.data["name"]
         config.github_repo = bot_meta.data["github_repo"]
         config.default_command_prefix = bot_meta.data["command_prefix"]
         config.default_case_sensitive_commands = bot_meta.data["case_sensitive_commands"]
         config.owner_error = bot_meta.data["display_owner_error_in_chat"]
+        config.owner_dm = bot_meta.data["send_owner_error_messages"]
 
         # Create all database tables
         create_tables()
