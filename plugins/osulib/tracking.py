@@ -168,7 +168,8 @@ class OsuTracker:
 
         # Check if the member is tracked, add to cache and tracking if not
         db_user = db.get_osu_user(profile)
-        if not db_user:
+        if not db_user or not str(member_id) in osu_tracking:
+            await wipe_user(member_id)
             await add_new_user(member_id, profile)
             return
 
