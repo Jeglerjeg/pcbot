@@ -58,31 +58,34 @@ async def add_new_user(member_id: int, profile: int):
     # Wipe user data to make sure things aren't duplicated
     await wipe_user(member_id)
 
-    osu_tracking[str(member_id)] = {}
-    osu_tracking[str(member_id)]["schedule_wipe"] = False
-    if cache_user_profiles:
-        osu_profile_cache.data[str(member_id)] = {}
-        osu_profile_cache.data[str(member_id)]["schedule_wipe"] = False
     current_time = datetime.now(tz=timezone.utc)
     mode = user_utils.get_mode(str(member_id))
     api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
-    db.insert_osu_user(api_user_data)
-    if not db.get_recent_events(profile):
-        db.insert_recent_events(profile)
-
-    if user_utils.get_leaderboard_update_status(str(member_id)) \
-            or user_utils.get_beatmap_update_status(str(member_id)):
-        params = {
-            "limit": 20
-        }
-        recent_events = await api.get_user_recent_activity(profile, params=params)
-        if recent_events is not None:
-            tracking_data = {"events": recent_events}
-            osu_tracking[str(member_id)]["new"] = {}
-            osu_tracking[str(member_id)]["new"] = tracking_data
-        else:
-            logging.info("Could not retrieve osu! info from %s (%s)", member_id, profile)
-            return
+    if api_user_data:
+        osu_tracking[str(member_id)] = {}
+        osu_tracking[str(member_id)]["schedule_wipe"] = False
+        if cache_user_profiles:
+            osu_profile_cache.data[str(member_id)] = {}
+            osu_profile_cache.data[str(member_id)]["schedule_wipe"] = False
+        db.insert_osu_user(api_user_data)
+        if not db.get_recent_events(profile):
+            db.insert_recent_events(profile)
+        if user_utils.get_leaderboard_update_status(str(member_id)) \
+                or user_utils.get_beatmap_update_status(str(member_id)):
+            params = {
+                "limit": 20
+            }
+            recent_events = await api.get_user_recent_activity(profile, params=params)
+            if recent_events is not None:
+                tracking_data = {"events": recent_events}
+                osu_tracking[str(member_id)]["new"] = {}
+                osu_tracking[str(member_id)]["new"] = tracking_data
+            else:
+                logging.info("Could not retrieve osu! info from %s (%s)", member_id, profile)
+                return
+    else:
+        logging.info("Could not retrieve osu! info from %s (%s)", member_id, profile)
+        return
     return
 
 
