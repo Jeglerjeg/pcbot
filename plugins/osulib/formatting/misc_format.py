@@ -59,7 +59,7 @@ def format_user_diff(mode: enums.GameMode, new_osu_user: OsuUser, old_osu_user: 
 
     # Find the performance page number of the respective ranks
 
-    formatted = [f"\u2139`{format_mode_name(mode, abbreviation=True)} "
+    formatted = [f"`{format_mode_name(mode, abbreviation=True)} "
                  f"{utils.format_number(new_osu_user.pp, 2)}pp "
                  f"{utils.format_number(pp_diff, 2):+}pp`",
                  f" [\U0001f30d]({rankings_url}?page="
