@@ -183,7 +183,7 @@ class OsuTracker:
 
         # Get the new events
         api_events = await api.get_user_recent_activity(new_osu_user.id)
-        if not api_events:
+        if api_events is None:
             logging.info(f"Failed to fetch recent events for {member_id}")
             return
         last_user_events = db.get_recent_events(int(member_id))
