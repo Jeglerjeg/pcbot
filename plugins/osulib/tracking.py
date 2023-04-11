@@ -208,7 +208,6 @@ class OsuTracker:
         member = discord.utils.get(client.get_all_members(), id=member_id)
         if user_utils.user_exists(member, str(member_id), str(profile)) \
                 or user_utils.user_unlinked_during_iteration(member_id):
-            logging.info(f"Wiping user {member_id}")
             await wipe_user(member_id)
             return
 
@@ -216,6 +215,7 @@ class OsuTracker:
         db_user = db.get_osu_user(profile)
         if not db_user or str(member_id) not in osu_tracking:
             logging.info(f"Adding new user {member_id}, profile: {profile}")
+            logging.info(db_user)
             await add_new_user(member_id, profile)
             return
 
