@@ -170,7 +170,7 @@ async def get_new_score(member_id: str):
     if fetched_scores is None:
         return None
 
-    recent_notifications = db.get_recent_events(profile)
+    recent_notifications = db.get_recent_events(int(member_id))
 
     new_scores = []
     # Compare the scores from top to bottom and try to find a new one
@@ -187,7 +187,7 @@ async def get_new_score(member_id: str):
 
     # Save the updated score list, and if there are new scores, update time_updated
     if new_scores:
-        db.update_recent_events(profile, recent_notifications, pp=True)
+        db.update_recent_events(int(member_id), recent_notifications, pp=True)
     return new_scores
 
 

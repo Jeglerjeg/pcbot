@@ -51,11 +51,11 @@ class OsuUser:
             self.ticks = None
             self.time_cached = None
 
-    def to_db_query(self, new_user: bool = False, ticks: int = None):
+    def to_db_query(self, discord_id: int, new_user: bool = False, ticks: int = None):
         if new_user:
             ticks = randint(0, not_playing_skip - 1)
 
-        return {"id": self.id, "username": self.username, "avatar_url": self.avatar_url,
+        return {"discord_id": discord_id, "id": self.id, "username": self.username, "avatar_url": self.avatar_url,
                 "country_code": self.country_code, "mode": self.mode.value, "pp": self.pp, "accuracy": self.accuracy,
                 "country_rank": self.country_rank, "global_rank": self.global_rank, "max_combo": self.max_combo,
                 "ranked_score": self.ranked_score, "ticks": ticks, "time_cached": int(self.time_cached.timestamp())}

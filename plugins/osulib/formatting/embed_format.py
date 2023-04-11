@@ -27,7 +27,7 @@ def get_embed_from_template(description: str, color: discord.Colour, author_text
 
 
 async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore, beatmap: Beatmap,
-                                     mode: enums.GameMode, osu_tracking: dict, twitch_link: bool = False,
+                                     mode: enums.GameMode, twitch_link: bool = False,
                                      time: bool = False):
     """ Returns a score embed for use outside of automatic score notifications. """
     score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
@@ -42,12 +42,6 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
         beatmap.max_combo = score_pp.max_combo
     if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp and score_pp.max_combo:
         beatmap.add_max_combo(score_pp.max_combo)
-
-    # There might not be any events
-    if str(member.id) in osu_tracking and "new" in osu_tracking[str(member.id)] \
-            and osu_tracking[str(member.id)]["new"]["events"]:
-        osu_score.rank_global = api.rank_from_events(osu_tracking[str(member.id)]["new"]["events"],
-                                                     str(beatmap.id), osu_score)
 
     time_string = ""
     if time:

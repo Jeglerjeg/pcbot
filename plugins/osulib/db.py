@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import update
+from sqlalchemy import update, Row
 from sqlalchemy.sql import select, insert, delete
 
 from pcbot.db import engine, db_metadata
@@ -40,7 +40,8 @@ def get_recent_events(user_id: int):
 
 
 def insert_recent_events(user_id: int):
-    new_recent_events = {"id": user_id, "last_pp_notification": int(datetime.now(tz=timezone.utc).timestamp())}
+    current_time = int(datetime.now(tz=timezone.utc).timestamp())
+    new_recent_events = {"id": user_id, "last_pp_notification": current_time, "last_recent_notification": current_time}
     with engine.connect() as connection:
         table = db_metadata.tables["osu_recent_events"]
         statement = insert(table).values(new_recent_events)
@@ -49,10 +50,14 @@ def insert_recent_events(user_id: int):
         transaction.commit()
 
 
-def update_recent_events(user_id: int, old: dict, pp: bool = False):
+def update_recent_events(user_id: int, old: Row, pp: bool = False, recent: bool = False):
+    current_time = int(datetime.now(tz=timezone.utc).timestamp())
     updated_recent_events = {"id": user_id,
-                             "last_pp_notification": int(datetime.now(tz=timezone.utc).timestamp())
-                             if pp else old["last_pp_notification"]}
+                             "last_pp_notification": current_time
+                             if pp else old.last_pp_notification,
+                             "last_recent_notification": current_time
+                             if recent else old.last_recent_notification
+                             }
     with engine.connect() as connection:
         table = db_metadata.tables["osu_recent_events"]
         statement = update(table).where(table.c.id == user_id).values(updated_recent_events)
@@ -179,41 +184,42 @@ def get_osu_users():
 def delete_osu_users():
     with engine.connect() as connection:
         table = db_metadata.tables["osu_users"]
-        statement = delete(table).returning(table.c.id)
+        statement = delete(table).returning(table.c.discord_id)
         result = connection.execute(statement)
         return result.fetchall()
 
 
-def get_osu_user(user_id: int):
+def get_osu_user(discord_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["osu_users"]
-        statement = select(table).where(table.c.id == user_id)
+        statement = select(table).where(table.c.discord_id == discord_id)
         result = connection.execute(statement)
         return result.fetchone()
 
 
-def insert_osu_user(user: OsuUser):
+def insert_osu_user(user: OsuUser, discord_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["osu_users"]
-        statement = insert(table).values(user.to_db_query(new_user=True))
+        statement = insert(table).values(user.to_db_query(discord_id, new_user=True))
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()
 
 
-def update_osu_user(user: OsuUser, ticks: int):
+def update_osu_user(user: OsuUser, discord_id: int, ticks: int):
     with engine.connect() as connection:
         table = db_metadata.tables["osu_users"]
-        statement = update(table).where(table.c.id == user.id).values(user.to_db_query(ticks=ticks))
+        statement = update(table).where(table.c.discord_id == discord_id).values(user.to_db_query(discord_id,
+                                                                                                  ticks=ticks))
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()
 
 
-def delete_osu_user(user_id: int):
+def delete_osu_user(discord_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["osu_users"]
-        statement = delete(table).where(table.c.id == user_id)
+        statement = delete(table).where(table.c.discord_id == discord_id)
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()

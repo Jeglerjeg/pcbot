@@ -55,6 +55,7 @@ def get_osu_users_db():
     Table(
         "osu_users",
         db_metadata,
+        Column("discord_id", Integer, nullable=False, primary_key=True, autoincrement=False),
         Column("id", Integer, nullable=False, autoincrement=False),
         Column("username", String, nullable=False),
         Column("avatar_url", String, nullable=False),
@@ -75,8 +76,9 @@ def get_osu_events_db():
     Table(
         "osu_recent_events",
         db_metadata,
-        Column("id", Integer, nullable=False, unique=True),
+        Column("id", Integer, nullable=False, primary_key=True, autoincrement=False),
         Column("last_pp_notification", Integer, nullable=False),
+        Column("last_recent_notification", Integer, nullable=False),
     )
 
 
