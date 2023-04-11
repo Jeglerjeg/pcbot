@@ -88,6 +88,48 @@ async def add_new_user(member_id: int, profile: int):
         return
     return
 
+async def update_osu_user(member_id: int, profile: int, member: discord.Member, osu_user: OsuUser):
+    tracking_data = {}
+    # Get the user data for the player
+    try:
+        current_time = datetime.now(tz=timezone.utc)
+        mode = user_utils.get_mode(str(member_id))
+        api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
+        if api_user_data is None:
+            logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
+            return
+        db.update_osu_user(api_user_data, osu_user.ticks)
+        if user_utils.get_leaderboard_update_status(str(member_id)) or user_utils.get_beatmap_update_status(
+                str(member_id)):
+            params = {
+                "limit": 20
+            }
+            recent_events = await api.get_user_recent_activity(profile, params=params)
+            if recent_events is not None:
+                tracking_data["events"] = recent_events
+            else:
+                logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
+                return
+        else:
+            tracking_data["events"] = []
+    except aiohttp.ServerDisconnectedError:
+        return
+    except asyncio.TimeoutError:
+        logging.warning("Timed out when retrieving osu! info from %s (%s)", member, profile)
+        return
+    except ValueError:
+        logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
+        return
+
+    # Update the "new" data
+    if "new" in osu_tracking[str(member_id)]:
+        # Move the "new" data into the "old" data of this user
+        osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
+
+    osu_tracking[str(member_id)]["new"] = tracking_data
+    if cache_user_profiles:
+        osu_profile_cache.data[str(member_id)]["new"] = copy.deepcopy(osu_tracking[str(member_id)]["new"])
+
 
 class OsuTracker:
     def __init__(self):
@@ -166,13 +208,14 @@ class OsuTracker:
         member = discord.utils.get(client.get_all_members(), id=member_id)
         if user_utils.user_exists(member, str(member_id), str(profile)) \
                 or user_utils.user_unlinked_during_iteration(member_id):
+            logging.info(f"Wiping user {member_id}")
             await wipe_user(member_id)
             return
 
         # Check if the member is tracked, add to cache and tracking if not
         db_user = db.get_osu_user(profile)
-        if not db_user or not str(member_id) in osu_tracking:
-            await wipe_user(member_id)
+        if not db_user or str(member_id) not in osu_tracking:
+            logging.info(f"Adding new user {member_id}")
             await add_new_user(member_id, profile)
             return
 
@@ -184,46 +227,7 @@ class OsuTracker:
             db.update_osu_user(osu_user, osu_user.ticks)
             return
 
-        tracking_data = {}
-        # Get the user data for the player
-        try:
-            current_time = datetime.now(tz=timezone.utc)
-            mode = user_utils.get_mode(str(member_id))
-            api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
-            if api_user_data is None:
-                logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
-                return
-            db.update_osu_user(api_user_data, osu_user.ticks)
-            params = {
-                "limit": 20
-            }
-            if user_utils.get_leaderboard_update_status(str(member_id)) or user_utils.get_beatmap_update_status(
-                    str(member_id)):
-                recent_events = await api.get_user_recent_activity(profile, params=params)
-                if recent_events is not None:
-                    tracking_data["events"] = recent_events
-                else:
-                    logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
-                    return
-            else:
-                tracking_data["events"] = []
-        except aiohttp.ServerDisconnectedError:
-            return
-        except asyncio.TimeoutError:
-            logging.warning("Timed out when retrieving osu! info from %s (%s)", member, profile)
-            return
-        except ValueError:
-            logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
-            return
-
-        # Update the "new" data
-        if "new" in osu_tracking[str(member_id)]:
-            # Move the "new" data into the "old" data of this user
-            osu_tracking[str(member_id)]["old"] = osu_tracking[str(member_id)]["new"]
-
-        osu_tracking[str(member_id)]["new"] = tracking_data
-        if cache_user_profiles:
-            osu_profile_cache.data[str(member_id)]["new"] = copy.deepcopy(osu_tracking[str(member_id)]["new"])
+        await update_osu_user(member_id, profile, member, osu_user)
 
     async def __notify_recent_events(self, member_id: str, data: dict, new_osu_user: OsuUser):
         """ Notify any map updates, such as update, resurrect and qualified. """
