@@ -215,7 +215,7 @@ class OsuTracker:
         # Check if the member is tracked, add to cache and tracking if not
         db_user = db.get_osu_user(profile)
         if not db_user or str(member_id) not in osu_tracking:
-            logging.info(f"Adding new user {member_id}")
+            logging.info(f"Adding new user {member_id}, profile: {profile}")
             await add_new_user(member_id, profile)
             return
 
