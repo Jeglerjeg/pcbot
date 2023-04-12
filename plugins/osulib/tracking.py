@@ -112,17 +112,9 @@ class OsuTracker:
         try:
             member_list = db.get_linked_osu_profiles()
             for linked_profile in member_list:
-                old_db_user = db.get_osu_user(linked_profile.id)
+
                 # First, update the user's data
                 await self.__update_user_data(linked_profile.id, linked_profile.osu_id)
-                new_db_user = db.get_osu_user(linked_profile.id)
-                if new_db_user:
-                    if old_db_user:
-                        old_osu_user = OsuUser(old_db_user)
-                    else:
-                        old_osu_user = None
-                    new_osu_user = OsuUser(new_db_user)
-                    client.loop.create_task(self.__notify(linked_profile.id, new_osu_user, old_osu_user))
         except KeyError as e:
             logging.exception(e)
             return
@@ -142,8 +134,7 @@ class OsuTracker:
         # Check for any differences in the users' events and post about map updates
         await self.__notify_recent_events(str(member_id), new_osu_user)
 
-    @staticmethod
-    async def __update_user_data(member_id: int, profile: int):
+    async def __update_user_data(self, member_id: int, profile: int):
         """ Go through all registered members playing osu!, and update their data. """
         # Go through each member playing and give them an "old" and a "new" subsection
         # for their previous and latest user data
@@ -173,6 +164,10 @@ class OsuTracker:
             return
 
         await update_osu_user(member_id, profile, member, osu_user)
+        new_osu_user = db.get_osu_user(member_id)
+        if not new_osu_user:
+            return
+        client.loop.create_task(self.__notify(member_id, OsuUser(new_osu_user), osu_user))
 
     async def __notify_recent_events(self, member_id: str, new_osu_user: OsuUser):
         """ Notify any map updates, such as update, resurrect and qualified. """
