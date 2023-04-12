@@ -1,6 +1,6 @@
 import discord
 
-from plugins.osulib import enums, pp, api
+from plugins.osulib import enums, pp
 from plugins.osulib.formatting import score_format
 from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore

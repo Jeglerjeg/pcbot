@@ -199,14 +199,14 @@ async def find_closest_pp(osu_map: rosu_pp_py.Beatmap, calculator: rosu_pp_py.Ca
     """ Find the accuracy required to get the given amount of pp from this map. """
 
     # Define a partial command for easily setting the pp value by 100s count
-    def calc(count_100: int, pp_info=None):
+    def calc(n100: int, pp_info=None):
         if pp_info:
-            calculator.set_n100(count_100)
+            calculator.set_n100(n100)
             calculator.set_difficulty(pp_info.difficulty)
             pp_info = calculator.performance(osu_map)
         else:
             new_calculator = set_score_params(calculator, args)
-            new_calculator.set_n100(count_100)
+            new_calculator.set_n100(n100)
             pp_info = new_calculator.performance(osu_map)
 
         return pp_info
@@ -215,7 +215,7 @@ async def find_closest_pp(osu_map: rosu_pp_py.Beatmap, calculator: rosu_pp_py.Ca
     # it's an impossible value.
     map_attributes = calculator.map_attributes(osu_map)
     object_count = map_attributes.n_circles + map_attributes.n_sliders + map_attributes.n_spinners
-    min_pp = calc(count_100=object_count)
+    min_pp = calc(n100=object_count)
 
     if args.pp <= min_pp.pp:
         raise ValueError(f"The given pp value is too low (calculator gives **{min_pp.pp:.02f}pp** as the "
