@@ -34,14 +34,15 @@ def get_user(message: discord.Message, username: str):
     return member
 
 
-async def retrieve_user_proile(profile: str, mode: enums.GameMode, timestamp: datetime):
+async def retrieve_user_proile(profile: str, mode: enums.GameMode, timestamp: datetime = None):
     params = {
         "key": "id"
     }
     user_data = await api.get_user(profile, mode.name, params=params)
     if not user_data:
         return None
-    user_data.set_time_cached(timestamp)
+    if timestamp:
+        user_data.set_time_cached(timestamp)
     return user_data
 
 

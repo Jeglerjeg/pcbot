@@ -626,10 +626,8 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
     linked_profile = get_linked_osu_profile(member.id)
     assert linked_profile, user_utils.get_missing_user_string(member)
 
-    db_user = get_osu_user(member.id)
-    assert db_user, \
-        "This command requires user data to have been fetched. Please wait a bit and try again."
-    osu_user = OsuUser(db_user)
+    mode = user_utils.get_mode(str(member.id))
+    osu_user = await user_utils.retrieve_user_proile(str(linked_profile.osu_id), mode)
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -644,7 +642,6 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
             return
 
     beatmap_id = beatmap_info.beatmap_id
-    mode = user_utils.get_mode(str(member.id))
     params = {
         "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
     }
@@ -765,10 +762,7 @@ async def top(message: discord.Message, *options):
     linked_profile = get_linked_osu_profile(member.id)
     assert linked_profile, user_utils.get_missing_user_string(member)
 
-    db_user = get_osu_user(member.id)
-    assert db_user, \
-        "This command requires user data to have been fetched. Please wait a bit and try again."
-    osu_user = OsuUser(db_user)
+    osu_user = await user_utils.retrieve_user_proile(str(linked_profile.osu_id), mode)
 
     params = {
         "mode": mode.name,
@@ -837,12 +831,10 @@ async def lazer_top(message: discord.Message, *options):
 
     linked_profile = get_linked_osu_profile(member.id)
     assert linked_profile, user_utils.get_missing_user_string(member)
-    db_user = get_osu_user(member.id)
-    assert db_user, \
-        "This command requires user data to have been fetched. Please wait a bit and try again."
-    osu_user = OsuUser(db_user)
 
     mode = user_utils.get_mode(str(member.id))
+    osu_user = await user_utils.retrieve_user_proile(str(linked_profile.osu_id), mode)
+
     params = {
         "mode": mode.name,
         "limit": score_request_limit,
