@@ -112,9 +112,8 @@ class OsuTracker:
         try:
             member_list = db.get_linked_osu_profiles()
             for linked_profile in member_list:
-
-                # First, update the user's data
-                await self.__update_user_data(linked_profile.id, linked_profile.osu_id)
+                # Update the user's data
+                client.loop.create_task(self.__update_user_data(linked_profile.id, linked_profile.osu_id))
         except KeyError as e:
             logging.exception(e)
             return
@@ -167,7 +166,7 @@ class OsuTracker:
         new_osu_user = db.get_osu_user(member_id)
         if not new_osu_user:
             return
-        client.loop.create_task(self.__notify(member_id, OsuUser(new_osu_user), osu_user))
+        await self.__notify(member_id, OsuUser(new_osu_user), osu_user)
 
     async def __notify_recent_events(self, member_id: str, new_osu_user: OsuUser):
         """ Notify any map updates, such as update, resurrect and qualified. """
