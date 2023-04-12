@@ -111,9 +111,11 @@ class OsuTracker:
 
         try:
             member_list = db.get_linked_osu_profiles()
+            update_tasks = []
             for linked_profile in member_list:
                 # Update the user's data
-                client.loop.create_task(self.__update_user_data(linked_profile.id, linked_profile.osu_id))
+                update_tasks.append(self.__update_user_data(linked_profile.id, linked_profile.osu_id))
+            await asyncio.gather(*update_tasks)
         except KeyError as e:
             logging.exception(e)
             return
