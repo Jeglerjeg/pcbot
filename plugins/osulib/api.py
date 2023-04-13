@@ -170,7 +170,11 @@ async def get_user(user, mode=None, params=None):
 
     if "{'error': None}" in str(result) or result is None:
         return None
-    user = OsuUser(result, from_db=False)
+    try:
+        user = OsuUser(result, from_db=False)
+    except KeyError:
+        logging.info(result)
+        return None
     return user
 
 
