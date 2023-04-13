@@ -173,7 +173,7 @@ async def get_user(user, mode=None, params=None):
     try:
         user = OsuUser(result, from_db=False)
     except KeyError:
-        logging.info(result)
+        logging.info(f"Fetching osu user from API failed: api result: {result}")
         return None
     return user
 
