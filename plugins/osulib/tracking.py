@@ -189,12 +189,19 @@ class OsuTracker:
             return
         events = []
         for event in api_events:
-            if parser.isoparse(event["created_at"]).replace(tzinfo=timezone.utc).timestamp() \
+            try:
+                if parser.isoparse(event["created_at"]).replace(tzinfo=timezone.utc).timestamp() \
                     < last_user_events.last_recent_notification:
-                break
+                    break
 
-            # Since the events are displayed on the profile from newest to oldest, we want to post the oldest first
-            events.insert(0, event)
+                # Since the events are displayed on the profile from newest to oldest, we want to post the oldest first
+                events.insert(0, event)
+            except TypeError:
+                logging.info(f"Failed to parse event: {event}")
+                continue
+            except KeyError:
+                logging.info(f"Failed to parse event: {event}")
+                continue
 
         # Format and post the events
         status_format = None
