@@ -34,6 +34,7 @@ def format_new_score(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreS
         f"{format_score_info(scoresaber_score, leaderboard_info)}"
         "```ansi\n"
         f"{format_score_statistics(scoresaber_score, leaderboard_info)}```"
+        f"<t:{int(scoresaber_score.time_set.timestamp())}:R>"
     )
 
 def format_score_rank(accuracy: float):
