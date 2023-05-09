@@ -16,6 +16,7 @@ def format_score_statistics(scoresaber_score: ScoreSaberScore, leaderboard_info:
 def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
     """ Return formatted beatmap information. """
     beatmap_url = map_utils.get_map_url(leaderboard_info.id)
+    grade = format_score_rank(100 * (scoresaber_score.modified_score / leaderboard_info.max_score))
     difficulty = map_format.format_beatmap_difficulty(leaderboard_info.difficulty.difficulty)
     modslist = scoresaber_score.modifiers if scoresaber_score.modifiers else "Nomod"
     score_pp = utils.format_number(scoresaber_score.pp, 2)
@@ -25,7 +26,7 @@ def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: Score
     title = leaderboard_info.song_name
     i = ("*" if "*" not in leaderboard_info.song_author_name + leaderboard_info.song_name else "")
     return f'[{i}{artist} - {title} [{difficulty}]{i}]({beatmap_url})\n' \
-           f'**{score_pp}pp {stars}\u2605, +{modslist} {ranked_score}**'
+           f'**{score_pp}pp {stars}\u2605, {grade} +{modslist} {ranked_score}**'
 
 def format_new_score(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
     """ Format any score. There should be a member name/mention in front of this string. """
@@ -34,3 +35,21 @@ def format_new_score(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreS
         "```ansi\n"
         f"{format_score_statistics(scoresaber_score, leaderboard_info)}```"
     )
+
+def format_score_rank(accuracy: float):
+    grade = ""
+    if accuracy >= 90.0:
+        grade = "SS"
+    elif accuracy >= 80.0:
+        grade = "S"
+    elif accuracy >= 65.0:
+        grade = "A"
+    elif accuracy >= 50.0:
+        grade = "B"
+    elif accuracy >= 35.0:
+        grade = "C"
+    elif accuracy >= 20.0:
+        grade = "D"
+    else:
+        grade = "E"
+    return grade
