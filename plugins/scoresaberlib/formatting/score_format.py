@@ -7,7 +7,7 @@ from plugins.scoresaberlib.formatting import map_format
 
 def format_score_statistics(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
     """" Returns formatted score statistics for each mode. """
-    acc = f"{utils.format_number(100 * (scoresaber_score.modified_score / leaderboard_info.max_score), 2)}%"
+    acc = f"{utils.format_number(100 * (scoresaber_score.base_score / leaderboard_info.max_score), 2)}%"
     color = "\u001b[0;32m" if scoresaber_score.full_combo else "\u001b[0;31m"
     return "acc    bad  miss  combo\n" \
            f'{color}{acc:<7}{scoresaber_score.bad_cuts:<5}{scoresaber_score.missed_notes:<6}{scoresaber_score.max_combo}'
@@ -16,7 +16,7 @@ def format_score_statistics(scoresaber_score: ScoreSaberScore, leaderboard_info:
 def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
     """ Return formatted beatmap information. """
     beatmap_url = map_utils.get_map_url(leaderboard_info.id)
-    grade = format_score_rank(100 * (scoresaber_score.modified_score / leaderboard_info.max_score))
+    grade = format_score_rank(100 * (scoresaber_score.base_score / leaderboard_info.max_score))
     difficulty = map_format.format_beatmap_difficulty(leaderboard_info.difficulty.difficulty)
     modslist = scoresaber_score.modifiers if scoresaber_score.modifiers else "Nomod"
     score_pp = utils.format_number(scoresaber_score.pp, 2)
