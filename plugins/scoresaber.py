@@ -44,23 +44,29 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
     await client.say(message, f"Unlinked **{member.name}'s** scoresaber profile.")
 
 @scoresaber.command()
-async def score(message: discord.Message, map_id: int, user: str):
-    scoresaber_score = await api.get_user_map_score(map_id, user)
+async def score(message: discord.Message, map_id: int, user: str = None):
+    if not user:
+        user = message.author.mention
+    scoresaber_user = await user_utils.get_user(message, user)
+    assert scoresaber_user, "Couldn't find user."
+    scoresaber_score = await api.get_user_map_score(map_id, scoresaber_user.name)
     leaderboard_info = await api.get_leaderboard_info(map_id)
     formatted_text = score_format.format_new_score(scoresaber_score, leaderboard_info)
     embed = embed_format.get_embed_from_template(formatted_text,
                                                  message.author.color,
-                                                 scoresaber_score.player.name,
-                                                 user_utils.get_user_url(scoresaber_score.player.id),
-                                                 scoresaber_score.player.profile_picture,
+                                                 scoresaber_user.name,
+                                                 user_utils.get_user_url(scoresaber_user.id),
+                                                 scoresaber_user.profile_picture,
                                                  leaderboard_info.cover_image)
     await client.send_message(message.channel, embed=embed)
 
 @scoresaber.command()
-async def recent(message: discord.Message, user: str):
-    user = await api.get_user(user)
-    assert user, "Couldn't find user."
-    scoresaber_scores = await api.get_user_scores(user.id, "recent", 1)
+async def recent(message: discord.Message, user: str = None):
+    if not user:
+        user = message.author.mention
+    scoresaber_user = await user_utils.get_user(message, user)
+    assert scoresaber_user, "Couldn't find user."
+    scoresaber_scores = await api.get_user_scores(scoresaber_user.id, "recent", 1)
     if not scoresaber_scores or len(scoresaber_scores) <1:
         await client.say(message, "Found no recent score.")
         return
@@ -70,8 +76,8 @@ async def recent(message: discord.Message, user: str):
     formatted_text = score_format.format_new_score(scoresaber_score, leaderboard_info)
     embed = embed_format.get_embed_from_template(formatted_text,
                                                  message.author.color,
-                                                 user.name,
-                                                 user_utils.get_user_url(user.id),
-                                                 user.profile_picture,
+                                                 scoresaber_user.name,
+                                                 user_utils.get_user_url(scoresaber_user.id),
+                                                 scoresaber_user.profile_picture,
                                                  leaderboard_info.cover_image)
     await client.send_message(message.channel, embed=embed)

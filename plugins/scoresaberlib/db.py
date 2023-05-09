@@ -1,4 +1,4 @@
-from sqlalchemy import update, Row
+from sqlalchemy import update
 from sqlalchemy.sql import select, insert, delete
 
 from pcbot.db import engine, db_metadata

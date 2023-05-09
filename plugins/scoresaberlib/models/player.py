@@ -1,3 +1,6 @@
+from typing import Optional
+
+
 class ScoreSaberLeaderboardPlayer:
     id: int
     name: str
@@ -50,7 +53,7 @@ class ScoreSaberPlayer(ScoreSaberLeaderboardPlayer):
     pp: int
     rank: int
     country_rank: int
-    score_stats: ScoreSaberPlayerScoreStats
+    score_stats: Optional[ScoreSaberPlayerScoreStats]
     banned: bool
     inactive: bool
 
@@ -59,7 +62,10 @@ class ScoreSaberPlayer(ScoreSaberLeaderboardPlayer):
         self.pp = raw_data["pp"]
         self.rank = raw_data["rank"]
         self.country_rank = raw_data["countryRank"]
-        self.score_stats = ScoreSaberPlayerScoreStats(raw_data["scoreStats"])
+        if raw_data["scoreStats"]:
+            self.score_stats = ScoreSaberPlayerScoreStats(raw_data["scoreStats"])
+        else:
+            self.score_stats = None
         self.banned = raw_data["banned"]
         self.inactive = raw_data["inactive"]
 

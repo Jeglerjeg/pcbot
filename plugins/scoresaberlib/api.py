@@ -107,3 +107,14 @@ async def get_user(user: str):
     else:
         result = ScoreSaberPlayer(result["players"][0])
     return result
+
+async def get_user_by_id(user_id: int):
+    """ Returns a user. """
+    request = def_section(f"player/{user_id}/basic")
+
+    result = await request()
+    if not result or "errorMessage" in str(result):
+        result = None
+    else:
+        result = ScoreSaberPlayer(result)
+    return result
