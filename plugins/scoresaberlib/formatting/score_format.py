@@ -15,7 +15,7 @@ def format_score_statistics(scoresaber_score: ScoreSaberScore, leaderboard_info:
 
 def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
     """ Return formatted beatmap information. """
-    beatmap_url = map_utils.get_beatmap_url(leaderboard_info.id)
+    beatmap_url = map_utils.get_map_url(leaderboard_info.id)
     difficulty = map_format.format_beatmap_difficulty(leaderboard_info.difficulty.difficulty)
     modslist = scoresaber_score.modifiers if scoresaber_score.modifiers else "Nomod"
     score_pp = utils.format_number(scoresaber_score.pp, 2)
