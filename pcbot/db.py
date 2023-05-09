@@ -135,6 +135,16 @@ def get_osu_beatmapset_db():
         Column("time_cached", DateTime)
     )
 
+def get_linked_scoresaber_profiles_db():
+    Table(
+        "linked_scoresaber_profiles",
+        db_metadata,
+        Column("id", Integer, nullable=False, primary_key=True, autoincrement=False),
+        Column("scoresaber_id", Integer, nullable=False),
+        Column("home_guild", Integer, nullable=False),
+        Column("update_mode", String, nullable=False),
+    )
+
 
 def create_tables():
     get_moderate_db()
@@ -145,6 +155,7 @@ def create_tables():
     get_osu_beatmapset_db()
     get_linked_osu_profiles_db()
     get_osu_users_db()
+    get_linked_scoresaber_profiles_db()
     db_metadata.create_all(engine)
 
 
