@@ -5,7 +5,7 @@ from pcbot import utils, Annotate
 
 from plugins.scoresaberlib import api, db
 from plugins.scoresaberlib.formatting import score_format, embed_format
-from plugins.scoresaberlib.utils import user_utils
+from plugins.scoresaberlib.utils import user_utils, score_utils
 
 client = plugins.client  # type: bot.Client
 
@@ -81,3 +81,30 @@ async def recent(message: discord.Message, user: str = None):
                                                  scoresaber_user.profile_picture,
                                                  leaderboard_info.cover_image)
     await client.send_message(message.channel, embed=embed)
+
+@scoresaber.command(name="top")
+async def top(message: discord.Message, user: str = None):
+    """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
+     You can also add "nochoke" as an option to display a list of unchoked top scores instead.
+     Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
+
+    if not user:
+        user = message.author.mention
+    scoresaber_user = await user_utils.get_user(message, user)
+    assert scoresaber_user, "Couldn't find user."
+
+    fetched_scores = await api.get_user_scores(scoresaber_user.id, "top", 100)
+    assert fetched_scores, "Failed to retrieve scores. Please try again."
+    for i, scoresaber_score in enumerate(fetched_scores):
+        scoresaber_score[0].add_position(i + 1)
+
+    m = await score_format.get_formatted_score_list(fetched_scores, 5)
+    e = embed_format.get_embed_from_template(m, message.author.color, scoresaber_user.name, user_utils.get_user_url(scoresaber_user.id),
+                                             scoresaber_user.profile_picture,
+                                             scoresaber_user.profile_picture)
+    view = score_format.PaginatedScoreList(fetched_scores,
+                                           score_utils.count_score_pages(fetched_scores, 5), e)
+    e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(fetched_scores, 5)}")
+    message = await client.send_message(message.channel, embed=e, view=view)
+    await view.wait()
+    await message.edit(embed=view.embed, view=None)

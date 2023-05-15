@@ -23,6 +23,7 @@ class ScoreSaberScore:
     hmd: int
     time_set: datetime
     has_replay: bool
+    position: Optional[int]
     def __init__(self, raw_data: dict):
         self.id = raw_data["id"]
         if "leaderboardPlayerInfo" in raw_data:
@@ -43,9 +44,13 @@ class ScoreSaberScore:
         self.hmd = raw_data["hmd"]
         self.time_set = parser.isoparse(raw_data["timeSet"]).replace(tzinfo=timezone.utc)
         self.has_replay = raw_data["hasReplay"]
+        self.position = None
 
     def __repr__(self):
         return str(self.to_dict())
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
     def to_dict(self):
         readable_dict = {}
@@ -55,3 +60,6 @@ class ScoreSaberScore:
                 continue
             readable_dict[attr] = value
         return readable_dict
+
+    def add_position(self, position: int):
+        self.position = position
