@@ -27,7 +27,7 @@ import discord
 import bot
 import plugins
 from pcbot import utils, Annotate
-from plugins.osulib import api, pp, ordr, enums
+from plugins.osulib import api, pp, ordr, enums, db
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
 from plugins.osulib.db import insert_linked_osu_profile, get_osu_user, get_linked_osu_profile, delete_osu_user, \
@@ -874,6 +874,11 @@ async def beatmap_updates(message: discord.Message, notify_setting: str):
 
     if notify_setting.lower() == "on":
         osu_config.data["beatmap_updates"][str(member.id)] = True
+        last_user_events = db.get_recent_events(int(member.id))
+        if not last_user_events:
+            db.insert_recent_events(int(member.id))
+        else:
+            db.update_recent_events(int(member.id), last_user_events, recent=True)
         await client.say(message, "Enabled leaderboard updates.")
     elif notify_setting.lower() == "off":
         osu_config.data["beatmap_updates"][str(member.id)] = False
@@ -894,6 +899,11 @@ async def leaderboard_scores(message: discord.Message, notify_setting: str):
 
     if notify_setting.lower() == "on":
         osu_config.data["leaderboard"][str(member.id)] = True
+        last_user_events = db.get_recent_events(int(member.id))
+        if not last_user_events:
+            db.insert_recent_events(int(member.id))
+        else:
+            db.update_recent_events(int(member.id), last_user_events, recent=True)
         await client.say(message, "Enabled leaderboard updates.")
     elif notify_setting.lower() == "off":
         osu_config.data["leaderboard"][str(member.id)] = False
