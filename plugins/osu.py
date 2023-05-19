@@ -18,6 +18,7 @@ TUTORIAL:
 """
 import asyncio
 import importlib
+import logging
 from datetime import datetime
 from operator import itemgetter
 from textwrap import wrap
@@ -647,7 +648,9 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
     }
     fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, linked_profile.osu_id,
                                                            params=params, lazer=lazer_api)
+    logging.info(fetched_osu_scores)
     assert fetched_osu_scores, f"Found no scores by **{osu_user.username}**."
+    assert fetched_osu_scores["scores"], f"Found no scores by **{osu_user.username}**."
 
     beatmap = await api.beatmap_lookup(map_id=beatmap_id)
     if mods:
