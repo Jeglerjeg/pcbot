@@ -2,6 +2,15 @@ from sqlalchemy import update
 from sqlalchemy.sql import select, insert, delete
 
 from pcbot.db import engine, db_metadata
+from plugins.scoresaberlib.models.player import ScoreSaberPlayer
+
+
+def get_linked_scoresaber_profiles():
+    with engine.connect() as connection:
+        table = db_metadata.tables["linked_scoresaber_profiles"]
+        statement = select(table)
+        result = connection.execute(statement)
+        return result.fetchall()
 
 def get_linked_scoresaber_profile(user_id: int):
     with engine.connect() as connection:
@@ -37,6 +46,41 @@ def delete_linked_scoresaber_profile(user_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["linked_scoresaber_profiles"]
         statement = delete(table).where(table.c.id == user_id)
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+        
+def get_scoresaber_user(discord_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["scoresaber_users"]
+        statement = select(table).where(table.c.discord_id == discord_id)
+        result = connection.execute(statement)
+        return result.fetchone()
+
+
+def insert_scoresaber_user(user: ScoreSaberPlayer, discord_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["scoresaber_users"]
+        statement = insert(table).values(user.to_db_query(discord_id, new_user=True))
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def update_scoresaber_user(user: ScoreSaberPlayer, discord_id: int, ticks: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["scoresaber_users"]
+        statement = update(table).where(table.c.discord_id == discord_id).values(user.to_db_query(discord_id,
+                                                                                                  ticks=ticks))
+        transaction = connection.begin()
+        connection.execute(statement)
+        transaction.commit()
+
+
+def delete_scoresaber_user(discord_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["scoresaber_users"]
+        statement = delete(table).where(table.c.discord_id == discord_id)
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()

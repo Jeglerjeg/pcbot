@@ -23,3 +23,15 @@ async def get_user(message: discord.Message, username: str):
         else:
             user = await api.get_user_by_id(linked_profile.scoresaber_id)
     return user
+
+def is_playing(member: discord.Member):
+    """ Check if a member has "BeatSaber" in their Game name. """
+    # See if the member is playing
+    for activity in member.activities:
+        if activity is not None and activity.name is not None:
+            if "beatsaber" in activity.name.lower():
+                return True
+            if activity == discord.ActivityType.streaming and "beatsaber" in activity.game.lower():
+                return True
+
+    return False

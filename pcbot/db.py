@@ -145,6 +145,25 @@ def get_linked_scoresaber_profiles_db():
         Column("update_mode", String, nullable=False),
     )
 
+def get_scoresaber_users_db():
+    Table(
+        "scoresaber_users",
+        db_metadata,
+        Column("discord_id", Integer, nullable=False, primary_key=True, autoincrement=False),
+        Column("id", Integer, nullable=False, autoincrement=False),
+        Column("name", String, nullable=False),
+        Column("profile_picture", String, nullable=False),
+        Column("country", String, nullable=False),
+        Column("pp", Float, nullable=False),
+        Column("average_ranked_accuracy", Float, nullable=False),
+        Column("country_rank", Integer, nullable=False),
+        Column("rank", Integer, nullable=False),
+        Column("total_ranked_score", Integer, nullable=False),
+        Column("ticks", Integer, nullable=False),
+        Column("time_cached", Integer, nullable=False),
+        Column("last_pp_notification", Integer, nullable=False)
+    )
+
 
 def create_tables():
     get_moderate_db()
@@ -156,6 +175,7 @@ def create_tables():
     get_linked_osu_profiles_db()
     get_osu_users_db()
     get_linked_scoresaber_profiles_db()
+    get_scoresaber_users_db()
     db_metadata.create_all(engine)
 
 

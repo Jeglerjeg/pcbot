@@ -5,9 +5,14 @@ from pcbot import utils, Annotate
 
 from plugins.scoresaberlib import api, db
 from plugins.scoresaberlib.formatting import score_format, embed_format
-from plugins.scoresaberlib.utils import user_utils, score_utils
+from plugins.scoresaberlib.tracking import ScoreSaberTracker
+from plugins.scoresaberlib.utils import user_utils, score_utils, misc_utils
+from plugins.scoresaberlib.config import scoresaber_config
 
 client = plugins.client  # type: bot.Client
+
+
+scoresaber_tracker = ScoreSaberTracker()
 
 @plugins.command()
 async def scoresaber(message, _: utils.placeholder):
@@ -108,3 +113,16 @@ async def top(message: discord.Message, user: str = None):
     message = await client.send_message(message.channel, embed=e, view=view)
     await view.wait()
     await message.edit(embed=view.embed, view=None)
+
+@scoresaber.command(aliases="configure cfg")
+async def config(message, _: utils.placeholder):
+    """ Manage configuration for this plugin. """
+
+
+@config.command(name="scores", alias="score", permissions="manage_guild")
+async def config_scores(message: discord.Message, *channels: discord.TextChannel):
+    """ Set which channels to post scores to. """
+    await misc_utils.init_guild_config(message.guild)
+    scoresaber_config.data["guild"][str(message.guild.id)]["score-channels"] = list(str(c.id) for c in channels)
+    await scoresaber_config.asyncsave()
+    await client.say(message, f"**Notifying scores in**: {utils.format_objects(*channels, sep=' ') or 'no channels'}")

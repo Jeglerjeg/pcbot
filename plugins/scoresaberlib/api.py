@@ -105,7 +105,7 @@ async def get_user(user: str):
     if not result or "errorMessage" in str(result) or "players" not in result:
         result = None
     else:
-        result = ScoreSaberPlayer(result["players"][0])
+        result = ScoreSaberPlayer(result["players"][0], from_db=False)
     return result
 
 async def get_user_by_id(user_id: int):
@@ -116,5 +116,16 @@ async def get_user_by_id(user_id: int):
     if not result or "errorMessage" in str(result):
         result = None
     else:
-        result = ScoreSaberPlayer(result)
+        result = ScoreSaberPlayer(result, from_db=False)
+    return result
+
+async def get_full_user_by_id(user_id: int):
+    """ Returns a user. """
+    request = def_section(f"player/{user_id}/full")
+
+    result = await request()
+    if not result or "errorMessage" in str(result):
+        result = None
+    else:
+        result = ScoreSaberPlayer(result, from_db=False)
     return result
