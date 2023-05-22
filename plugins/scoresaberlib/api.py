@@ -19,8 +19,10 @@ else:
 
 requests_sent = 0
 
+
 def def_section(api_name: str, first_element: bool = False, api_url: str = "https://scoresaber.com/api/"):
     """ Add a section using a template to simplify adding API functions. """
+
     async def template(url=api_url, request_tries: int = 1, **params):
         if not limiter:
             return None
@@ -68,6 +70,7 @@ async def get_user_map_score(map_id: int, username: str):
         result = ScoreSaberScore(result["scores"][0])
     return result
 
+
 async def get_leaderboard_info(map_id: int):
     """ Returns a map. """
     request = def_section(f"leaderboard/by-id/{map_id}/info")
@@ -78,6 +81,7 @@ async def get_leaderboard_info(map_id: int):
     else:
         result = ScoreSaberLeaderboardInfo(result)
     return result
+
 
 async def get_user_scores(user_id: int, sort: str, limit: int):
     """ Returns a user's best or recent. """
@@ -91,8 +95,11 @@ async def get_user_scores(user_id: int, sort: str, limit: int):
     if not result or "errorMessage" in str(result) or "playerScores" not in result:
         result = None
     else:
-        result = [(ScoreSaberScore(scoresaber_score["score"]), ScoreSaberLeaderboardInfo(scoresaber_score["leaderboard"])) for scoresaber_score in result["playerScores"]]
+        result = [(ScoreSaberScore(scoresaber_score["score"]),
+                   ScoreSaberLeaderboardInfo(scoresaber_score["leaderboard"]))
+                  for scoresaber_score in result["playerScores"]]
     return result
+
 
 async def get_user(user: str):
     """ Returns a user. """
@@ -108,6 +115,7 @@ async def get_user(user: str):
         result = ScoreSaberPlayer(result["players"][0], from_db=False)
     return result
 
+
 async def get_user_by_id(user_id: int):
     """ Returns a user. """
     request = def_section(f"player/{user_id}/basic")
@@ -118,6 +126,7 @@ async def get_user_by_id(user_id: int):
     else:
         result = ScoreSaberPlayer(result, from_db=False)
     return result
+
 
 async def get_full_user_by_id(user_id: int):
     """ Returns a user. """

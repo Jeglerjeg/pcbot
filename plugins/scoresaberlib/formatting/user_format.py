@@ -10,9 +10,11 @@ def format_user_diff(new_scoresaber_user: ScoreSaberPlayer, old_scoresaber_user:
     iso = new_scoresaber_user.country
     rank = -(new_scoresaber_user.rank - old_scoresaber_user.rank)
     country_rank = -(new_scoresaber_user.country_rank - old_scoresaber_user.country_rank)
-    accuracy = new_scoresaber_user.score_stats.average_ranked_accuracy - old_scoresaber_user.score_stats.average_ranked_accuracy
+    accuracy = new_scoresaber_user.score_stats.average_ranked_accuracy - \
+               old_scoresaber_user.score_stats.average_ranked_accuracy
     pp_diff = new_scoresaber_user.pp - old_scoresaber_user.pp
-    ranked_score = new_scoresaber_user.score_stats.total_ranked_score - old_scoresaber_user.score_stats.total_ranked_score
+    ranked_score = new_scoresaber_user.score_stats.total_ranked_score - \
+                   old_scoresaber_user.score_stats.total_ranked_score
     rankings_url = f"https://scoresaber.com/rankings/"
 
     # Find the performance page number of the respective ranks

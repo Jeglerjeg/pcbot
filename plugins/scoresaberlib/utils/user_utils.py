@@ -3,13 +3,16 @@ import discord
 from pcbot import config, utils
 from plugins.scoresaberlib import db, api
 
+
 def get_user_url(user_id: int):
     return f"https://scoresaber.com/u/{user_id}"
+
 
 def get_missing_user_string(member: discord.Member):
     """ Format missing user text for all commands needing it. """
     return f"No scoresaber profile assigned to **{member.name}**! Please assign a profile using " \
            f"**{config.guild_command_prefix(member.guild)}scoresaber link <username>**"
+
 
 async def get_user(message: discord.Message, username: str):
     """ Get member by discord username or scoresaber username. """
@@ -23,6 +26,7 @@ async def get_user(message: discord.Message, username: str):
         else:
             user = await api.get_user_by_id(linked_profile.scoresaber_id)
     return user
+
 
 def is_playing(member: discord.Member):
     """ Check if a member has "BeatSaber" in their Game name. """

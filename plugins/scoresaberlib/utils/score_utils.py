@@ -10,8 +10,10 @@ from plugins.scoresaberlib import db, api
 from plugins.scoresaberlib.models.player import ScoreSaberPlayer
 from plugins.scoresaberlib.models.score import ScoreSaberScore
 
+
 def count_score_pages(scoresaber_scores: list[ScoreSaberScore], scores_per_page: int):
     return ceil(len(scoresaber_scores) / scores_per_page)
+
 
 async def get_new_score(member_id: int, profile: ScoreSaberPlayer):
     """ Compare old user scores with new user scores and return the discovered

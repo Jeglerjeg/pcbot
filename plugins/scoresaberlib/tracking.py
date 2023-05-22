@@ -24,10 +24,12 @@ not_playing_skip = config.scoresaber_config.data.get("update_interval", 5)
 score_update_delay = config.scoresaber_config.data.get("score_update_delay", 5)
 notify_empty_score = config.scoresaber_config.data.get("notify_empty_score", False)
 
+
 async def wipe_user(member_id: int):
     """ Deletes user data from tracking. """
     if db.get_scoresaber_user(member_id):
         db.delete_scoresaber_user(member_id)
+
 
 async def add_new_user(member_id: int, profile: int):
     # Wipe user data to make sure things aren't duplicated
@@ -43,7 +45,9 @@ async def add_new_user(member_id: int, profile: int):
         return
     return
 
-async def update_scoresaber_user(member_id: int, profile: int, member: discord.Member, scoresaber_user: ScoreSaberPlayer):
+
+async def update_scoresaber_user(member_id: int, profile: int, member: discord.Member,
+                                 scoresaber_user: ScoreSaberPlayer):
     # Get the user data for the player
     try:
         current_time = datetime.now(tz=timezone.utc)
@@ -61,6 +65,7 @@ async def update_scoresaber_user(member_id: int, profile: int, member: discord.M
     except ValueError:
         logging.info("Could not retrieve scoresaber info from %s (%s)", member, profile)
         return
+
 
 class ScoreSaberTracker:
     def __init__(self):
@@ -91,7 +96,7 @@ class ScoreSaberTracker:
     @__tracking_loop.before_loop
     async def wait_for_ready(self):
         await client.wait_until_ready()
-        
+
     async def __notify(self, member_id: int, new_scoresaber_user: ScoreSaberPlayer,
                        old_scoresaber_user: ScoreSaberPlayer = None):
         # Next, check for any differences in pp between the "old" and the "new" subsections
@@ -124,8 +129,10 @@ class ScoreSaberTracker:
         if not new_scoresaber_user:
             return
         await self.__notify(member_id, ScoreSaberPlayer(new_scoresaber_user), scoresaber_user)
-        
-    async def __notify_pp(self, member_id: int, new_scoresaber_user: ScoreSaberPlayer, old_scoresaber_user: ScoreSaberPlayer = None):
+
+    @staticmethod
+    async def __notify_pp(member_id: int, new_scoresaber_user: ScoreSaberPlayer,
+                          old_scoresaber_user: ScoreSaberPlayer = None):
         """ Notify any differences in pp and post the scores + rank/pp gained. """
         member = discord.utils.get(client.get_all_members(), id=int(member_id))
 
@@ -145,7 +152,6 @@ class ScoreSaberTracker:
         if not scoresaber_scores and not notify_empty_score:
             return
 
-
         # If a new score was found, format the score(s)
         if len(scoresaber_scores) == 1:
             scoresaber_score = scoresaber_scores[0][0]
@@ -156,7 +162,8 @@ class ScoreSaberTracker:
             m.append(f"{score_format.format_new_score(scoresaber_score, leaderboard_info)}\n")
         elif len(scoresaber_scores) > 1:
             m.append(await score_format.get_formatted_score_list(scoresaber_scores,
-                                                                 limit=len(scoresaber_scores) if len(scoresaber_scores) <= 5 else 5))
+                                                                 limit=len(scoresaber_scores) if len(scoresaber_scores)
+                                                                                                 <= 5 else 5))
             thumbnail_url = new_scoresaber_user.profile_picture
             author_text = f"""{new_scoresaber_user.name} set new best scores"""
         else:

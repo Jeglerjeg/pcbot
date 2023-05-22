@@ -3,6 +3,7 @@ from typing import Optional
 
 from dateutil import parser
 
+
 class Difficulty:
     leaderboard_id: int
     difficulty: int
@@ -23,6 +24,7 @@ class Difficulty:
         for attr, value in self.__dict__.items():
             readable_dict[attr] = value
         return readable_dict
+
 
 class ScoreSaberLeaderboardInfo:
     id: int
@@ -46,6 +48,7 @@ class ScoreSaberLeaderboardInfo:
     plays: int
     daily_plays: int
     cover_image: str
+
     def __init__(self, raw_data: dict):
         self.id = raw_data["id"]
         self.difficulty = Difficulty(raw_data["difficulty"])

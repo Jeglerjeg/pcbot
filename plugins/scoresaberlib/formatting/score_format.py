@@ -8,7 +8,8 @@ from plugins.scoresaberlib.formatting import map_format
 
 
 class PaginatedScoreList(discord.ui.View):
-    def __init__(self, osu_scores: list[(ScoreSaberScore, ScoreSaberLeaderboardInfo)], max_pages: int, embed: discord.Embed):
+    def __init__(self, osu_scores: list[(ScoreSaberScore, ScoreSaberLeaderboardInfo)], max_pages: int,
+                 embed: discord.Embed):
         super().__init__(timeout=30)
         self.osu_scores = osu_scores
         self.page = 1
@@ -58,7 +59,8 @@ def format_score_statistics(scoresaber_score: ScoreSaberScore, leaderboard_info:
     acc = f"{utils.format_number(100 * (scoresaber_score.base_score / leaderboard_info.max_score), 2)}%"
     color = "\u001b[0;32m" if scoresaber_score.full_combo else "\u001b[0;31m"
     return "acc    bad  miss  combo\n" \
-           f'{color}{acc:<7}{scoresaber_score.bad_cuts:<5}{scoresaber_score.missed_notes:<6}{scoresaber_score.max_combo}'
+           f'{color}{acc:<7}{scoresaber_score.bad_cuts:<5}{scoresaber_score.missed_notes:<6}' \
+           f'{scoresaber_score.max_combo}'
 
 
 def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
@@ -76,6 +78,7 @@ def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: Score
     return f'[{i}{artist} - {title} [{difficulty}]{i}]({beatmap_url})\n' \
            f'**{score_pp}pp {stars}\u2605, {grade} +{modslist} {ranked_score}**'
 
+
 def format_new_score(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
     """ Format any score. There should be a member name/mention in front of this string. """
     return (
@@ -85,8 +88,8 @@ def format_new_score(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreS
         f"<t:{int(scoresaber_score.time_set.timestamp())}:R>"
     )
 
+
 def format_score_rank(accuracy: float):
-    grade = ""
     if accuracy >= 90.0:
         grade = "SS"
     elif accuracy >= 80.0:
@@ -103,7 +106,9 @@ def format_score_rank(accuracy: float):
         grade = "E"
     return grade
 
-async def get_formatted_score_list(scoresaber_scores: list[(ScoreSaberScore, ScoreSaberLeaderboardInfo)], limit: int, offset: int = 0):
+
+async def get_formatted_score_list(scoresaber_scores: list[(ScoreSaberScore, ScoreSaberLeaderboardInfo)], limit: int,
+                                   offset: int = 0):
     """ Return a list of formatted scores along with time since the score was set. """
     m = []
     for i, scoresaber_score in enumerate(scoresaber_scores):

@@ -14,6 +14,7 @@ class ScoreSaberLeaderboardPlayer:
     country: str
     permissions: Optional[int]
     role: Optional[str]
+
     def __init__(self, raw_data, from_db: bool = True):
         if from_db:
             self.id = raw_data.id
@@ -39,6 +40,7 @@ class ScoreSaberLeaderboardPlayer:
             readable_dict[attr] = value
         return readable_dict
 
+
 class ScoreSaberPlayerScoreStats:
     total_score: int
     total_ranked_score: int
@@ -47,7 +49,7 @@ class ScoreSaberPlayerScoreStats:
     ranked_playcount = int
     replays_watched = int
 
-    def __init__(self, raw_data, from_db: bool = True):
+    def __init__(self, raw_data):
         self.total_score = raw_data["totalScore"]
         self.total_ranked_score = raw_data["totalRankedScore"]
         self.average_ranked_accuracy = raw_data["averageRankedAccuracy"]
@@ -63,6 +65,7 @@ class ScoreSaberPlayerScoreStats:
         for attr, value in self.__dict__.items():
             readable_dict[attr] = value
         return readable_dict
+
 
 class ScoreSaberPlayer(ScoreSaberLeaderboardPlayer):
     pp: int
@@ -119,9 +122,12 @@ class ScoreSaberPlayer(ScoreSaberLeaderboardPlayer):
             self.last_pp_notification = datetime.now(tz=timezone.utc)
 
         return {"discord_id": discord_id, "id": self.id, "name": self.name, "profile_picture": self.profile_picture,
-                "country": self.country, "pp": self.pp, "average_ranked_accuracy": self.score_stats.average_ranked_accuracy if self.score_stats else 0.0,
-                "country_rank": self.country_rank, "rank": self.rank, "total_ranked_score": self.score_stats.total_ranked_score if self.score_stats else 0,
-                "ticks": ticks, "time_cached": int(self.time_cached.timestamp()), "last_pp_notification": int(self.time_cached.timestamp())}
+                "country": self.country, "pp": self.pp,
+                "average_ranked_accuracy": self.score_stats.average_ranked_accuracy if self.score_stats else 0.0,
+                "country_rank": self.country_rank, "rank": self.rank,
+                "total_ranked_score": self.score_stats.total_ranked_score if self.score_stats else 0,
+                "ticks": ticks, "time_cached": int(self.time_cached.timestamp()),
+                "last_pp_notification": int(self.time_cached.timestamp())}
 
     def add_tick(self):
         self.ticks += 1

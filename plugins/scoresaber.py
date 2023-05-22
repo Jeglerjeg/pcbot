@@ -11,13 +11,13 @@ from plugins.scoresaberlib.config import scoresaber_config
 
 client = plugins.client  # type: bot.Client
 
-
 scoresaber_tracker = ScoreSaberTracker()
+
 
 @plugins.command()
 async def scoresaber(message, _: utils.placeholder):
     """ Score saber plugin. """
-    
+
 @scoresaber.command(aliases="set")
 async def link(message: discord.Message, name: Annotate.LowerContent):
     """ Tell the bot who you are on scoresaber!. """
@@ -35,7 +35,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
 
 @scoresaber.command(aliases="unset")
 async def unlink(message: discord.Message, member: discord.Member = Annotate.Self):
-    """ Unlink your osu! account or unlink the member specified (**Owner only**). """
+    """ Unlink your scoresaber! account or unlink the member specified (**Owner only**). """
     # The message author is allowed to unlink himself
     # If a member is specified and the member is not the owner, set member to the author
     if not plugins.is_owner(message.author):
@@ -47,6 +47,7 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
     # Unlink the given member (usually the message author)
     db.delete_linked_scoresaber_profile(member.id)
     await client.say(message, f"Unlinked **{member.name}'s** scoresaber profile.")
+
 
 @scoresaber.command()
 async def score(message: discord.Message, map_id: int, user: str = None):
@@ -104,7 +105,8 @@ async def top(message: discord.Message, user: str = None):
         scoresaber_score[0].add_position(i + 1)
 
     m = await score_format.get_formatted_score_list(fetched_scores, 5)
-    e = embed_format.get_embed_from_template(m, message.author.color, scoresaber_user.name, user_utils.get_user_url(scoresaber_user.id),
+    e = embed_format.get_embed_from_template(m, message.author.color, scoresaber_user.name,
+                                             user_utils.get_user_url(scoresaber_user.id),
                                              scoresaber_user.profile_picture,
                                              scoresaber_user.profile_picture)
     view = score_format.PaginatedScoreList(fetched_scores,
@@ -126,3 +128,28 @@ async def config_scores(message: discord.Message, *channels: discord.TextChannel
     scoresaber_config.data["guild"][str(message.guild.id)]["score-channels"] = list(str(c.id) for c in channels)
     await scoresaber_config.asyncsave()
     await client.say(message, f"**Notifying scores in**: {utils.format_objects(*channels, sep=' ') or 'no channels'}")
+
+@scoresaber.command(owner=True)
+async def debug(message: discord.Message):
+    """ Display some debug info. """
+    client_time = f"<t:{int(client.time_started.timestamp())}:F>"
+    linked_profiles = db.get_linked_scoresaber_profiles()
+    tracked_profiles = db.get_scoresaber_users()
+    member_list = []
+    for linked_profile in linked_profiles:
+        if any(linked_profile.scoresaber_id == scoresaber_user.id for scoresaber_user in tracked_profiles):
+            member = discord.utils.get(client.get_all_members(), id=linked_profile.id)
+            if member and user_utils.is_playing(member):
+                member_list.append(f"`{member.name}`")
+
+    average_requests = utils.format_number(api.requests_sent /
+                                           ((discord.utils.utcnow() - client.time_started).total_seconds() / 60.0), 2) \
+        if api.requests_sent > 0 else 0
+    last_update = f"<t:{int(scoresaber_tracker.previous_update.timestamp())}:F>" \
+        if scoresaber_tracker.previous_update else "Not updated yet."
+    await client.say(message, f"Sent `{api.requests_sent}` requests since the bot started ({client_time}).\n"
+                              f"Sent an average of `{average_requests}` requests per minute. \n"
+                              f"Spent `{scoresaber_tracker.time_elapsed:.3f}` seconds last update.\n"
+                              f"Last update happened at: {last_update}\n"
+                              f"Members registered as playing: {', '.join(member_list) if member_list else 'None'}\n"
+                              f"Total members tracked: `{len(tracked_profiles)}`")

@@ -12,6 +12,7 @@ def get_linked_scoresaber_profiles():
         result = connection.execute(statement)
         return result.fetchall()
 
+
 def get_linked_scoresaber_profile(user_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["linked_scoresaber_profiles"]
@@ -33,7 +34,7 @@ def insert_linked_scoresaber_profile(discord_id: int, scoresaber_id: int, home_g
 
 def update_linked_scoresaber_profile(discord_id: int, scoresaber_id: int, home_guild: int, update_mode: str):
     updated_linked_scoresaber_proile = {"id": discord_id, "scoresaber_id": scoresaber_id, "home_guild": home_guild,
-                                 "update_mode": update_mode}
+                                        "update_mode": update_mode}
     with engine.connect() as connection:
         table = db_metadata.tables["linked_scoresaber_profiles"]
         statement = update(table).where(table.c.id == discord_id).values(updated_linked_scoresaber_proile)
@@ -49,7 +50,16 @@ def delete_linked_scoresaber_profile(user_id: int):
         transaction = connection.begin()
         connection.execute(statement)
         transaction.commit()
-        
+
+
+def get_scoresaber_users():
+    with engine.connect() as connection:
+        table = db_metadata.tables["scoresaber_users"]
+        statement = select(table)
+        result = connection.execute(statement)
+        return result.fetchall()
+
+
 def get_scoresaber_user(discord_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["scoresaber_users"]

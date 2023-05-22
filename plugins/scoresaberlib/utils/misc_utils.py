@@ -3,8 +3,8 @@ import discord
 from plugins.scoresaberlib import config
 from plugins.scoresaberlib.models.player import ScoreSaberPlayer
 
-
 pp_threshold = config.scoresaber_config.data.get("pp_threshold", 0.5)
+
 
 def check_for_pp_difference(new_scoresaber_user: ScoreSaberPlayer, old_scoresaber_user: ScoreSaberPlayer = None):
     """ Check if user has gained enough PP to notify a score. """
@@ -29,8 +29,10 @@ def get_notify_channels(guild: discord.Guild, data_type: str):
     if "".join([data_type, "-channels"]) not in config.scoresaber_config.data["guild"][str(guild.id)]:
         return None
 
-    return [guild.get_channel(int(s)) for s in config.scoresaber_config.data["guild"][str(guild.id)]["".join([data_type,"-channels"])]
+    return [guild.get_channel(int(s))
+            for s in config.scoresaber_config.data["guild"][str(guild.id)]["".join([data_type, "-channels"])]
             if guild.get_channel(int(s))]
+
 
 async def init_guild_config(guild: discord.Guild):
     """ Initializes the config when it's not already set. """

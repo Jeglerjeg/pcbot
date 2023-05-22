@@ -24,6 +24,7 @@ class ScoreSaberScore:
     time_set: datetime
     has_replay: bool
     position: Optional[int]
+
     def __init__(self, raw_data: dict):
         self.id = raw_data["id"]
         if "leaderboardPlayerInfo" in raw_data:
