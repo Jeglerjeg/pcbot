@@ -44,6 +44,6 @@ async def get_new_score(member_id: int, profile: ScoreSaberPlayer):
 
     # Save the updated score list, and if there are new scores, update time_updated
     if new_scores:
-        profile.set_time_cached(datetime.now(tz=timezone.utc))
+        profile.set_last_pp_notification(datetime.now(tz=timezone.utc))
         db.update_scoresaber_user(profile, member_id, profile.ticks)
     return new_scores

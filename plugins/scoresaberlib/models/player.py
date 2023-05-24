@@ -134,3 +134,6 @@ class ScoreSaberPlayer(ScoreSaberLeaderboardPlayer):
 
     def set_time_cached(self, time: datetime):
         self.time_cached = time
+
+    def set_last_pp_notification(self, time: datetime):
+        self.last_pp_notification = time
