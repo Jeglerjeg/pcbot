@@ -127,7 +127,7 @@ class ScoreSaberPlayer(ScoreSaberLeaderboardPlayer):
                 "country_rank": self.country_rank, "rank": self.rank,
                 "total_ranked_score": self.score_stats.total_ranked_score if self.score_stats else 0,
                 "ticks": ticks, "time_cached": int(self.time_cached.timestamp()),
-                "last_pp_notification": int(self.time_cached.timestamp())}
+                "last_pp_notification": int(self.last_pp_notification.timestamp())}
 
     def add_tick(self):
         self.ticks += 1
