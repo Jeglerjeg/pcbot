@@ -53,6 +53,7 @@ async def update_scoresaber_user(member_id: int, profile: int, member: discord.M
         current_time = datetime.now(tz=timezone.utc)
         api_user_data = await api.get_full_user_by_id(profile)
         api_user_data.time_cached = current_time
+        api_user_data.last_pp_notification = scoresaber_user.last_pp_notification
         if api_user_data is None:
             logging.info("Could not retrieve scoresaber info from %s (%s)", member, profile)
             return
