@@ -33,9 +33,9 @@ def is_playing(member: discord.Member):
     # See if the member is playing
     for activity in member.activities:
         if activity is not None and activity.name is not None:
-            if "beatsaber" in activity.name.lower():
+            if "beat saber" in activity.name.lower():
                 return True
-            if activity == discord.ActivityType.streaming and "beatsaber" in activity.game.lower():
+            if activity == discord.ActivityType.streaming and "beat saber" in activity.game.lower():
                 return True
 
     return False
