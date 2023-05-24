@@ -181,7 +181,7 @@ class ScoreSaberTracker:
             member = guild.get_member(int(member_id))
 
             embed = embed_format.get_embed_from_template("".join(m), member.color, author_text,
-                                                         user_utils.get_user_url(member.id),
+                                                         user_utils.get_user_url(new_scoresaber_user.id),
                                                          new_scoresaber_user.profile_picture, thumbnail_url)
             for i, channel in enumerate(channels):
                 try:
