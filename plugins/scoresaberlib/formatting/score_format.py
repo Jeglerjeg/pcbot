@@ -63,7 +63,7 @@ def format_score_statistics(scoresaber_score: ScoreSaberScore, leaderboard_info:
            f'{scoresaber_score.max_combo}'
 
 
-def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
+def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo, rank: int = None):
     """ Return formatted beatmap information. """
     beatmap_url = map_utils.get_map_url(leaderboard_info.id)
     grade = format_score_rank(100 * (scoresaber_score.base_score / leaderboard_info.max_score))
@@ -72,17 +72,18 @@ def format_score_info(scoresaber_score: ScoreSaberScore, leaderboard_info: Score
     score_pp = utils.format_number(scoresaber_score.pp, 2)
     ranked_score = f'{scoresaber_score.modified_score:,}'
     stars = utils.format_number(float(leaderboard_info.stars), 2)
+    rank = f"#{rank} " if rank else ""
     artist = leaderboard_info.song_author_name
     title = leaderboard_info.song_name
     i = ("*" if "*" not in leaderboard_info.song_author_name + leaderboard_info.song_name else "")
     return f'[{i}{artist} - {title} [{difficulty}]{i}]({beatmap_url})\n' \
-           f'**{score_pp}pp {stars}\u2605, {grade} +{modslist} {ranked_score}**'
+           f'**{score_pp}pp {stars}\u2605, {grade} {rank}+{modslist} {ranked_score}**'
 
 
-def format_new_score(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
+def format_new_score(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo, rank: int = None):
     """ Format any score. There should be a member name/mention in front of this string. """
     return (
-        f"{format_score_info(scoresaber_score, leaderboard_info)}"
+        f"{format_score_info(scoresaber_score, leaderboard_info, rank)}"
         "```ansi\n"
         f"{format_score_statistics(scoresaber_score, leaderboard_info)}```"
         f"<t:{int(scoresaber_score.time_set.timestamp())}:R>"
@@ -121,6 +122,6 @@ async def get_formatted_score_list(scoresaber_scores: list[(ScoreSaberScore, Sco
         scoresaber_map = scoresaber_score[1]
 
         # Add score position to the score
-        m.append("".join([f"{score.position}.\n", f"{format_new_score(score, scoresaber_map)}\n",
+        m.append("".join([f"{score.position}.\n", f"{format_new_score(score, scoresaber_map, score.rank)}\n",
                           "\n" if not i == limit - 1 else ""]))
     return "".join(m)

@@ -79,7 +79,7 @@ async def recent(message: discord.Message, user: str = None):
     recent_score = scoresaber_scores[0]
     scoresaber_score = recent_score[0]
     leaderboard_info = recent_score[1]
-    formatted_text = score_format.format_new_score(scoresaber_score, leaderboard_info)
+    formatted_text = score_format.format_new_score(scoresaber_score, leaderboard_info, scoresaber_score.rank)
     embed = embed_format.get_embed_from_template(formatted_text,
                                                  message.author.color,
                                                  scoresaber_user.name,

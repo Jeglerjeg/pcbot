@@ -160,7 +160,7 @@ class ScoreSaberTracker:
             thumbnail_url = leaderboard_info.cover_image
             author_text = f"{new_scoresaber_user.name} set a new top score!"
 
-            m.append(f"{score_format.format_new_score(scoresaber_score, leaderboard_info)}\n")
+            m.append(f"{score_format.format_new_score(scoresaber_score, leaderboard_info, scoresaber_score.rank)}\n")
         elif len(scoresaber_scores) > 1:
             m.append(await score_format.get_formatted_score_list(scoresaber_scores,
                                                                  limit=len(scoresaber_scores) if len(scoresaber_scores)
