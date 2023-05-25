@@ -20,7 +20,7 @@ def draw_score_rank(score_rank: RespektiveScoreRank):
     tier = get_rank_tier(score_rank.rank)
     colors = tier["colors"]
     header_text = "Score Rank"
-    rank_text = f"#{score_rank:,}" if score_rank and score_rank.rank > 0 else "-"
+    rank_text = f"#{score_rank.rank:,}" if score_rank and score_rank.rank > 0 else "-"
 
     font_header = ImageFont.truetype(TORUS_SEMIBOLD, header_font_size)
     font_rank = ImageFont.truetype(tier["font_path"], rank_font_size)
