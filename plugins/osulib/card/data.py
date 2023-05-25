@@ -4,6 +4,7 @@ from plugins.osulib.card.image import draw_card
 from plugins.osulib.card.embed import get_card_embed
 from plugins.osulib.api import get_user
 
+
 # Adapted from https://github.com/respektive/osualt-bot/blob/main/src/card/, thanks respektive!
 
 def get_avatar_url_from_id(user_id: int):
