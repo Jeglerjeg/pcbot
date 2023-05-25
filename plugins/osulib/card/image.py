@@ -11,9 +11,9 @@ draw = ImageDraw.Draw(image)
 
 # Card design is using flyte's Player Card design as a base and builds on top of it
 # https://www.figma.com/file/ocltATjJqWQZBravhPuqjB/UI%2FPlayer-Card
-async def draw_card(user_data: OsuUser, avatar_data: bytes, color: tuple):
+async def draw_card(user_data: OsuUser, avatar_data: bytes, color: tuple, mode: int):
     draw_background(draw)
     draw_header(image, draw, user_data, avatar_data, color)
-    await draw_body(image, user_data)
+    await draw_body(image, user_data, mode)
 
     return image

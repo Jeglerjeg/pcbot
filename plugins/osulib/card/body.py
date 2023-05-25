@@ -8,8 +8,8 @@ from plugins.osulib.card.helpers import get_rank_tier
 from plugins.osulib.models.user import OsuUser, RespektiveScoreRank
 
 
-async def draw_body(image: Image, user_data: OsuUser):
-    await draw_ranks(image, user_data)
+async def draw_body(image: Image, user_data: OsuUser, mode: int):
+    await draw_ranks(image, user_data, mode)
     draw_stats(image, user_data)
     draw_grades(image, user_data)
 
@@ -91,8 +91,8 @@ def draw_generic_rank(text: str, rank: int):
     return rank_image
 
 
-async def draw_ranks(image: Image, user_data: OsuUser):
-    score_rank = await respektive_score_rank(user_data.id, user_data.mode.value)
+async def draw_ranks(image: Image, user_data: OsuUser, mode: int):
+    score_rank = await respektive_score_rank(user_data.id, mode)
     ranks = [
         draw_score_rank(score_rank),
         draw_generic_rank("Global Rank", user_data.global_rank),
@@ -192,7 +192,8 @@ def draw_stats_row(image: Image, stats: list, y_offset=0):
 
 
 def draw_stats(image: Image, user_data: OsuUser):
-    clears = user_data.grades.ssh + user_data.grades.ss + user_data.grades.sh + user_data.grades.s + user_data.grades.a
+    clears = (user_data.grades.ssh + user_data.grades.ss + user_data.grades.sh + user_data.grades.s
+              + user_data.grades.a) if user_data.grades else 0
     row1 = [
         draw_stat("Medals", user_data["medal_count"]),
         draw_stat("pp", utils.format_number(user_data.pp, 0)),
@@ -236,11 +237,11 @@ def draw_grade(grade: str, count: int):
 
 def draw_grades(image: Image, user_data: OsuUser):
     grades = [
-        draw_grade("XH", user_data.grades.ssh),
-        draw_grade("X", user_data.grades.ss),
-        draw_grade("SH", user_data.grades.sh),
-        draw_grade("S", user_data.grades.s),
-        draw_grade("A", user_data.grades.a),
+        draw_grade("XH", user_data.grades.ssh if user_data.grades else 0),
+        draw_grade("X", user_data.grades.ss if user_data.grades else 0),
+        draw_grade("SH", user_data.grades.sh if user_data.grades else 0),
+        draw_grade("S", user_data.grades.s if user_data.grades else 0),
+        draw_grade("A", user_data.grades.a if user_data.grades else 0),
     ]
 
     draw_stats_row(image, grades, 320)

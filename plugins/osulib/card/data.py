@@ -28,7 +28,7 @@ async def get_card(user_id: int, mode: GameMode, color: discord.Colour):
     # Fallback to generating an avatar_url if for some reason the url is not set
     avatar_url = user_data.avatar_url or get_avatar_url_from_id(user_id)
     avatar_data = get_image_data_from_url(avatar_url)
-    image = await draw_card(user_data, avatar_data, (color.r, color.g, color.b))
+    image = await draw_card(user_data, avatar_data, (color.r, color.g, color.b), mode.value)
     embed, file = get_card_embed(image, user_data, avatar_url, color)
 
     return embed, file

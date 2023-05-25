@@ -125,11 +125,21 @@ class OsuUser:
             self.country_code = data["country_code"]
             self.mode = GameMode.get_mode(data["playmode"])
             self.pp = data["statistics"]["pp"] if data["statistics"]["pp"] else 0.0
-            self.accuracy = data["statistics"]["hit_accuracy"] if data["statistics"]["hit_accuracy"] else 0.0
-            self.country_rank = data["statistics"]["country_rank"] if data["statistics"]["country_rank"] else 0
-            self.global_rank = data["statistics"]["global_rank"] if data["statistics"]["global_rank"] else 0
-            self.max_combo = data["statistics"]["maximum_combo"] if data["statistics"]["maximum_combo"] else 0
-            self.ranked_score = data["statistics"]["ranked_score"] if data["statistics"]["ranked_score"] else 0
+            self.accuracy = data["statistics"]["hit_accuracy"] if "statistics" in data and \
+                                                                  "hit_accuracy" in data["statistics"] and \
+                                                                  data["statistics"]["hit_accuracy"] else 0
+            self.country_rank = data["statistics"]["country_rank"] if "statistics" in data and \
+                                                                      "country_rank" in data["statistics"] and \
+                                                                      data["statistics"]["country_rank"] else 0
+            self.global_rank = data["statistics"]["global_rank"] if "statistics" in data and \
+                                                                    "global_rank" in data["statistics"] and \
+                                                                    data["statistics"]["global_rank"] else 0
+            self.max_combo = data["statistics"]["maximum_combo"] if "statistics" in data and \
+                                                                    "maximum_combo" in data["statistics"] and \
+                                                                    data["statistics"]["maximum_combo"] else 0
+            self.ranked_score = data["statistics"]["ranked_score"] if "statistics" in data and \
+                                                                      "ranked_score" in data["statistics"] and \
+                                                                      data["statistics"]["ranked_score"] else 0
             if "groups" in data:
                 groups = []
                 for group in data["groups"]:
@@ -144,10 +154,18 @@ class OsuUser:
             self.profile_colour = data["profile_colour"]
             self.cover_url = data["cover"]["url"]
             self.join_date = parser.isoparse(data["join_date"]).replace(tzinfo=timezone.utc)
-            self.total_score = data["statistics"]["total_score"] if data["statistics"]["total_score"] else 0
-            self.play_time = data["statistics"]["play_time"] if data["statistics"]["play_time"] else 0
-            self.play_count = data["statistics"]["play_count"] if data["statistics"]["play_count"] else 0
-            self.grades = UserGrades(data["statistics"]["grade_counts"])
+            self.total_score = data["statistics"]["total_score"] if "statistics" in data and \
+                                                                    "total_score" in data["statistics"] and \
+                                                                    data["statistics"]["total_score"] else 0
+            self.play_time = data["statistics"]["play_time"] if "statistics" in data and \
+                                                                "play_time" in data["statistics"] and \
+                                                                data["statistics"]["play_time"] else 0
+            self.play_count = data["statistics"]["play_count"] if "statistics" in data and \
+                                                                  "play_count" in data["statistics"] and \
+                                                                  data["statistics"]["play_count"] else 0
+            self.grades = UserGrades(data["statistics"]["grade_counts"]) if "grade_counts" in data and \
+                                                                            "grade_counts" in data["statistics"] and \
+                                                                            data["statistics"]["grade_counts"] else None
             self.medal_count = len(data["user_achievements"])
             self.ticks = None
             self.time_cached = None

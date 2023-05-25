@@ -110,11 +110,12 @@ async def osu(message: discord.Message, *options):
     mode = None
 
     for value in options:
+        if value in gamemodes:
+            mode = enums.GameMode.get_mode(value)
+            continue
         member = user_utils.get_user(message, value)
         if member:
             continue
-
-        mode = enums.GameMode.get_mode(value)
 
     if member is None:
         member = message.author
