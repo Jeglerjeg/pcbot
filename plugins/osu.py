@@ -130,7 +130,7 @@ async def osu(message: discord.Message, *options):
 
     assert osu_user, "Failed to get user data. Please try again later."
 
-    card = await get_card(osu_user.id, mode, member.color)
+    card = await get_card(osu_user.id, mode if mode else osu_user.mode, member.color)
     await client.send_message(message.channel, embed=card[0], file=card[1])
 
 
