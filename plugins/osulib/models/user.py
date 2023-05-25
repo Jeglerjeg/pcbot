@@ -26,7 +26,6 @@ class UserGroup:
     identifier: str
     name: str
     short_name: str
-    description: str
     colour: str
 
     def __init__(self, data: dict):
@@ -34,7 +33,6 @@ class UserGroup:
         self.identifier = data["identifier"]
         self.name = data["name"]
         self.short_name = data["short_name"]
-        self.description = data["description"]
         self.colour = data["colour"]
 
     def __repr__(self):
