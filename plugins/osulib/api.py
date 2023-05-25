@@ -6,6 +6,7 @@
 import asyncio
 import logging
 import re
+import traceback
 from collections import namedtuple
 from datetime import datetime, timezone, timedelta
 
@@ -14,7 +15,7 @@ from dateutil import parser
 
 from plugins.osulib.models.beatmap import Beatmapset
 from plugins.osulib.models.score import OsuScore
-from plugins.osulib.models.user import OsuUser
+from plugins.osulib.models.user import OsuUser, RespektiveScoreRank
 
 try:
     import pyrate_limiter
@@ -79,6 +80,7 @@ async def get_access_token(client_id: str, client_secret: str):
 
 def def_section(api_name: str, first_element: bool = False, api_url: str = main_api_url):
     """ Add a section using a template to simplify adding API functions. """
+
     async def template(url=api_url, request_tries: int = 1, **params):
         if not limiter:
             return None
@@ -172,8 +174,8 @@ async def get_user(user, mode=None, params=None):
         return None
     try:
         user = OsuUser(result, from_db=False)
-    except KeyError:
-        logging.info(f"Fetching osu user from API failed: api result: {result}")
+    except KeyError as e:
+        logging.error(traceback.format_exception(e))
         return None
     return user
 
@@ -242,6 +244,16 @@ async def get_user_recent_activity(user, params=None):
     if params:
         return await request(**params)
     return await request()
+
+async def respektive_score_rank(user_id: int, mode: int):
+    request = def_section(f"u/{user_id}?m={mode}", api_url="https://score.respektive.pw/")
+
+    result = await request()
+
+    if not result:
+        return None
+
+    return RespektiveScoreRank(result[0])
 
 
 beatmap_url_pattern_v1 = \

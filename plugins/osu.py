@@ -29,6 +29,7 @@ import bot
 import plugins
 from pcbot import utils, Annotate
 from plugins.osulib import api, pp, ordr, enums, db
+from plugins.osulib.card.data import get_card
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
 from plugins.osulib.db import insert_linked_osu_profile, get_osu_user, get_linked_osu_profile, delete_osu_user, \
@@ -123,36 +124,8 @@ async def osu(message: discord.Message, *options):
     assert linked_profile, user_utils.get_missing_user_string(member)
 
     user_id = linked_profile.osu_id
-    mode = user_utils.get_mode(str(member.id)) if mode is None else mode
-
-    member_rgb = member.color.to_rgb()
-    # Set the signature color to that of the role color
-    color = "pink" if member.color == discord.Color.default() \
-        else f"#{member_rgb[0]:02x}{member_rgb[1]:02x}{member_rgb[2]:02x}"
-
-    # Calculate whether the header color should be black or white depending on the background color.
-    # Stupidly, the API doesn't accept True/False. It only looks for the &darkheaders keyword.
-    # The silly trick done here is extracting either the darkheader param or nothing.
-    dark = {"darkheader": "True"} if (member_rgb[0] * 0.299
-                                      + member_rgb[1] * 0.587
-                                      + member_rgb[2] * 0.144) > 186 else {}
-
-    # Download and upload the signature
-    params = {
-        "colour": color,
-        "uname": user_id,
-        "pp": 0,
-        "countryrank": "",
-        "xpbar": "",
-        "mode": mode.value,
-        "date": datetime.now().ctime()
-    }
-    signature = await utils.retrieve_page("https://osusig.lolicon.app/sig.php", head=True, **params, **dark)
-    embed = discord.Embed(color=member.color)
-    embed.set_author(name=member.display_name, icon_url=member.display_avatar.url,
-                     url=user_utils.get_user_url(str(member.id)))
-    embed.set_image(url=signature.url)
-    await client.send_message(message.channel, embed=embed)
+    card = await get_card(user_id)
+    await client.send_message(message.channel, embed=card[0], file=card[1])
 
 
 @plugins.command(aliases="l")

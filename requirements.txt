@@ -20,3 +20,4 @@ rosu-pp-py>=0.9, <0.10
 SQLAlchemy>=2.0, <2.1
 twitchio[speed]>=2.6, <2.7
 yt-dlp==2023.3.4
+scikit-learn>=1.2, <1.3
