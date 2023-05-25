@@ -6,8 +6,9 @@ from pcbot import config, utils
 from plugins.osulib import enums, api
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import host, minimum_pp_required
-from plugins.osulib.db import get_linked_osu_profile, get_osu_users, get_linked_osu_profile_accounts
+from plugins.osulib.db import get_linked_osu_profile, get_osu_users, get_linked_osu_profile_accounts, get_osu_user
 from plugins.osulib.enums import GameMode
+from plugins.osulib.models.user import OsuUser
 
 
 def get_missing_user_string(member: discord.Member):
@@ -16,7 +17,7 @@ def get_missing_user_string(member: discord.Member):
            f"**{config.guild_command_prefix(member.guild)}osu link <username>**"
 
 
-def get_user(message: discord.Message, username: str):
+async def get_user(message: discord.Message, username: str, mode: GameMode = None):
     """ Get member by discord username or osu username. """
     member = utils.find_member(guild=message.guild, name=username)
     if not member:
@@ -28,10 +29,28 @@ def get_user(message: discord.Message, username: str):
                     member = discord.utils.get(message.guild.members, id=int(linked_profile.id))
                     if not member:
                         continue
+                    else:
+                        if not mode:
+                            mode = GameMode(linked_profile.mode)
                 if not member:
                     continue
 
-    return member
+    if member:
+        db_osu_user = get_osu_user(member.id)
+        if not db_osu_user:
+            params = {
+                "key": "username",
+            }
+            osu_user = await api.get_user(username, mode.name if mode else "", params=params)
+        else:
+            osu_user = OsuUser(db_osu_user)
+    else:
+        params = {
+            "key": "username",
+        }
+        osu_user = await api.get_user(username, mode.name if mode else "", params=params)
+
+    return osu_user
 
 
 async def retrieve_user_proile(profile: str, mode: enums.GameMode, timestamp: datetime = None):

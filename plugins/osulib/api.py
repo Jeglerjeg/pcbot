@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 from aiohttp import ClientConnectorError
 from dateutil import parser
 
+from plugins.osulib.enums import GameMode
 from plugins.osulib.models.beatmap import Beatmapset
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.models.user import OsuUser, RespektiveScoreRank
@@ -207,6 +208,8 @@ async def get_user(user, mode=None, params=None):
         return None
     try:
         user = OsuUser(result, from_db=False)
+        if mode:
+            user.mode = GameMode.get_mode(mode)
     except KeyError as e:
         logging.error(traceback.format_exception(e))
         return None

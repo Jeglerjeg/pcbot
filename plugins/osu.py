@@ -108,27 +108,29 @@ async def osu(message: discord.Message, *options):
     new top score. """
     member = None
     mode = None
+    to_search = ""
 
     for value in options:
         if value in gamemodes:
             mode = enums.GameMode.get_mode(value)
-            continue
-        member = user_utils.get_user(message, value)
-        if member:
-            continue
+        elif utils.member_mention_pattern.match(value):
+            member = utils.find_member(message.guild, value)
+        else:
+            to_search = value
+
+    if not member:
+        member = message.author
+    if not to_search:
+        to_search = member.mention
 
     if member is None:
         member = message.author
 
-    if not mode:
-        mode = user_utils.get_mode(str(member.id))
+    osu_user = await user_utils.get_user(message, to_search, mode)
 
-    # Make sure the member is assigned
-    linked_profile = get_linked_osu_profile(member.id)
-    assert linked_profile, user_utils.get_missing_user_string(member)
+    assert osu_user, "Failed to get user data. Please try again later."
 
-    user_id = linked_profile.osu_id
-    card = await get_card(user_id, mode, member.color)
+    card = await get_card(osu_user.id, mode, member.color)
     await client.send_message(message.channel, embed=card[0], file=card[1])
 
 
@@ -366,34 +368,38 @@ osu.command(name="pp", aliases="oppai")(pp_)
 
 async def recent_command(message: discord.Message, user: str = None, lazer_api: bool = False,
                          mode: enums.GameMode = None):
-    if not user:
-        member = message.author
-    else:
-        member = user_utils.get_user(message, user)
+    member = None
+    to_search = ""
+    if user:
+        if utils.member_mention_pattern.match(user):
+            member = utils.find_member(message.guild, user)
+        else:
+            to_search = user
+
     if not member:
         member = message.author
-    linked_profile = get_linked_osu_profile(member.id)
-    assert linked_profile, user_utils.get_missing_user_string(member)
+    if not to_search:
+        to_search = member.mention
 
-    user_id = linked_profile.osu_id
+    osu_user = await user_utils.get_user(message, to_search, mode)
 
-    if not mode:
-        mode = user_utils.get_mode(str(member.id))
+    assert osu_user, "Failed to get user data. Please try again later."
 
     params = {
         "include_fails": 1,
-        "mode": mode.name,
+        "mode": mode.name if mode else osu_user.mode.name,
         "limit": 1
     }
 
-    osu_scores = await api.get_user_scores(user_id, "recent", params=params, lazer=lazer_api)  # type: list[OsuScore]
+    osu_scores = await api.get_user_scores(osu_user.id, "recent", params=params,
+                                           lazer=lazer_api)  # type: list[OsuScore]
     assert osu_scores, "Found no recent score."
 
     osu_score = osu_scores[0]
 
     beatmap = await api.beatmap_lookup(map_id=int(osu_score.beatmap.id))
 
-    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode,
+    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, osu_user.mode,
                                                           twitch_link=osu_score.passed)
     await client.send_message(message.channel, embed=embed)
 
@@ -516,20 +522,26 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
     member = None
     beatmap_url = None
     mods = None
+    to_search = ""
 
     for value in options:
         if utils.http_url_pattern.match(value):
             beatmap_url = value
         elif value.startswith("+"):
             mods = value.replace("+", "").upper()
+        elif utils.member_mention_pattern.match(value):
+            member = utils.find_member(message.guild, value)
         else:
-            member = user_utils.get_user(message, value)
+            to_search = value
 
     if not member:
         member = message.author
+    if not to_search:
+        to_search = member.mention
 
-    linked_profile = get_linked_osu_profile(member.id)
-    assert linked_profile, user_utils.get_missing_user_string(member)
+    osu_user = await user_utils.get_user(message, to_search)
+
+    assert osu_user, "Failed to get user data. Please try again later."
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -543,13 +555,11 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
             await client.say(message, str(e))
             return
 
-    user_id = linked_profile.osu_id
-    mode = user_utils.get_mode(str(member.id))
     params = {
-        "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
+        "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else osu_user.mode.name,
     }
-    osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, user_id, params=params, lazer=lazer_api)
-    assert osu_scores, f"Found no scores by **{member.display_name}**."
+    osu_scores = await api.get_user_beatmap_score(beatmap_info.beatmap_id, osu_user.id, params=params, lazer=lazer_api)
+    assert osu_scores, f"Found no scores by **{osu_user.username}**."
 
     osu_score = osu_scores["score"]  # type: OsuScore
     if mods:
@@ -563,8 +573,9 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
 
     beatmap = await api.beatmap_lookup(map_id=osu_score.beatmap.id)
 
-    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-                                                          if beatmap_info.gamemode else mode,
+    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap,
+                                                          beatmap_info.gamemode if beatmap_info.gamemode else
+                                                          osu_user.mode,
                                                           time=bool(not mods))
     await client.send_message(message.channel, embed=embed)
 
@@ -590,22 +601,26 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
     member = None
     beatmap_url = None
     mods = None
+    to_search = ""
 
     for value in options:
         if utils.http_url_pattern.match(value):
             beatmap_url = value
         elif value.startswith("+"):
             mods = value.replace("+", "").upper()
+        elif utils.member_mention_pattern.match(value):
+            member = utils.find_member(message.guild, value)
         else:
-            member = user_utils.get_user(message, value)
+            to_search = value
+
     if not member:
         member = message.author
+    if not to_search:
+        to_search = member.mention
 
-    linked_profile = get_linked_osu_profile(member.id)
-    assert linked_profile, user_utils.get_missing_user_string(member)
+    osu_user = await user_utils.get_user(message, to_search)
 
-    mode = user_utils.get_mode(str(member.id))
-    osu_user = await user_utils.retrieve_user_proile(str(linked_profile.osu_id), mode)
+    assert osu_user, "Failed to get user data. Please try again later."
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -621,9 +636,9 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
 
     beatmap_id = beatmap_info.beatmap_id
     params = {
-        "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else mode.name,
+        "mode": beatmap_info.gamemode.name if beatmap_info.gamemode else osu_user.mode.name,
     }
-    fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, linked_profile.osu_id,
+    fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, osu_user.id,
                                                            params=params, lazer=lazer_api)
     logging.info(fetched_osu_scores)
     assert fetched_osu_scores, f"Found no scores by **{osu_user.username}**."
@@ -642,19 +657,23 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
 
         # Add user to the score so formatting will work properly.
         matching_score.user = osu_user
-        embed = await embed_format.create_score_embed_with_pp(member, matching_score, beatmap, beatmap_info.gamemode
-                                                              if beatmap_info.gamemode else mode, time=bool(not mods))
+        embed = await embed_format.create_score_embed_with_pp(member, matching_score, beatmap,
+                                                              beatmap_info.gamemode if beatmap_info.gamemode else
+                                                              osu_user.mode,
+                                                              time=bool(not mods))
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add user to the score so formatting will work properly.
         osu_score.user = osu_user
-        embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, beatmap_info.gamemode
-                                                              if beatmap_info.gamemode else mode, time=bool(not mods))
+        embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap,
+                                                              beatmap_info.gamemode if beatmap_info.gamemode else
+                                                              osu_user.mode,
+                                                              time=bool(not mods))
     else:
         osu_score_list = fetched_osu_scores["scores"]
         # Add position to the scores so formatting the score list will work properly.
         sorted_scores = score_utils.add_score_position(score_utils.get_sorted_scores(osu_score_list, "pp"))
-        embed = embed_format.get_embed_from_template(await score_format.get_formatted_score_list(mode,
+        embed = embed_format.get_embed_from_template(await score_format.get_formatted_score_list(osu_user.mode,
                                                                                                  sorted_scores, 5,
                                                                                                  beatmap_id),
                                                      member.color,
@@ -719,6 +738,8 @@ async def top(message: discord.Message, *options):
     member = None
     list_type = "pp"
     nochoke = False
+    to_search = ""
+
     for value in options:
         if value in ("newest", "recent"):
             list_type = "newest"
@@ -732,20 +753,24 @@ async def top(message: discord.Message, *options):
             list_type = value
         elif value == "nochoke":
             nochoke = True
+        elif utils.member_mention_pattern.match(value):
+            member = utils.find_member(message.guild, value)
         else:
-            member = user_utils.get_user(message, value)
+            to_search = value
 
     if not member:
         member = message.author
-    mode = user_utils.get_mode(str(member.id))
+    if not to_search:
+        to_search = member.mention
 
-    linked_profile = get_linked_osu_profile(member.id)
-    assert linked_profile, user_utils.get_missing_user_string(member)
+    osu_user = await user_utils.get_user(message, to_search)
 
-    osu_user = await user_utils.retrieve_user_proile(str(linked_profile.osu_id), mode)
+    assert osu_user, "Failed to get user data. Please try again later."
+
+    assert osu_user, "Failed to get user data. Please try again later."
 
     params = {
-        "mode": mode.name,
+        "mode": osu_user.mode.name,
         "limit": score_request_limit,
     }
     fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params)
@@ -753,7 +778,7 @@ async def top(message: discord.Message, *options):
     for i, osu_score in enumerate(fetched_scores):
         osu_score.add_position(i + 1)
 
-    assert mode is enums.GameMode.osu if nochoke else True, \
+    assert osu_user.mode is enums.GameMode.osu if nochoke else True, \
         "No-choke lists are only supported for osu!standard."
     assert not list_type == "score" if nochoke else True, "No-choke lists can't be sorted by score."
     if nochoke:
@@ -769,11 +794,11 @@ async def top(message: discord.Message, *options):
         osu_scores = fetched_scores
         author_text = osu_user.username
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
-    m = await score_format.get_formatted_score_list(mode, sorted_scores, 5, nochoke=nochoke)
+    m = await score_format.get_formatted_score_list(osu_user.mode, sorted_scores, 5, nochoke=nochoke)
     e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
                                              osu_user.avatar_url,
                                              osu_user.avatar_url)
-    view = score_format.PaginatedScoreList(sorted_scores, mode,
+    view = score_format.PaginatedScoreList(sorted_scores, osu_user.mode,
                                            score_utils.count_score_pages(sorted_scores, 5), e, nochoke)
     e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
     message = await client.send_message(message.channel, embed=e, view=view)
@@ -791,6 +816,7 @@ async def lazer_top(message: discord.Message, *options):
      You can also add "nochoke" as an option to display a list of unchoked top scores instead.
      Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
     member = None
+    to_search = ""
     list_type = "pp"
     for value in options:
         if value in ("newest", "recent"):
@@ -803,20 +829,22 @@ async def lazer_top(message: discord.Message, *options):
             list_type = value
         elif value == "score":
             list_type = value
+        elif utils.member_mention_pattern.match(value):
+            member = utils.find_member(message.guild, value)
         else:
-            member = user_utils.get_user(message, value)
+            to_search = value
 
     if not member:
         member = message.author
+    if not to_search:
+        to_search = member.mention
 
-    linked_profile = get_linked_osu_profile(member.id)
-    assert linked_profile, user_utils.get_missing_user_string(member)
+    osu_user = await user_utils.get_user(message, to_search)
 
-    mode = user_utils.get_mode(str(member.id))
-    osu_user = await user_utils.retrieve_user_proile(str(linked_profile.osu_id), mode)
+    assert osu_user, "Failed to get user data. Please try again later."
 
     params = {
-        "mode": mode.name,
+        "mode": osu_user.mode.name,
         "limit": score_request_limit,
     }
     fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params,
@@ -828,11 +856,11 @@ async def lazer_top(message: discord.Message, *options):
     osu_scores = fetched_scores
     author_text = osu_user.username
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
-    m = await score_format.get_formatted_score_list(mode, sorted_scores, 5)
+    m = await score_format.get_formatted_score_list(osu_user.mode, sorted_scores, 5)
     e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
                                              osu_user.avatar_url,
                                              osu_user.avatar_url)
-    view = score_format.PaginatedScoreList(sorted_scores, mode,
+    view = score_format.PaginatedScoreList(sorted_scores, osu_user.mode,
                                            score_utils.count_score_pages(sorted_scores, 5), e)
     e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
     message = await client.send_message(message.channel, embed=e, view=view)
