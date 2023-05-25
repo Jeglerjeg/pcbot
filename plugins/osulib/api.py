@@ -122,6 +122,39 @@ def def_section(api_name: str, first_element: bool = False, api_url: str = main_
     return template
 
 
+def respektive_def_section(api_name: str, first_element: bool = False, api_url: str = main_api_url):
+    """ Add a section using a template to simplify adding API functions. """
+
+    async def template(url=api_url, request_tries: int = 1, **params):
+        # Download using a URL of the given API function name
+        for _ in range(request_tries):
+            try:
+                response = await utils.download_json(url + api_name, **params)
+
+            except ValueError as e:
+                logging.warning("ValueError Calling %s: %s", url + api_name, e)
+            else:
+                global requests_sent
+                requests_sent += 1
+
+                if response is not None:
+                    break
+        else:
+            return None
+
+        # Unless we want to extract the first element, return the entire object (usually a list)
+        if not first_element:
+            return response
+
+        # If the returned value should be the first element, see if we can cut it
+        return response[0] if len(response) > 0 else None
+
+    # Set the correct name of the function and add simple docstring
+    template.__name__ = api_name
+    template.__doc__ = "Get " + ("list" if not first_element else "dict") + " using " + api_url + api_name
+    return template
+
+
 # Define all osu! API requests using the template
 async def beatmap_lookup(map_id):
     """ Looks up a beatmap unless cache exists"""
@@ -245,8 +278,9 @@ async def get_user_recent_activity(user, params=None):
         return await request(**params)
     return await request()
 
+
 async def respektive_score_rank(user_id: int, mode: int):
-    request = def_section(f"u/{user_id}?m={mode}", api_url="https://score.respektive.pw/")
+    request = respektive_def_section(f"u/{user_id}?m={mode}", api_url="https://score.respektive.pw/")
 
     result = await request()
 
