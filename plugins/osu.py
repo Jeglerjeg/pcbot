@@ -119,12 +119,15 @@ async def osu(message: discord.Message, *options):
     if member is None:
         member = message.author
 
+    if not mode:
+        mode = user_utils.get_mode(str(member.id))
+
     # Make sure the member is assigned
     linked_profile = get_linked_osu_profile(member.id)
     assert linked_profile, user_utils.get_missing_user_string(member)
 
     user_id = linked_profile.osu_id
-    card = await get_card(user_id)
+    card = await get_card(user_id, mode)
     await client.send_message(message.channel, embed=card[0], file=card[1])
 
 

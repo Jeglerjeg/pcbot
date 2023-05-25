@@ -3,6 +3,7 @@ import time
 from plugins.osulib.card.image import draw_card
 from plugins.osulib.card.embed import get_card_embed
 from plugins.osulib.api import get_user
+from plugins.osulib.enums import GameMode
 
 
 # Adapted from https://github.com/respektive/osualt-bot/blob/main/src/card/, thanks respektive!
@@ -17,11 +18,11 @@ def get_image_data_from_url(image_url: str):
     return image_data
 
 
-async def get_card(user_id: int):
+async def get_card(user_id: int, mode: GameMode):
     params = {
         "key": "id",
     }
-    user_data = await get_user(user_id, params=params)
+    user_data = await get_user(user_id, mode.name, params=params)
     assert user_data, "Failed to get user data, please try again later."
     # Fallback to generating an avatar_url if for some reason the url is not set
     avatar_url = user_data.avatar_url or get_avatar_url_from_id(user_id)

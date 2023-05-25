@@ -105,7 +105,7 @@ async def has_enough_pp(user: str, mode: enums.GameMode, **params):
     """ Lookup the given member and check if they have enough pp to register.
     params are just like api.get_user. """
     osu_user = await api.get_user(user, mode, params=params)
-    return osu_user.pp >= minimum_pp_required
+    return osu_user.pp or 0.0 >= minimum_pp_required
 
 
 def user_exists(member: discord.Member, member_id: str, profile: str):
