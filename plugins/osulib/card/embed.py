@@ -5,11 +5,11 @@ from PIL import Image
 from plugins.osulib.models.user import OsuUser
 
 
-def get_card_embed(image: Image, user_data: OsuUser, avatar_url: str):
+def get_card_embed(image: Image, user_data: OsuUser, avatar_url: str, color: discord.Colour):
     author_string = f'{user_data.username} - {user_data.pp:,}pp (#{user_data.global_rank:,}) ' \
                     f'({user_data.country_code}#{user_data.country_rank:,})'
 
-    embed = discord.Embed(colour=discord.Colour(0xCC5288))
+    embed = discord.Embed(colour=color)
     embed.set_author(
         name=author_string,
         icon_url=avatar_url,

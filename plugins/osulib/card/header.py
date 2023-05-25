@@ -14,19 +14,20 @@ from plugins.osulib.card.constants import (
     TORUS_SEMIBOLD,
 )
 from plugins.osulib.card.helpers import (
-    get_image_color,
     fit_image_to_aspect_ratio,
     calculate_corner_radius,
-    convert_country_code_to_unicode,
+    convert_country_code_to_unicode, adjust_color_saturation_and_brightness,
 )
 from plugins.osulib.models.user import OsuUser, UserGroup
 
 
-def draw_header(image: Image, draw: ImageDraw, user_data: OsuUser, avatar_data: bytes):
-    avatar_color = get_image_color(avatar_data)
-    draw_header_background(image, avatar_color, user_data.cover_url)
+def draw_header(image: Image, draw: ImageDraw, user_data: OsuUser, avatar_data: bytes, color: tuple):
+    color = adjust_color_saturation_and_brightness(color, 0.45, 0.3)
+    draw_header_background(image, color, user_data.cover_url)
     draw_avatar(image, avatar_data)
     draw_user_group_line(draw, user_data)
+    draw_level(image, draw, user_data.level)
+    draw_flag(image, user_data.country_code)
     draw_username(image, draw, user_data.username)
     draw_osu_logo(image)
     pills = []
@@ -38,12 +39,10 @@ def draw_header(image: Image, draw: ImageDraw, user_data: OsuUser, avatar_data: 
         pills.append(draw_supporter_pill(user_data.support_level))
 
     draw_pills(image, pills)
-    draw_level(image, draw, user_data.level)
-    draw_flag(image, user_data.country_code)
     draw_join_date(draw, user_data.join_date)
 
 
-def draw_header_background(image: Image, avatar_color: str, cover_url: str):
+def draw_header_background(image: Image, avatar_color: tuple, cover_url: str):
     if cover_url:
         res = requests.get(cover_url)
         if res.status_code == requests.codes.ok:

@@ -1,8 +1,6 @@
 from PIL import Image
 import io
 from colorsys import rgb_to_hsv, hsv_to_rgb
-import numpy as np
-from sklearn.cluster import KMeans
 from plugins.osulib.card.constants import TORUS_BOLD, TORUS_REGULAR, TORUS_SEMIBOLD
 
 
@@ -73,35 +71,6 @@ def adjust_color_saturation_and_brightness(rgb_color, saturation, brightness):
     adjusted_rgb = hsv_to_rgb(*adjusted_hsv)
     normalized_rgb = [int(c * 255) for c in adjusted_rgb]
     return tuple(normalized_rgb)
-
-
-def get_image_color(image_data):
-    osu_pink = (255, 0, 115)
-    try:
-        image = Image.open(io.BytesIO(image_data)).convert("RGB")
-    except (OSError, IOError):
-        return adjust_color_saturation_and_brightness(osu_pink, 0.45, 0.3)
-
-    pixels = np.array(image).reshape(-1, 3)
-
-    if len(pixels) < 5:
-        return adjust_color_saturation_and_brightness(osu_pink, 0.45, 0.3)
-
-    kmeans = KMeans(n_init=10, n_clusters=5)
-    kmeans.fit(pixels)
-
-    cluster_centers = kmeans.cluster_centers_
-
-    _, counts = np.unique(kmeans.labels_, return_counts=True)
-
-    dominant_color = tuple(map(int, cluster_centers[np.argmax(counts)]))
-
-    if dominant_color == (255, 255, 255) or dominant_color == (0, 0, 0):
-        dominant_color = osu_pink
-
-    adjusted_color = adjust_color_saturation_and_brightness(dominant_color, 0.45, 0.3)
-
-    return adjusted_color
 
 
 def calculate_corner_radius(image_width, image_height, percentage):

@@ -127,7 +127,7 @@ async def osu(message: discord.Message, *options):
     assert linked_profile, user_utils.get_missing_user_string(member)
 
     user_id = linked_profile.osu_id
-    card = await get_card(user_id, mode)
+    card = await get_card(user_id, mode, member.color)
     await client.send_message(message.channel, embed=card[0], file=card[1])
 
 
