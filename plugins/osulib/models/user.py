@@ -161,7 +161,7 @@ class OsuUser:
             self.play_count = data["statistics"]["play_count"] if "statistics" in data and \
                                                                   "play_count" in data["statistics"] and \
                                                                   data["statistics"]["play_count"] else 0
-            self.grades = UserGrades(data["statistics"]["grade_counts"]) if "grade_counts" in data and \
+            self.grades = UserGrades(data["statistics"]["grade_counts"]) if "statistics" in data and \
                                                                             "grade_counts" in data["statistics"] and \
                                                                             data["statistics"]["grade_counts"] else None
             self.medal_count = len(data["user_achievements"])
