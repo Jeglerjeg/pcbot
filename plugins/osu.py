@@ -126,7 +126,7 @@ async def osu(message: discord.Message, *options):
     if member is None:
         member = message.author
 
-    osu_user = await user_utils.get_user(message, to_search, mode)
+    osu_user = await user_utils.get_user(message, to_search, message.guild, mode)
 
     card = await get_card(osu_user.id, mode if mode else osu_user.mode, member.color)
     await client.send_message(message.channel, embed=card[0], file=card[1])
@@ -379,7 +379,7 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
     if not to_search:
         to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search, mode)
+    osu_user = await user_utils.get_user(message, to_search, message.guild, mode)
 
     params = {
         "include_fails": 1,
@@ -535,7 +535,7 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
     if not to_search:
         to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search)
+    osu_user = await user_utils.get_user(message, to_search, message.guild)
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -612,7 +612,7 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
     if not to_search:
         to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search)
+    osu_user = await user_utils.get_user(message, to_search, message.guild)
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -755,7 +755,7 @@ async def top(message: discord.Message, *options):
     if not to_search:
         to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search)
+    osu_user = await user_utils.get_user(message, to_search, message.guild)
 
     params = {
         "mode": osu_user.mode.name,
@@ -827,7 +827,7 @@ async def lazer_top(message: discord.Message, *options):
     if not to_search:
         to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search)
+    osu_user = await user_utils.get_user(message, to_search, message.guild)
 
     params = {
         "mode": osu_user.mode.name,
