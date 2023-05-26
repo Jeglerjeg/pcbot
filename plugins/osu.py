@@ -128,8 +128,6 @@ async def osu(message: discord.Message, *options):
 
     osu_user = await user_utils.get_user(message, to_search, mode)
 
-    assert osu_user, "Failed to get user data. Please try again later."
-
     card = await get_card(osu_user.id, mode if mode else osu_user.mode, member.color)
     await client.send_message(message.channel, embed=card[0], file=card[1])
 
@@ -383,8 +381,6 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
 
     osu_user = await user_utils.get_user(message, to_search, mode)
 
-    assert osu_user, "Failed to get user data. Please try again later."
-
     params = {
         "include_fails": 1,
         "mode": mode.name if mode else osu_user.mode.name,
@@ -541,8 +537,6 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
 
     osu_user = await user_utils.get_user(message, to_search)
 
-    assert osu_user, "Failed to get user data. Please try again later."
-
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
         beatmap_info = await beatmap_utils.find_beatmap_info(message.channel)
@@ -619,8 +613,6 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
         to_search = member.mention
 
     osu_user = await user_utils.get_user(message, to_search)
-
-    assert osu_user, "Failed to get user data. Please try again later."
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -765,10 +757,6 @@ async def top(message: discord.Message, *options):
 
     osu_user = await user_utils.get_user(message, to_search)
 
-    assert osu_user, "Failed to get user data. Please try again later."
-
-    assert osu_user, "Failed to get user data. Please try again later."
-
     params = {
         "mode": osu_user.mode.name,
         "limit": score_request_limit,
@@ -840,8 +828,6 @@ async def lazer_top(message: discord.Message, *options):
         to_search = member.mention
 
     osu_user = await user_utils.get_user(message, to_search)
-
-    assert osu_user, "Failed to get user data. Please try again later."
 
     params = {
         "mode": osu_user.mode.name,

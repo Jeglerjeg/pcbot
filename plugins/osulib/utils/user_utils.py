@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 import discord
@@ -11,13 +12,13 @@ from plugins.osulib.enums import GameMode
 from plugins.osulib.models.user import OsuUser
 
 
-def get_missing_user_string(member: discord.Member):
+def get_missing_user_string(guild: discord.Guild):
     """ Format missing user text for all commands needing it. """
-    return f"No osu! profile assigned to **{member.name}**! Please assign a profile using " \
-           f"**{config.guild_command_prefix(member.guild)}osu link <username>**"
+    return f"No osu! profile assigned! Please assign a profile using " \
+           f"**{config.guild_command_prefix(guild)}osu link <username>**"
 
 
-async def get_user(message: discord.Message, username: str, mode: GameMode = None):
+async def get_user(message: discord.Message, username: str, guild: discord.Guild, mode: GameMode = None):
     """ Get member by discord username or osu username. """
     member = utils.find_member(guild=message.guild, name=username)
     if not member:
@@ -49,6 +50,10 @@ async def get_user(message: discord.Message, username: str, mode: GameMode = Non
             "key": "username",
         }
         osu_user = await api.get_user(username, mode.name if mode else "", params=params)
+
+    assert not bool(member and not osu_user), get_missing_user_string(guild)
+
+    assert osu_user, "Failed to get user data. Please try again later."
 
     return osu_user
 
