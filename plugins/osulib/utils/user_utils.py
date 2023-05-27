@@ -118,11 +118,9 @@ def get_update_mode(member_id: str):
     return enums.UpdateModes.get_mode(linked_profile.update_mode)
 
 
-def get_user_url(member_id: str):
+def get_user_url(osu_id: str):
     """ Return the user website URL. """
-    user_id = get_linked_osu_profile(int(member_id)).osu_id
-
-    return "".join([host, "/users/", str(user_id)])
+    return "".join([host, "/users/", str(osu_id)])
 
 
 async def has_enough_pp(user: str, mode: enums.GameMode, **params):

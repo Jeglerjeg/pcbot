@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from random import randint
 from typing import Optional
@@ -60,11 +61,68 @@ class UserGrades:
         self.a = data["a"]
 
 
-class OsuUser:
-    id: int
-    username: str
+class OsuUserCompact:
     avatar_url: str
     country_code: str
+    default_group: Optional[str]
+    id: int
+    is_active: Optional[bool]
+    is_bot: Optional[bool]
+    is_deleted: Optional[bool]
+    is_online: Optional[bool]
+    is_supporter: Optional[bool]
+    last_visit: Optional[datetime]
+    pm_friends_only: Optional[bool]
+    profile_colour: Optional[str]
+    username: str
+
+    def __init__(self, data, from_db: bool = True):
+        if from_db:
+            self.id = data.id
+            self.username = data.username
+            self.avatar_url = data.avatar_url
+            self.country_code = data.country_code
+            self.is_supporter = None
+            self.profile_colour = None
+            self.default_group = None
+            self.is_active = None
+            self.is_bot = None
+            self.is_deleted = None
+            self.is_online = None
+            self.last_visit = None
+            self.pm_friends_only = None
+        else:
+            self.id = data["id"]
+            self.username = data["username"]
+            self.avatar_url = data["avatar_url"]
+            self.country_code = data["country_code"]
+            self.is_supporter = data["is_supporter"]
+            self.profile_colour = data["profile_colour"] if data["profile_colour"] else ""
+            self.default_group = data["default_group"]
+            self.is_active = data["is_active"]
+            self.is_bot = data["is_bot"]
+            self.is_deleted = data["is_deleted"]
+            self.is_online = data["is_online"]
+            self.last_visit = parser.isoparse(data["last_visit"]).replace(tzinfo=timezone.utc) if data["last_visit"] \
+                else None
+            self.pm_friends_only = data["pm_friends_only"]
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
+    def __repr__(self):
+        return str(self.to_dict())
+
+    def to_dict(self):
+        readable_dict = {}
+        for attr, value in self.__dict__.items():
+            if isinstance(value, datetime):
+                readable_dict[attr] = value.isoformat()
+                continue
+            readable_dict[attr] = value
+        return readable_dict
+
+class OsuUser(OsuUserCompact):
     mode: GameMode
     pp: float
     accuracy: float
@@ -74,10 +132,8 @@ class OsuUser:
     ranked_score: int
     groups: Optional[list[UserGroup]]
     follower_count: Optional[int]
-    is_supporter: Optional[bool]
     support_level: Optional[int]
     level: Optional[float]
-    profile_colour: Optional[str]
     cover_url: Optional[str]
     join_date: Optional[datetime]
     total_score: Optional[int]
@@ -89,11 +145,8 @@ class OsuUser:
     time_cached: Optional[datetime]
 
     def __init__(self, data, from_db: bool = True):
+        super().__init__(data, from_db)
         if from_db:
-            self.id = data.id
-            self.username = data.username
-            self.avatar_url = data.avatar_url
-            self.country_code = data.country_code
             self.mode = GameMode(data.mode)
             self.pp = data.pp
             self.accuracy = data.accuracy
@@ -105,10 +158,8 @@ class OsuUser:
             self.time_cached = datetime.fromtimestamp(data.time_cached)
             self.groups = None
             self.follower_count = None
-            self.is_supporter = None
             self.support_level = None
             self.level = None
-            self.profile_colour = None
             self.cover_url = None
             self.join_date = None
             self.total_score = None
@@ -117,10 +168,6 @@ class OsuUser:
             self.grades = None
             self.medal_count = None
         else:
-            self.id = data["id"]
-            self.username = data["username"]
-            self.avatar_url = data["avatar_url"]
-            self.country_code = data["country_code"]
             self.mode = GameMode.get_mode(data["playmode"])
             self.pp = data["statistics"]["pp"] if data["statistics"]["pp"] else 0.0
             self.accuracy = data["statistics"]["hit_accuracy"] if "statistics" in data and \
@@ -146,10 +193,8 @@ class OsuUser:
             else:
                 self.groups = None
             self.follower_count = data["follower_count"]
-            self.is_supporter = data["is_supporter"]
             self.support_level = data["support_level"]
             self.level = float(f'{data["statistics"]["level"]["current"]}.{data["statistics"]["level"]["progress"]}')
-            self.profile_colour = data["profile_colour"]
             self.cover_url = data["cover"]["url"]
             self.join_date = parser.isoparse(data["join_date"]).replace(tzinfo=timezone.utc)
             self.total_score = data["statistics"]["total_score"] if "statistics" in data and \

@@ -5,7 +5,7 @@ from dateutil import parser
 
 from plugins.osulib.enums import GameMode
 from plugins.osulib.models.beatmap import Beatmap, BeatmapsetCompact
-from plugins.osulib.models.user import OsuUser
+from plugins.osulib.models.user import OsuUserCompact
 
 
 class ScoreStatistics:
@@ -76,7 +76,7 @@ class OsuScore:
     rank_country: Optional[int]
     rank_global: Optional[int]
     weight: Optional[dict]
-    user: Optional[OsuUser]
+    user: Optional[OsuUserCompact]
 
     def __init__(self, data):
         self.total_score = data["total_score"]
@@ -132,7 +132,7 @@ class OsuScore:
         else:
             self.weight = None
         if "user" in data:
-            self.user = data["user"]
+            self.user = OsuUserCompact(data["user"], from_db=False)
         else:
             self.user = None
 

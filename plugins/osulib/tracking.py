@@ -346,7 +346,8 @@ class OsuTracker:
                     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode,
                                                                           twitch_link=True)
                     embed.set_author(name=f"{new_osu_user.username} set a new leaderboard score",
-                                     icon_url=new_osu_user.avatar_url, url=user_utils.get_user_url(str(member.id)))
+                                     icon_url=new_osu_user.avatar_url,
+                                     url=user_utils.get_user_url(str(new_osu_user.id)))
 
                     for channel in channels:
                         try:
@@ -428,12 +429,12 @@ class OsuTracker:
             primary_guild = db.get_linked_osu_profile(int(member_id)).home_guild
             is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
             potential_string = score_format.format_potential_pp(score_pp if score_pp is not None
-                                                                and not bool(osu_score.legacy_perfect
-                                                                             and osu_score.passed)
+                                                                            and not bool(osu_score.legacy_perfect
+                                                                                         and osu_score.passed)
                                                                 else None,
                                                                 osu_score)
             embed = embed_format.get_embed_from_template("".join(m), member.color, author_text,
-                                                         user_utils.get_user_url(str(member.id)),
+                                                         user_utils.get_user_url(str(new_osu_user.id)),
                                                          new_osu_user.avatar_url, thumbnail_url,
                                                          potential_string=potential_string)
             for i, channel in enumerate(channels):

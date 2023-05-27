@@ -308,18 +308,6 @@ async def notify(message: discord.Message, mode: enums.UpdateModes.get_mode):
     await client.say(message, f"Set your update notification mode to **{mode.name.lower()}**.")
 
 
-@osu.command()
-async def url(message: discord.Message, member: discord.Member = Annotate.Self,
-              section: str.lower = None):
-    """ Display the member's osu! profile URL. """
-    # Member might not be registered
-    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(message.guild)
-
-    # Send the URL since the member is registered
-    await client.say(message, f"**{member.display_name}'s profile:** "
-                              f"<{user_utils.get_user_url(str(member.id))}{f'#_{section}' if section else ''}>")
-
-
 async def pp_(message: discord.Message, beatmap_url: str, *options):
     """ Calculate and return the would be pp using `rosu-pp`.
 
@@ -710,7 +698,7 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
                                                                                                  beatmap_id),
                                                      member.color,
                                                      osu_user.username,
-                                                     user_utils.get_user_url(str(member.id)),
+                                                     user_utils.get_user_url(str(osu_user.id)),
                                                      osu_user.avatar_url,
                                                      thumbnail_url=beatmap.beatmapset.covers.list2x)
     await client.send_message(message.channel, embed=embed)
@@ -823,7 +811,7 @@ async def top(message: discord.Message, *options):
         author_text = osu_user.username
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
     m = await score_format.get_formatted_score_list(osu_user.mode, sorted_scores, 5, nochoke=nochoke)
-    e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
+    e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(osu_user.id)),
                                              osu_user.avatar_url,
                                              osu_user.avatar_url)
     view = score_format.PaginatedScoreList(sorted_scores, osu_user.mode,
@@ -883,7 +871,7 @@ async def lazer_top(message: discord.Message, *options):
     author_text = osu_user.username
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
     m = await score_format.get_formatted_score_list(osu_user.mode, sorted_scores, 5)
-    e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(member.id)),
+    e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(osu_user.id)),
                                              osu_user.avatar_url,
                                              osu_user.avatar_url)
     view = score_format.PaginatedScoreList(sorted_scores, osu_user.mode,

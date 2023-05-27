@@ -50,7 +50,7 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
                                                                         member if twitch_link else None),
                                     member.color, osu_score.user.username,
                                     user_utils.get_user_url(str(osu_score.user.id)),
-                                    osu_score.user["avatar_url"],
+                                    osu_score.user.avatar_url,
                                     osu_score.beatmapset.covers.list2x
                                     if hasattr(osu_score, "beatmapset") and osu_score["beatmapset"]
                                     else beatmap.beatmapset.covers.list2x,
