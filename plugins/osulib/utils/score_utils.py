@@ -25,6 +25,8 @@ def get_sorted_scores(osu_scores: list[OsuScore], list_type: str):
         sorted_scores = sorted(osu_scores, key=itemgetter("max_combo"), reverse=True)
     elif list_type == "score":
         sorted_scores = sorted(osu_scores, key=itemgetter("score"), reverse=True)
+    elif list_type == "pp":
+        sorted_scores = sorted(osu_scores, key=itemgetter("pp"), reverse=True)
     else:
         sorted_scores = osu_scores
     return sorted_scores

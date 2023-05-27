@@ -33,7 +33,7 @@ from plugins.osulib.card.data import get_card
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
 from plugins.osulib.db import insert_linked_osu_profile, get_osu_user, get_linked_osu_profile, delete_osu_user, \
-    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache,\
+    delete_linked_osu_profile, update_linked_osu_profile, get_linked_osu_profiles, migrate_profile_cache, \
     get_osu_users, delete_osu_users
 from plugins.osulib.formatting import beatmap_format, embed_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
@@ -209,7 +209,7 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
         member = message.author
 
     # The member might not be linked to any profile
-    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(member)
+    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(message.guild)
 
     # Clear the tracking data when unlinking user
     await wipe_user(message.author.id)
@@ -228,7 +228,7 @@ async def gamemode(message: discord.Message, mode: enums.GameMode.get_mode):
 
     Gamemodes are: `{modes}`. """
     linked_profile = get_linked_osu_profile(message.author.id)
-    assert linked_profile, user_utils.get_missing_user_string(message.author)
+    assert linked_profile, user_utils.get_missing_user_string(message.guild)
 
     user_id = linked_profile.osu_id
 
@@ -251,7 +251,7 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     """ Display configuration info. """
     # Make sure the member is assigned
     linked_profile = get_linked_osu_profile(member.id)
-    assert linked_profile, user_utils.get_missing_user_string(member)
+    assert linked_profile, user_utils.get_missing_user_string(message.guild)
 
     user_id = linked_profile.osu_id
     mode = user_utils.get_mode(str(member.id))
@@ -279,9 +279,9 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if user_utils.is_playing(member) else "NO")
     e.add_field(name="Notifying leaderboard scores", value="YES"
-                if user_utils.get_leaderboard_update_status(str(member.id)) else "NO")
+    if user_utils.get_leaderboard_update_status(str(member.id)) else "NO")
     e.add_field(name="Notifying beatmap updates", value="YES"
-                if user_utils.get_beatmap_update_status(str(member.id)) else "NO")
+    if user_utils.get_beatmap_update_status(str(member.id)) else "NO")
 
     await client.send_message(message.channel, embed=e)
 
@@ -296,7 +296,7 @@ async def notify(message: discord.Message, mode: enums.UpdateModes.get_mode):
 
     Update modes are: `{modes}`. """
     linked_profile = get_linked_osu_profile(message.author.id)
-    assert linked_profile, user_utils.get_missing_user_string(message.author)
+    assert linked_profile, user_utils.get_missing_user_string(message.guild)
 
     update_linked_osu_profile(linked_profile.id, linked_profile.osu_id, linked_profile.home_guild, linked_profile.mode,
                               mode.name)
@@ -313,7 +313,7 @@ async def url(message: discord.Message, member: discord.Member = Annotate.Self,
               section: str.lower = None):
     """ Display the member's osu! profile URL. """
     # Member might not be registered
-    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(member)
+    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(message.guild)
 
     # Send the URL since the member is registered
     await client.say(message, f"**{member.display_name}'s profile:** "
@@ -347,7 +347,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
         # Remove any accuracy percentage from options as we're setting this manually, and remove unused options
         for opt in options.copy():
             if opt.endswith("%") or opt.endswith("pp") or opt.endswith("x300") or opt.endswith("x100") or opt.endswith(
-                    "x50"):
+                "x50"):
                 options.remove(opt)
 
         options.insert(0, f"{pp_stats.count_100}x100")
@@ -362,6 +362,46 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
 
 plugins.command(name="pp", aliases="oppai")(pp_)
 osu.command(name="pp", aliases="oppai")(pp_)
+
+
+async def recent_best(message: discord.Message, user: str = None, mode: enums.GameMode = None):
+    member = None
+    to_search = ""
+    if user:
+        if utils.member_mention_pattern.match(user):
+            member = utils.find_member(message.guild, user)
+        else:
+            to_search = user
+
+    if not member:
+        member = message.author
+    if not to_search:
+        to_search = member.mention
+
+    osu_user = await user_utils.get_user(message, to_search, message.guild, mode)
+
+    params = {
+        "include_fails": 0,
+        "mode": mode.name if mode else osu_user.mode.name,
+        "limit": 100
+    }
+
+    osu_scores = await api.get_user_scores(osu_user.id, "recent", params=params)  # type: list[OsuScore]
+    assert osu_scores, "Found no recent score."
+
+    sorted_scores = score_utils.get_sorted_scores(osu_scores, "pp")
+
+    osu_score = sorted_scores[0]
+
+    beatmap = await api.beatmap_lookup(map_id=int(osu_score.beatmap.id))
+
+    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, osu_user.mode,
+                                                          twitch_link=osu_score.passed)
+    await client.send_message(message.channel, embed=embed)
+
+
+plugins.command(aliases="rb")(recent_best)
+osu.command(aliases="rb")(recent_best)
 
 
 async def recent_command(message: discord.Message, user: str = None, lazer_api: bool = False,
@@ -864,7 +904,7 @@ async def beatmap_updates(message: discord.Message, notify_setting: str):
     """ When beatmap updates are enabled, the bot will post updates to your beatmaps. """
     member = message.author
     # Make sure the member is assigned
-    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(member)
+    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(message.guild)
 
     if notify_setting.lower() == "on":
         osu_config.data["beatmap_updates"][str(member.id)] = True
@@ -889,7 +929,7 @@ async def leaderboard_scores(message: discord.Message, notify_setting: str):
     it's in your top100 PP scores. """
     member = message.author
     # Make sure the member is assigned
-    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(member)
+    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(message.guild)
 
     if notify_setting.lower() == "on":
         osu_config.data["leaderboard"][str(member.id)] = True
