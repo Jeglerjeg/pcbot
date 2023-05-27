@@ -128,7 +128,7 @@ async def osu(message: discord.Message, *options):
 
     osu_user = await user_utils.get_user(message, to_search, message.guild, mode)
 
-    card = await get_card(osu_user.id, mode if mode else osu_user.mode, member.color)
+    card = await get_card(osu_user.id, mode if mode else osu_user.mode, member.color, osu_user)
     await client.send_message(message.channel, embed=card[0], file=card[1])
 
 
