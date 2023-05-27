@@ -97,7 +97,7 @@ class OsuUserCompact:
             self.avatar_url = data["avatar_url"]
             self.country_code = data["country_code"]
             self.is_supporter = data["is_supporter"]
-            self.profile_colour = data["profile_colour"] if data["profile_colour"] else ""
+            self.profile_colour = data["profile_colour"]
             self.default_group = data["default_group"]
             self.is_active = data["is_active"]
             self.is_bot = data["is_bot"]
