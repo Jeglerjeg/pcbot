@@ -119,7 +119,9 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     args = parse_options(*options)
 
     # Calculate the mod bitmask and apply settings if needed
-
+    if args.mods and enums.Mods.NC in args.mods:
+        args.mods.remove(enums.Mods.NC)
+        args.mods.append(enums.Mods.DT)
     mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
 
     osu_map = rosu_pp_py.Beatmap(path=beatmap_path)
