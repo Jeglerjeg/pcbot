@@ -2,6 +2,7 @@ import asyncio
 import logging
 import traceback
 from math import ceil
+from datetime import datetime, timezone
 from operator import itemgetter
 
 import aiohttp
@@ -35,7 +36,7 @@ def get_sorted_scores(osu_scores: list[OsuScore], list_type: str):
 def get_maximum_score_combo(osu_score: OsuScore, beatmap: Beatmap):
     if hasattr(osu_score, "maximum_statistics") and osu_score.maximum_statistics:
         combo = osu_score.maximum_statistics.great + osu_score.maximum_statistics.large_tick_hit + \
-            osu_score.maximum_statistics.legacy_combo_increase
+                osu_score.maximum_statistics.legacy_combo_increase
         if combo > 0:
             return combo
     return beatmap.max_combo if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None else None
@@ -103,7 +104,7 @@ def process_score_args(osu_score: OsuScore):
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
     elif osu_score.mode is enums.GameMode.mania:
         args_list = f"{formatted_mods} {osu_score.statistics.perfect}xgeki {great}x300 " \
-                    f"{osu_score.statistics.good}xkatu {ok}x100 {meh}x50 "\
+                    f"{osu_score.statistics.good}xkatu {ok}x100 {meh}x50 " \
                     f"{miss}m {get_score_object_count(osu_score)}objects".split()
     else:
         large_tick_hit = osu_score.statistics.large_tick_hit
@@ -145,7 +146,7 @@ def calculate_potential_pp(osu_score: OsuScore, mode: enums.GameMode):
 
 def add_score_position(osu_scores: list[OsuScore]):
     for i, osu_score in enumerate(osu_scores):
-        osu_score.add_position(i+1)
+        osu_score.add_position(i + 1)
     return osu_scores
 
 
@@ -178,6 +179,9 @@ async def get_new_score(member_id: str):
     # Compare the scores from top to bottom and try to find a new one
     for i, osu_score in enumerate(fetched_scores):
         if osu_score.ended_at.timestamp() > float(recent_notifications.last_pp_notification):
+            # If the score is older than 3 hours, don't notify it
+            if (datetime.now(tz=timezone.utc) - osu_score.ended_at).total_seconds() > 3600 * 3:
+                continue
             # Calculate the difference in pp from the score below
             if i < len(fetched_scores) - 2:
                 score_pp = float(osu_score.pp)
