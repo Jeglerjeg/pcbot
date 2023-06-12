@@ -122,6 +122,7 @@ async def get_formatted_score_list(scoresaber_scores: list[(ScoreSaberScore, Sco
         scoresaber_map = scoresaber_score[1]
 
         # Add score position to the score
-        m.append("".join([f"{score.position}.\n", f"{format_new_score(score, scoresaber_map, score.rank)}\n",
+        m.append("".join([f"{score.position if score.position else i + 1}.\n",
+                          f"{format_new_score(score, scoresaber_map, score.rank)}\n",
                           "\n" if not i == limit - 1 else ""]))
     return "".join(m)
