@@ -383,7 +383,7 @@ async def recent_best(message: discord.Message, user: str = None, mode: enums.Ga
 
     beatmap = await api.beatmap_lookup(map_id=int(osu_score.beatmap.id))
 
-    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, osu_user.mode,
+    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, mode if mode else osu_user.mode,
                                                           twitch_link=osu_score.passed)
     await client.send_message(message.channel, embed=embed)
 
@@ -423,7 +423,8 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
 
     beatmap = await api.beatmap_lookup(map_id=int(osu_score.beatmap.id))
 
-    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap, osu_user.mode,
+    embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap,
+                                                          mode if mode else osu_user.mode,
                                                           twitch_link=osu_score.passed)
     await client.send_message(message.channel, embed=embed)
 
