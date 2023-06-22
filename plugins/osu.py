@@ -430,8 +430,8 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
 
 
 async def recent_list(message: discord.Message, *options):
-    """ By default displays your or the selected member's 5 highest rated plays sorted by time.
-     Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
+    """ By default displays a list of your or the selected member's recently passed scores sorted by newest.
+     Alternative sorting methods are "oldest", "pp", "combo", "score" and "acc" """
     member = None
     list_type = "pp"
     nochoke = False
