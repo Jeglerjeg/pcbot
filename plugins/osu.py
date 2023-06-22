@@ -429,6 +429,69 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
     await client.send_message(message.channel, embed=embed)
 
 
+async def recent_list(message: discord.Message, *options):
+    """ By default displays your or the selected member's 5 highest rated plays sorted by time.
+     Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
+    member = None
+    list_type = "pp"
+    nochoke = False
+    to_search = ""
+
+    for value in options:
+        if value in ("newest", "recent"):
+            list_type = "newest"
+        elif value == "oldest":
+            list_type = value
+        elif value == "acc":
+            list_type = value
+        elif value == "combo":
+            list_type = value
+        elif value == "score":
+            list_type = value
+        elif value == "nochoke":
+            nochoke = True
+        elif utils.member_mention_pattern.match(value):
+            member = utils.find_member(message.guild, value)
+        else:
+            to_search = value
+
+    if not member:
+        member = message.author
+    if not to_search:
+        to_search = member.mention
+
+    osu_user = await user_utils.get_user(message, to_search, message.guild)
+
+    params = {
+        "include_fails": 0,
+        "mode": osu_user.mode.name,
+        "limit": 100
+    }
+
+    fetched_scores = await api.get_user_scores(osu_user.id, "recent", params=params)  # type: list[OsuScore]
+
+    assert fetched_scores, "Found no recent score."
+    for i, osu_score in enumerate(fetched_scores):
+        osu_score.add_position(i + 1)
+
+    author_text = osu_user.username
+    sorted_scores = score_utils.get_sorted_scores(fetched_scores, list_type)
+    m = await score_format.get_formatted_score_list(osu_user.mode, sorted_scores, 5, nochoke=nochoke)
+    e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(osu_user.id)),
+                                             osu_user.avatar_url,
+                                             osu_user.avatar_url)
+    view = score_format.PaginatedScoreList(sorted_scores, osu_user.mode,
+                                           score_utils.count_score_pages(sorted_scores, 5), e, nochoke)
+    e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
+    message = await client.send_message(message.channel, embed=e, view=view)
+    await view.wait()
+    await message.edit(embed=view.embed, view=None)
+
+
+plugins.command(aliases="rl")(recent_list)
+osu.command(aliases="rl")(recent_list)
+
+
 async def recent(message: discord.Message, user: str = None):
     """ Display your or another member's most recent score. """
     await recent_command(message, user)
