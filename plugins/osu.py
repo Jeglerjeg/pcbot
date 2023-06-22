@@ -433,7 +433,7 @@ async def recent_list(message: discord.Message, *options):
     """ By default displays a list of your or the selected member's recently passed scores sorted by newest.
      Alternative sorting methods are "oldest", "pp", "combo", "score" and "acc" """
     member = None
-    list_type = "pp"
+    list_type = "newest"
     nochoke = False
     to_search = ""
 
