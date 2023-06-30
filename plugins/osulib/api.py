@@ -6,7 +6,6 @@
 import asyncio
 import logging
 import re
-import traceback
 from collections import namedtuple
 from datetime import datetime, timezone, timedelta
 
@@ -211,7 +210,7 @@ async def get_user(user, mode=None, params=None):
         if mode:
             user.mode = GameMode.get_mode(mode)
     except KeyError as e:
-        logging.error(traceback.format_exception(e))
+        logging.exception(e)
         return None
     return user
 

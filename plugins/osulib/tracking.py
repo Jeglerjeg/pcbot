@@ -116,9 +116,8 @@ class OsuTracker:
                 # Update the user's data
                 update_tasks.append(self.__update_user_data(linked_profile.id, linked_profile.osu_id))
             await asyncio.gather(*update_tasks)
-        except KeyError as e:
+        except Exception as e:
             logging.exception(e)
-            return
         finally:
             self.time_elapsed = (datetime.now() - self.started).total_seconds()
             self.previous_update = datetime.now(tz=timezone.utc)
