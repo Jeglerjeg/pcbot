@@ -214,7 +214,8 @@ def draw_followers_pill(follower_count: int):
 
     font_size = 96
     font = ImageFont.truetype(TORUS_SEMIBOLD, font_size)
-    text_width, text_height = font.getsize(follower_count_string)
+    text_left, text_top, text_right, text_bottom = font.getbbox(follower_count_string)
+    text_width, text_height = text_right - text_left, text_bottom - text_top
 
     pill_width = text_padding * 2 + user_icon.width + text_width + padding * 2
 
@@ -329,15 +330,19 @@ def draw_join_date(draw: ImageDraw, join_date: datetime):
     y = int(IMAGE_HEIGHT // 5.3)
 
     draw.text((x, y), "Joined ", fill="white", font=font)
+    joined_bbox = font.getbbox("Joined ")
+    joined_length = joined_bbox[2] - joined_bbox[0]
+    date_string_bbox = bold_font.getbbox(date_string)
+    date_string_length = date_string_bbox[2] - date_string_bbox[0]
     draw.text(
-        (x + font.getsize("Joined ")[0], y),
+        (x + joined_length, y),
         date_string,
         fill="white",
         font=bold_font,
     )
     draw.text(
         (
-            x + font.getsize("Joined ")[0] + bold_font.getsize(date_string)[0],
+            x + joined_length + date_string_length,
             y,
         ),
         relative_time_string,
