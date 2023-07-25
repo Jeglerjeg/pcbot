@@ -187,7 +187,7 @@ async def convert_to_images(text: str):
             if e.height > height:
                 width = round(e.width * (height / e.height))
                 total_width += width
-                parsed_emoji[i] = e.resize((width, height), Image.ANTIALIAS)
+                parsed_emoji[i] = e.resize((width, height), Image.LANCZOS)
             else:
                 total_width += e.width
     else:
