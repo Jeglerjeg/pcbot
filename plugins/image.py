@@ -289,7 +289,7 @@ async def resize(message: discord.Message, image_arg: image, resolution: parse_r
         resolution = (int(w * scale), int(h * scale))
 
     # Resize and upload the image
-    image_arg.modify(Image.Image.resize, resolution, Image.NEAREST if "-nearest" in options else Image.ANTIALIAS,
+    image_arg.modify(Image.Image.resize, resolution, Image.NEAREST if "-nearest" in options else Image.LANCZOS,
                      convert="RGBA")
     await send_image(message, image_arg)
 
@@ -329,9 +329,9 @@ async def fuckify(message: discord.Message, image_arg: image, seed: Any = None):
     new_size = [random.randint(5, 40) for _ in range(2)]
 
     image_arg.modify([
-        partial(Image.Image.resize, size=new_size, resample=Image.ANTIALIAS),
+        partial(Image.Image.resize, size=new_size, resample=Image.LANCZOS),
         partial(to_jpg, quality=random.randint(3, 30)),
-        partial(Image.Image.resize, size=old_size, resample=Image.ANTIALIAS),
+        partial(Image.Image.resize, size=old_size, resample=Image.LANCZOS),
         partial(to_jpg, quality=random.randint(1, 20)),
     ], convert="RGBA")
 
