@@ -99,7 +99,7 @@ async def on_message(message: discord.Message):
         return True
 
 
-@plugins.command(aliases="circlesimulator eba", usage="[member] <mode>")
+@plugins.command(aliases="circlesimulator eba profile", usage="[member] <mode>")
 async def osu(message: discord.Message, *options):
     """ Handle osu! commands.
 
