@@ -263,13 +263,14 @@ def clean_format(image_format: str, extension: str):
     return image_format, extension
 
 
-async def send_image(message: discord.Message, image_arg: ImageArg, **params):
+async def send_image(message: discord.Message, image_arg: ImageArg, image_format: str = None, **params):
     """ Send an image. """
     try:
         if image_arg.gif and imageio:
             image_fp = BytesIO(image_arg.gif_bytes)
         else:
-            image_fp = utils.convert_image_object(image_arg.object, image_arg.format, **params)
+            image_fp = utils.convert_image_object(image_arg.object, image_format if image_format else image_arg.format,
+                                                  **params)
     except KeyError as e:
         await client.send_message(message.channel, f"Image format `{e}` is unsupported.")
     else:
@@ -291,7 +292,7 @@ async def resize(message: discord.Message, image_arg: image, resolution: parse_r
     # Resize and upload the image
     image_arg.modify(Image.Image.resize, resolution, Image.NEAREST if "-nearest" in options else Image.LANCZOS,
                      convert="RGBA")
-    await send_image(message, image_arg)
+    await send_image(message, image_arg, "PNG")
 
 
 @plugins.command(pos_check=lambda s: s.startswith("-"), aliases="tilt")
