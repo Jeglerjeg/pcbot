@@ -18,7 +18,6 @@ TUTORIAL:
 """
 import asyncio
 import importlib
-import logging
 from datetime import datetime
 from operator import itemgetter
 from textwrap import wrap
@@ -120,13 +119,8 @@ async def osu(message: discord.Message, *options):
 
     if not member:
         member = message.author
-    if not to_search:
-        to_search = member.mention
 
-    if member is None:
-        member = message.author
-
-    osu_user = await user_utils.get_user(message, to_search, message.guild, mode)
+    osu_user = await user_utils.get_user(message, member, to_search, mode)
 
     card = await get_card(osu_user.id, mode if mode else osu_user.mode, member.color, osu_user)
     await client.send_message(message.channel, embed=card[0], file=card[1])
@@ -279,9 +273,9 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if user_utils.is_playing(member) else "NO")
     e.add_field(name="Notifying leaderboard scores", value="YES"
-    if user_utils.get_leaderboard_update_status(str(member.id)) else "NO")
+                if user_utils.get_leaderboard_update_status(str(member.id)) else "NO")
     e.add_field(name="Notifying beatmap updates", value="YES"
-    if user_utils.get_beatmap_update_status(str(member.id)) else "NO")
+                if user_utils.get_beatmap_update_status(str(member.id)) else "NO")
 
     await client.send_message(message.channel, embed=e)
 
@@ -334,8 +328,8 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
     if isinstance(pp_stats, pp.ClosestPPStats):
         # Remove any accuracy percentage from options as we're setting this manually, and remove unused options
         for opt in options.copy():
-            if opt.endswith("%") or opt.endswith("pp") or opt.endswith("x300") or opt.endswith("x100") or opt.endswith(
-                "x50"):
+            if opt.endswith("%") or opt.endswith("pp") or opt.endswith("x300") or opt.endswith("x100") \
+                    or opt.endswith("x50"):
                 options.remove(opt)
 
         options.insert(0, f"{pp_stats.count_100}x100")
@@ -363,10 +357,8 @@ async def recent_best(message: discord.Message, user: str = None, mode: enums.Ga
 
     if not member:
         member = message.author
-    if not to_search:
-        to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search, message.guild, mode)
+    osu_user = await user_utils.get_user(message, member, to_search, mode)
 
     params = {
         "include_fails": 0,
@@ -404,10 +396,8 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
 
     if not member:
         member = message.author
-    if not to_search:
-        to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search, message.guild, mode)
+    osu_user = await user_utils.get_user(message, member, to_search, mode)
 
     params = {
         "include_fails": 1,
@@ -457,10 +447,8 @@ async def recent_list(message: discord.Message, *options):
 
     if not member:
         member = message.author
-    if not to_search:
-        to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search, message.guild)
+    osu_user = await user_utils.get_user(message, member, to_search)
 
     params = {
         "include_fails": 0,
@@ -594,11 +582,11 @@ async def render(message: discord.Message, *options):
     render_job = await ordr.send_render_job(replay_url)
 
     if not isinstance(render_job, dict):
-        await placeholder_msg.edit(content="An error occured when sending this replay. Please try again later.")
+        await placeholder_msg.edit(content="An error occurred when sending this replay. Please try again later.")
         return
 
     if "renderID" not in render_job:
-        await placeholder_msg.edit(content="\n".join(["An error occured when sending this replay.",
+        await placeholder_msg.edit(content="\n".join(["An error occurred when sending this replay.",
                                                       ordr.get_render_error(int(render_job["errorCode"]))]))
         return
 
@@ -624,10 +612,8 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
 
     if not member:
         member = message.author
-    if not to_search:
-        to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search, message.guild)
+    osu_user = await user_utils.get_user(message, member, to_search)
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -701,10 +687,8 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
 
     if not member:
         member = message.author
-    if not to_search:
-        to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search, message.guild)
+    osu_user = await user_utils.get_user(message, member, to_search)
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
@@ -724,7 +708,6 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
     }
     fetched_osu_scores = await api.get_user_beatmap_scores(beatmap_info.beatmap_id, osu_user.id,
                                                            params=params, lazer=lazer_api)
-    logging.info(fetched_osu_scores)
     assert fetched_osu_scores, f"Found no scores by **{osu_user.username}**."
     assert fetched_osu_scores["scores"], f"Found no scores by **{osu_user.username}**."
 
@@ -844,10 +827,8 @@ async def top(message: discord.Message, *options):
 
     if not member:
         member = message.author
-    if not to_search:
-        to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search, message.guild)
+    osu_user = await user_utils.get_user(message, member, to_search)
 
     params = {
         "mode": osu_user.mode.name,
@@ -916,10 +897,8 @@ async def lazer_top(message: discord.Message, *options):
 
     if not member:
         member = message.author
-    if not to_search:
-        to_search = member.mention
 
-    osu_user = await user_utils.get_user(message, to_search, message.guild)
+    osu_user = await user_utils.get_user(message, member, to_search)
 
     params = {
         "mode": osu_user.mode.name,

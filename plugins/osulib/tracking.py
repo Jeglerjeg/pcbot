@@ -54,7 +54,7 @@ async def add_new_user(member_id: int, profile: int):
 
     current_time = datetime.now(tz=timezone.utc)
     mode = user_utils.get_mode(str(member_id))
-    api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
+    api_user_data = await user_utils.retrieve_user_profile(str(profile), mode, current_time)
     if api_user_data:
         db.insert_osu_user(api_user_data, member_id)
         if not db.get_recent_events(member_id):
@@ -70,7 +70,7 @@ async def update_osu_user(member_id: int, profile: int, member: discord.Member, 
     try:
         current_time = datetime.now(tz=timezone.utc)
         mode = user_utils.get_mode(str(member_id))
-        api_user_data = await user_utils.retrieve_user_proile(str(profile), mode, current_time)
+        api_user_data = await user_utils.retrieve_user_profile(str(profile), mode, current_time)
         if api_user_data is None:
             logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
             return

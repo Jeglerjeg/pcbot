@@ -1,15 +1,13 @@
-import logging
 from datetime import datetime
 
 import discord
 
-from pcbot import config, utils
+from pcbot import config
 from plugins.osulib import enums, api
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import host, minimum_pp_required
-from plugins.osulib.db import get_linked_osu_profile, get_osu_users, get_linked_osu_profile_accounts, get_osu_user
+from plugins.osulib.db import get_linked_osu_profile
 from plugins.osulib.enums import GameMode
-from plugins.osulib.models.user import OsuUser
 
 
 def get_missing_user_string(guild: discord.Guild):
@@ -18,47 +16,28 @@ def get_missing_user_string(guild: discord.Guild):
            f"**{config.guild_command_prefix(guild)}osu link <username>**"
 
 
-async def get_user(message: discord.Message, username: str, guild: discord.Guild, mode: GameMode = None):
+async def get_user(message: discord.Message, member: discord.Member, username: str = None, mode: GameMode = None):
     """ Get member by discord username or osu username. """
-    member = utils.find_member(guild=message.guild, name=username)
-    if not member:
-        osu_users = get_osu_users()
-        for osu_user in osu_users:
-            if osu_user.username.lower() == username.lower():
-                linked_profiles = get_linked_osu_profile_accounts(osu_user.id)
-                for linked_profile in linked_profiles:
-                    member = discord.utils.get(message.guild.members, id=int(linked_profile.id))
-                    if not member:
-                        continue
-                    else:
-                        if not mode:
-                            mode = GameMode(linked_profile.mode)
-                if not member:
-                    continue
-
-    if member:
-        db_osu_user = get_osu_user(member.id)
-        if not db_osu_user:
-            params = {
-                "key": "username",
-            }
-            osu_user = await api.get_user(username, mode.name if mode else "", params=params)
-        else:
-            osu_user = OsuUser(db_osu_user)
-    else:
+    if username:
         params = {
             "key": "username",
         }
         osu_user = await api.get_user(username, mode.name if mode else "", params=params)
-
-    assert not bool(member and not osu_user), get_missing_user_string(guild)
+    else:
+        linked_profile = get_linked_osu_profile(member.id)
+        assert linked_profile, get_missing_user_string(message.guild)
+        params = {
+            "key": "id",
+        }
+        osu_user = await api.get_user(linked_profile.osu_id, mode.name if mode else GameMode(linked_profile.mode).name,
+                                      params=params)
 
     assert osu_user, "Failed to get user data. Please try again later."
 
     return osu_user
 
 
-async def retrieve_user_proile(profile: str, mode: enums.GameMode, timestamp: datetime = None):
+async def retrieve_user_profile(profile: str, mode: enums.GameMode, timestamp: datetime = None):
     params = {
         "key": "id"
     }
@@ -84,7 +63,7 @@ def is_playing(member: discord.Member):
 
 
 def get_leaderboard_update_status(member_id: str):
-    """ Return whether or not the user should have leaderboard scores posted automatically. """
+    """ Return whether the user should have leaderboard scores posted automatically. """
     if member_id in osu_config.data["leaderboard"]:
         return osu_config.data["leaderboard"][member_id]
 
@@ -92,7 +71,7 @@ def get_leaderboard_update_status(member_id: str):
 
 
 def get_beatmap_update_status(member_id: str):
-    """ Return whether or not the user should have leaderboard scores posted automatically. """
+    """ Return whether the user should have leaderboard scores posted automatically. """
     if member_id in osu_config.data["beatmap_updates"]:
         return osu_config.data["beatmap_updates"][member_id]
 
