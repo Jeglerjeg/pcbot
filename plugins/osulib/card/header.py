@@ -183,7 +183,8 @@ def draw_user_group_pill(groups: list[UserGroup]):
 
     font_size = 96
     font = ImageFont.truetype(TORUS_BOLD, font_size)
-    text_width, _ = font.getsize(group_name)
+    text_left, text_top, text_right, text_bottom = font.getbbox(group_name)
+    text_width, _ = text_right - text_left, text_bottom - text_top
 
     pill_width = text_width + padding * 2
 
