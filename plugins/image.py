@@ -2,6 +2,7 @@
 
 Commands:
     resize """
+import logging
 import random
 import re
 from functools import partial
@@ -111,7 +112,7 @@ class ImageArg:
                 frames.append(imageio.v2.imread(frame_bytes, format="PNG"))
 
             # Save the image as bytes and recreate the image object
-            image_bytes = imageio.mimwrite(imageio.RETURN_BYTES, frames, format=self.format, duration=duration)
+            image_bytes = imageio.mimwrite(imageio.RETURN_BYTES, frames, format=self.format, duration=duration, loop=0)
             self.object = Image.open(BytesIO(image_bytes))
             self.gif_bytes = image_bytes
 
