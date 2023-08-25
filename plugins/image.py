@@ -304,7 +304,7 @@ async def rotate(message: discord.Message, image_arg: image, degrees: int, *opti
     # Rotate and upload the image
     image_arg.modify(Image.Image.rotate, -degrees, Image.NEAREST if "-nearest" in options else Image.BICUBIC,
                      expand=True, convert="RGBA")
-    await send_image(message, image_arg)
+    await send_image(message, image_arg, "PNG")
 
 
 @plugins.command(aliases="jpg")
@@ -336,7 +336,7 @@ async def fuckify(message: discord.Message, image_arg: image, seed: Any = None):
         partial(to_jpg, quality=random.randint(1, 20)),
     ], convert="RGBA")
 
-    await send_image(message, image_arg)
+    await send_image(message, image_arg, "PNG")
 
 
 @plugins.command()
