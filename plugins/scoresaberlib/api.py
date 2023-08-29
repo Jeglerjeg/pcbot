@@ -1,5 +1,7 @@
 import logging
 
+from pyrate_limiter import BucketFullException
+
 from pcbot import utils
 from plugins.scoresaberlib.models.leaderboard_info import ScoreSaberLeaderboardInfo
 from plugins.scoresaberlib.models.player import ScoreSaberPlayer
@@ -12,8 +14,8 @@ except ImportError:
     logging.info("pyrate_limiter is not installed, scoresaber api functionality is unavailable.")
 
 if pyrate_limiter:
-    hourly_rate = pyrate_limiter.RequestRate(400, pyrate_limiter.Duration.MINUTE)  # Amount of requests per minute
-    limiter = pyrate_limiter.Limiter(hourly_rate)
+    hourly_rate = pyrate_limiter.Rate(400, pyrate_limiter.Duration.MINUTE)  # Amount of requests per minute
+    limiter = pyrate_limiter.Limiter(hourly_rate, raise_when_fail=True, max_delay=1000)
 else:
     limiter = None
 
@@ -26,7 +28,9 @@ def def_section(api_name: str, first_element: bool = False, api_url: str = "http
     async def template(url=api_url, request_tries: int = 1, **params):
         if not limiter:
             return None
-        async with limiter.ratelimit("scoresaber", delay=True):
+        try:
+            limiter.try_acquire(url + api_name)
+
             # Download using a URL of the given API function name
             for _ in range(request_tries):
                 try:
@@ -49,6 +53,9 @@ def def_section(api_name: str, first_element: bool = False, api_url: str = "http
 
             # If the returned value should be the first element, see if we can cut it
             return response[0] if len(response) > 0 else None
+
+        except BucketFullException as err:
+            logging.warning("ValueError Calling %s: %s", url + api_name, err)
 
     # Set the correct name of the function and add simple docstring
     template.__name__ = api_name
