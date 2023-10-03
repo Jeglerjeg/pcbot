@@ -11,7 +11,6 @@ from datetime import datetime, timezone, timedelta
 
 from aiohttp import ClientConnectorError
 from dateutil import parser
-from pyrate_limiter import BucketFullException
 
 from plugins.osulib.enums import GameMode
 from plugins.osulib.models.beatmap import Beatmapset
@@ -39,8 +38,8 @@ expires = datetime.now(tz=timezone.utc)
 requests_sent = 0
 
 if pyrate_limiter:
-    hourly_rate = pyrate_limiter.Rate(ratelimit, pyrate_limiter.Duration.MINUTE)  # Amount of requests per minute
-    limiter = pyrate_limiter.Limiter(hourly_rate, raise_when_fail=True, max_delay=1000)
+    hourly_rate = pyrate_limiter.RequestRate(ratelimit, pyrate_limiter.Duration.MINUTE)  # Amount of requests per minute
+    limiter = pyrate_limiter.Limiter(hourly_rate)
 else:
     limiter = None
 
@@ -87,8 +86,7 @@ def def_section(api_name: str, first_element: bool = False, api_url: str = main_
             return None
         if not access_token:
             return None
-        try:
-            limiter.try_acquire(url + api_name)
+        async with limiter.ratelimit("osu", delay=True):
             # Add the API key
             headers = {
                 "Authorization": "Bearer " + access_token,
@@ -117,8 +115,6 @@ def def_section(api_name: str, first_element: bool = False, api_url: str = main_
 
             # If the returned value should be the first element, see if we can cut it
             return response[0] if len(response) > 0 else None
-        except BucketFullException as err:
-            logging.warning("ValueError Calling %s: %s", url + api_name, err)
 
     # Set the correct name of the function and add simple docstring
     template.__name__ = api_name
