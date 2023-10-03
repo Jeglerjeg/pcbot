@@ -188,7 +188,7 @@ class OsuTracker:
         for event in api_events:
             try:
                 if parser.isoparse(event["created_at"]).replace(tzinfo=timezone.utc).timestamp() \
-                    < last_user_events.last_recent_notification:
+                        < last_user_events.last_recent_notification:
                     break
 
                 # Since the events are displayed on the profile from newest to oldest, we want to post the oldest first
@@ -426,8 +426,8 @@ class OsuTracker:
             primary_guild = db.get_linked_osu_profile(int(member_id)).home_guild
             is_primary = True if primary_guild is None else bool(primary_guild == str(guild.id))
             potential_string = score_format.format_potential_pp(score_pp if score_pp is not None
-                                                                            and not bool(osu_score.legacy_perfect
-                                                                                         and osu_score.passed)
+                                                                and not bool(osu_score.legacy_perfect
+                                                                             and osu_score.passed)
                                                                 else None,
                                                                 osu_score)
             embed = embed_format.get_embed_from_template("".join(m), member.color, author_text,

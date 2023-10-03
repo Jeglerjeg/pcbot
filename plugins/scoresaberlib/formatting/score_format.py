@@ -55,7 +55,7 @@ class PaginatedScoreList(discord.ui.View):
 
 
 def format_score_statistics(scoresaber_score: ScoreSaberScore, leaderboard_info: ScoreSaberLeaderboardInfo):
-    """" Returns formatted score statistics for each mode. """
+    """ Returns formatted score statistics for each mode. """
     acc = f"{utils.format_number(100 * (scoresaber_score.base_score / leaderboard_info.max_score), 2)}%"
     color = "\u001b[0;32m" if scoresaber_score.full_combo else "\u001b[0;31m"
     return "acc    bad  miss  combo\n" \

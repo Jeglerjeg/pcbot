@@ -18,6 +18,7 @@ scoresaber_tracker = ScoreSaberTracker()
 async def scoresaber(message, _: utils.placeholder):
     """ Score saber plugin. """
 
+
 @scoresaber.command(aliases="set")
 async def link(message: discord.Message, name: Annotate.LowerContent):
     """ Tell the bot who you are on scoresaber!. """
@@ -32,6 +33,7 @@ async def link(message: discord.Message, name: Annotate.LowerContent):
     db.insert_linked_scoresaber_profile(message.author.id, scoresaber_user.id, message.guild.id)
 
     await client.say(message, f"Set your scoresaber profile to `{scoresaber_user.name}`.")
+
 
 @scoresaber.command(aliases="unset")
 async def unlink(message: discord.Message, member: discord.Member = Annotate.Self):
@@ -66,6 +68,7 @@ async def score(message: discord.Message, map_id: int, user: str = None):
                                                  leaderboard_info.cover_image)
     await client.send_message(message.channel, embed=embed)
 
+
 @scoresaber.command()
 async def recent(message: discord.Message, user: str = None):
     if not user:
@@ -73,7 +76,7 @@ async def recent(message: discord.Message, user: str = None):
     scoresaber_user = await user_utils.get_user(message, user)
     assert scoresaber_user, "Couldn't find user."
     scoresaber_scores = await api.get_user_scores(scoresaber_user.id, "recent", 1)
-    if not scoresaber_scores or len(scoresaber_scores) <1:
+    if not scoresaber_scores or len(scoresaber_scores) < 1:
         await client.say(message, "Found no recent score.")
         return
     recent_score = scoresaber_scores[0]
@@ -87,6 +90,7 @@ async def recent(message: discord.Message, user: str = None):
                                                  scoresaber_user.profile_picture,
                                                  leaderboard_info.cover_image)
     await client.send_message(message.channel, embed=embed)
+
 
 @scoresaber.command(name="top")
 async def top(message: discord.Message, user: str = None):
@@ -116,6 +120,7 @@ async def top(message: discord.Message, user: str = None):
     await view.wait()
     await message.edit(embed=view.embed, view=None)
 
+
 @scoresaber.command(aliases="configure cfg")
 async def config(message, _: utils.placeholder):
     """ Manage configuration for this plugin. """
@@ -128,6 +133,7 @@ async def config_scores(message: discord.Message, *channels: discord.TextChannel
     scoresaber_config.data["guild"][str(message.guild.id)]["score-channels"] = list(str(c.id) for c in channels)
     await scoresaber_config.asyncsave()
     await client.say(message, f"**Notifying scores in**: {utils.format_objects(*channels, sep=' ') or 'no channels'}")
+
 
 @scoresaber.command(owner=True)
 async def debug(message: discord.Message):
