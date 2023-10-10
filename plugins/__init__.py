@@ -488,24 +488,6 @@ async def execute(cmd, message: discord.Message, *args, **kwargs):
         raise NameError(f"{cmd} is not a command") from e
 
 
-def get_cooldown(member: discord.Member, cmd: Command):
-    """ Returns the member's time left as a str or None.
-    """
-    if member not in cooldown_data:
-        return None
-
-    for cooldown in cooldown_data[member]:
-        if cooldown.command == cmd or cooldown.command is None:
-            diff = cooldown.date - pendulum.now()
-            if diff.seconds < 0:
-                cooldown_data[member].remove(cooldown)
-                return None
-
-            return diff.in_words()
-
-    return None
-
-
 def load_plugin(name: str, package: str = "plugins"):
     """ Load a plugin with the name name. If package isn't specified, this
     looks for plugin with specified name in /plugins/

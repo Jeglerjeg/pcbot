@@ -314,11 +314,11 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
     try:
         beatmap_info = api.parse_beatmap_url(beatmap_url)
         assert beatmap_info.beatmap_id, "Please link to a specific difficulty."
-        assert beatmap_info.gamemode, "Please link to a specific mode."
 
         beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
 
-        pp_stats = await pp.calculate_pp(beatmap_url, *options, mode=beatmap_info.gamemode,
+        pp_stats = await pp.calculate_pp(beatmap_url, *options,
+                                         mode=beatmap_info.gamemode if beatmap_info.gamemode else beatmap.mode,
                                          ignore_osu_cache=not bool(beatmap.status in ("ranked", "approved")))
     except ValueError as e:
         await client.say(message, str(e))
@@ -331,8 +331,9 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
             if opt.endswith("%") or opt.endswith("pp") or opt.endswith("x300") or opt.endswith("x100") \
                     or opt.endswith("x50"):
                 options.remove(opt)
-
-        options.insert(0, f"{pp_stats.count_100}x100")
+        objects = beatmap.count_circles + beatmap.count_sliders + beatmap.count_spinners
+        accuracy = (pp_stats.count_100 * 100 + (objects - pp_stats.count_100) * 300) / (objects * 300)
+        options.insert(0, f"{pp_stats.count_100}x100 {utils.format_number(accuracy * 100, 2)}%")
     for opt in options.copy():
         if opt.startswith("+"):
             options.append(opt.upper())
