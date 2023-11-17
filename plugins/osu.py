@@ -386,7 +386,7 @@ osu.command(aliases="rb")(recent_best)
 
 
 async def recent_command(message: discord.Message, user: str = None, lazer_api: bool = False,
-                         mode: enums.GameMode = None):
+                         mode: enums.GameMode = None, only_passes: bool = False):
     member = None
     to_search = ""
     if user:
@@ -401,7 +401,7 @@ async def recent_command(message: discord.Message, user: str = None, lazer_api: 
     osu_user = await user_utils.get_user(message, member, to_search, mode)
 
     params = {
-        "include_fails": 1,
+        "include_fails": 0 if only_passes else 1,
         "mode": mode.name if mode else osu_user.mode.name,
         "limit": 1
     }
@@ -488,6 +488,15 @@ async def recent(message: discord.Message, user: str = None):
 
 plugins.command(aliases="last new r")(recent)
 osu.command(aliases="last new r")(recent)
+
+
+async def recent_pass(message: discord.Message, user: str = None):
+    """ Display your or another member's most recent score. """
+    await recent_command(message, user, only_passes=True)
+
+
+plugins.command()(recent_pass)
+osu.command()(recent_pass)
 
 
 async def recent_standard(message: discord.Message, user: str = None):
