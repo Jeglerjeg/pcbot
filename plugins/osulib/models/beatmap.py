@@ -1,5 +1,5 @@
 import pickle
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Optional
 
 from dateutil import parser
@@ -152,7 +152,7 @@ class Beatmap:
                 "drain": self.drain, "hit_length": self.hit_length, "id": self.id, "mode": self.mode_int,
                 "passcount": self.passcount, "playcount": self.playcount, "ranked": self.ranked, "status": self.status,
                 "total_length": self.total_length, "user_id": self.user_id, "version": self.version,
-                "time_cached": datetime.utcnow()}
+                "time_cached": datetime.now(UTC)}
 
     def to_dict(self):
         readable_dict = {}
@@ -273,4 +273,4 @@ class Beatmapset(BeatmapsetCompact):
                 "play_count": self.play_count, "source": self.source, "status": self.status, "title": self.title,
                 "title_unicode": self.title_unicode, "user_id": self.user_id,
                 "beatmaps": pickle.dumps([beatmap.id for beatmap in self.beatmaps]), "bpm": self.bpm,
-                "ranked": self.ranked, "time_cached": datetime.utcnow()}
+                "ranked": self.ranked, "time_cached": datetime.now(UTC)}

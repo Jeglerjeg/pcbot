@@ -8,7 +8,7 @@ import importlib
 import inspect
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 import discord
 
@@ -392,7 +392,7 @@ async def ping(message: discord.Message):
 
 async def get_changelog(num: int):
     """ Get the latest commit messages from PCBOT. """
-    since = datetime.utcnow() - timedelta(days=7)
+    since = datetime.now(UTC) - timedelta(days=7)
     commits = await utils.download_json(f"https://api.github.com/repos/{config.github_repo}commits",
                                         since=since.strftime("%Y-%m-%dT00:00:00"))
     changelog = []

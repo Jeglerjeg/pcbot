@@ -4,7 +4,7 @@
 """
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 
 import socketio
 from aiohttp import FormData
@@ -161,9 +161,9 @@ async def render_progress_json(data: json):
     progress = data["progress"]
     renderer = data["renderer"]
     if render_id in requested_renders:
-        if (datetime.utcnow() - requested_renders[render_id]["edited"]).total_seconds() > 5:
+        if (datetime.now(UTC) - requested_renders[render_id]["edited"]).total_seconds() > 5:
             await requested_renders[render_id]["message"].edit(content=f"{progress}\nRendered by: {renderer}")
-            requested_renders[render_id]["edited"] = datetime.utcnow()
+            requested_renders[render_id]["edited"] = datetime.now(UTC)
 
 
 @ordr_client.event()
