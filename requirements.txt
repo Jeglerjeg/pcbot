@@ -4,13 +4,13 @@ aiofiles>=23.2, <23.3
 CairoSVG>=2.7, <2.8
 discord.py[speed]>=2.3, <2.4
 future>=0.18, <0.19
-imageio>=2.32, <2.33
+imageio>=2.33, <2.34
 markovify>=0.9, <0.10
 nltk>=3.8, <3.9
 numpy>=1.26, <1.27
 orjson>=3.9, <3.10
 pendulum==3.0.0b1
-pillow>=10, <10.1
+pillow>=10.1, <10.2
 PyNaCl>=1.5, <1.6
 pyrate-limiter>=2.10, <2.11
 python-dateutil>=2.8, <2.9
