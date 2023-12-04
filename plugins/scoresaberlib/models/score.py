@@ -27,7 +27,7 @@ class ScoreSaberScore:
 
     def __init__(self, raw_data: dict):
         self.id = raw_data["id"]
-        if "leaderboardPlayerInfo" in raw_data:
+        if "leaderboardPlayerInfo" in raw_data and raw_data["leaderboardPlayerInfo"] is not None:
             self.player = ScoreSaberLeaderboardPlayer(raw_data["leaderboardPlayerInfo"], from_db=False)
         else:
             self.player = None
