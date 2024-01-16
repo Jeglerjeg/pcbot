@@ -843,8 +843,11 @@ async def top(message: discord.Message, *options):
 
     osu_user = await user_utils.get_user(message, member, to_search)
 
+    if not mode:
+        mode = osu_user.mode
+
     params = {
-        "mode": mode.name if mode else osu_user.mode.name,
+        "mode": mode.name,
         "limit": score_request_limit,
     }
     fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params)
@@ -852,7 +855,7 @@ async def top(message: discord.Message, *options):
     for i, osu_score in enumerate(fetched_scores):
         osu_score.add_position(i + 1)
 
-    assert osu_user.mode is enums.GameMode.osu if nochoke else True, \
+    assert mode is enums.GameMode.osu if nochoke else True, \
         "No-choke lists are only supported for osu!standard."
     assert not list_type == "score" if nochoke else True, "No-choke lists can't be sorted by score."
     if nochoke:
@@ -868,11 +871,11 @@ async def top(message: discord.Message, *options):
         osu_scores = fetched_scores
         author_text = osu_user.username
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
-    m = await score_format.get_formatted_score_list(osu_user.mode, sorted_scores, 5, nochoke=nochoke)
+    m = await score_format.get_formatted_score_list(mode, sorted_scores, 5, nochoke=nochoke)
     e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(osu_user.id)),
                                              osu_user.avatar_url,
                                              osu_user.avatar_url)
-    view = score_format.PaginatedScoreList(sorted_scores, osu_user.mode,
+    view = score_format.PaginatedScoreList(sorted_scores, mode,
                                            score_utils.count_score_pages(sorted_scores, 5), e, nochoke)
     e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
     message = await client.send_message(message.channel, embed=e, view=view)
@@ -916,8 +919,11 @@ async def lazer_top(message: discord.Message, *options):
 
     osu_user = await user_utils.get_user(message, member, to_search)
 
+    if not mode:
+        mode = osu_user.mode
+
     params = {
-        "mode": mode.name if mode else osu_user.mode.name,
+        "mode": mode.name,
         "limit": score_request_limit,
     }
     fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params,
@@ -929,11 +935,11 @@ async def lazer_top(message: discord.Message, *options):
     osu_scores = fetched_scores
     author_text = osu_user.username
     sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
-    m = await score_format.get_formatted_score_list(osu_user.mode, sorted_scores, 5)
+    m = await score_format.get_formatted_score_list(mode, sorted_scores, 5)
     e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(osu_user.id)),
                                              osu_user.avatar_url,
                                              osu_user.avatar_url)
-    view = score_format.PaginatedScoreList(sorted_scores, osu_user.mode,
+    view = score_format.PaginatedScoreList(sorted_scores, mode,
                                            score_utils.count_score_pages(sorted_scores, 5), e)
     e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
     message = await client.send_message(message.channel, embed=e, view=view)
