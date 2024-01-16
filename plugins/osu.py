@@ -816,9 +816,12 @@ async def top(message: discord.Message, *options):
     list_type = "pp"
     nochoke = False
     to_search = ""
+    mode = None
 
     for value in options:
-        if value in ("newest", "recent"):
+        if value in gamemodes:
+            mode = enums.GameMode.get_mode(value)
+        elif value in ("newest", "recent"):
             list_type = "newest"
         elif value == "oldest":
             list_type = value
@@ -841,7 +844,7 @@ async def top(message: discord.Message, *options):
     osu_user = await user_utils.get_user(message, member, to_search)
 
     params = {
-        "mode": osu_user.mode.name,
+        "mode": mode.name if mode else osu_user.mode.name,
         "limit": score_request_limit,
     }
     fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params)
@@ -889,8 +892,11 @@ async def lazer_top(message: discord.Message, *options):
     member = None
     to_search = ""
     list_type = "pp"
+    mode = None
     for value in options:
-        if value in ("newest", "recent"):
+        if value in gamemodes:
+            mode = enums.GameMode.get_mode(value)
+        elif value in ("newest", "recent"):
             list_type = "newest"
         elif value == "oldest":
             list_type = value
@@ -911,7 +917,7 @@ async def lazer_top(message: discord.Message, *options):
     osu_user = await user_utils.get_user(message, member, to_search)
 
     params = {
-        "mode": osu_user.mode.name,
+        "mode": mode.name if mode else osu_user.mode.name,
         "limit": score_request_limit,
     }
     fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params,
