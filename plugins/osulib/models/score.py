@@ -40,11 +40,13 @@ class MaximumScoreStatistics:
     great: int
     large_tick_hit: int
     legacy_combo_increase: int
+    ignore_hit: int
 
     def __init__(self, raw_data: dict):
         self.great = raw_data["great"] if "great" in raw_data else 0
         self.large_tick_hit = raw_data["large_tick_hit"] if "large_tick_hit" in raw_data else 0
         self.legacy_combo_increase = raw_data["legacy_combo_increase"] if "legacy_combo_increase" in raw_data else 0
+        self.ignore_hit = raw_data["ignore_hit"] if "ignore_hit" in raw_data else 0
 
     def __repr__(self):
         return str(self.__dict__)

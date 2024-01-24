@@ -36,7 +36,7 @@ def get_sorted_scores(osu_scores: list[OsuScore], list_type: str):
 def get_maximum_score_combo(osu_score: OsuScore, beatmap: Beatmap):
     if hasattr(osu_score, "maximum_statistics") and osu_score.maximum_statistics:
         combo = osu_score.maximum_statistics.great + osu_score.maximum_statistics.large_tick_hit + \
-                osu_score.maximum_statistics.legacy_combo_increase
+                osu_score.maximum_statistics.legacy_combo_increase + osu_score.maximum_statistics.ignore_hit
         if combo > 0:
             return combo
     return beatmap.max_combo if hasattr(beatmap, "max_combo") and beatmap.max_combo is not None else None
