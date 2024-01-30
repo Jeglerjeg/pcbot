@@ -749,9 +749,9 @@ def generate_full_no_choke_score_list(no_choke_scores: list, original_scores: li
     """ Insert no_choke plays into full score list. """
     no_choke_ids = []
     for osu_score in no_choke_scores:
-        no_choke_ids.append(osu_score.best_id)
+        no_choke_ids.append(osu_score.id)
     for osu_score in list(original_scores):
-        if osu_score.best_id in no_choke_ids:
+        if osu_score.id in no_choke_ids:
             original_scores.remove(osu_score)
     for osu_score in no_choke_scores:
         original_scores.append(osu_score)

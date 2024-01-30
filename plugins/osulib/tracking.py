@@ -124,13 +124,12 @@ class OsuTracker:
     async def wait_for_ready(self):
         await client.wait_until_ready()
 
-    async def __notify(self, member_id: int, new_osu_user: OsuUser, old_osu_user: OsuUser = None):
+    async def __notify(self, member_id: int, old_osu_user: OsuUser = None):
         # Next, check for any differences in pp between the "old" and the "new" subsections
         # and notify any guilds
-        if misc_utils.check_for_pp_difference(new_osu_user, old_osu_user):
-            await self.__notify_pp(str(member_id), new_osu_user, old_osu_user)
+        await self.__notify_pp(str(member_id), old_osu_user)
         # Check for any differences in the users' events and post about map updates
-        await self.__notify_recent_events(str(member_id), new_osu_user)
+        await self.__notify_recent_events(str(member_id), old_osu_user)
 
     async def __update_user_data(self, member_id: int, profile: int):
         """ Go through all registered members playing osu!, and update their data. """
@@ -161,11 +160,7 @@ class OsuTracker:
             db.update_osu_user(osu_user, member_id, osu_user.ticks)
             return
 
-        await update_osu_user(member_id, profile, member, osu_user)
-        new_osu_user = db.get_osu_user(member_id)
-        if not new_osu_user:
-            return
-        client.loop.create_task(self.__notify(member_id, OsuUser(new_osu_user), osu_user))
+        client.loop.create_task(self.__notify(member_id, osu_user))
 
     async def __notify_recent_events(self, member_id: str, new_osu_user: OsuUser):
         """ Notify any map updates, such as update, resurrect and qualified. """
@@ -322,10 +317,10 @@ class OsuTracker:
                 if member_id not in self.previous_score_updates:
                     self.previous_score_updates[member_id] = []
 
-                if osu_score.best_id in self.previous_score_updates[member_id]:
+                if osu_score.id in self.previous_score_updates[member_id]:
                     continue
 
-                self.previous_score_updates[member_id].append(osu_score.best_id)
+                self.previous_score_updates[member_id].append(osu_score.id)
 
                 beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
 
@@ -352,7 +347,7 @@ class OsuTracker:
                         except discord.Forbidden:
                             pass
 
-    async def __notify_pp(self, member_id: str, new_osu_user: OsuUser, old_osu_user: OsuUser = None):
+    async def __notify_pp(self, member_id: str, old_osu_user: OsuUser = None):
         """ Notify any differences in pp and post the scores + rank/pp gained. """
         member = discord.utils.get(client.get_all_members(), id=int(member_id))
 
@@ -366,23 +361,21 @@ class OsuTracker:
         # Since the user got pp they probably have a new score in their own top 100
         # If there is a score, there is also a beatmap
         if update_mode is not UpdateModes.PP:
-            for i in range(3):
-                osu_scores = await score_utils.get_new_score(member_id)
-                if osu_scores:
-                    break
-                await asyncio.sleep(osu_config.data["score_update_delay"])
-            else:
-                logging.info("%s (%s) gained PP, but no new score was found.", member.name, member_id)
+            osu_scores = await score_utils.get_new_score(member_id)
         if member_id not in self.previous_score_updates:
             self.previous_score_updates[member_id] = []
         for osu_score in list(osu_scores):
-            if osu_score.best_id in self.previous_score_updates[member_id]:
+            if osu_score.id in self.previous_score_updates[member_id]:
                 osu_scores.remove(osu_score)
                 continue
-            self.previous_score_updates[member_id].append(osu_score.best_id)
+            self.previous_score_updates[member_id].append(osu_score.id)
 
-        if not osu_scores and not notify_empty_scores:
+        if not osu_scores:
             return
+
+        await update_osu_user(int(member_id), old_osu_user.id, member, old_osu_user)
+
+        new_osu_user = db.get_osu_user(int(member_id))
 
         # If a new score was found, format the score(s)
         if len(osu_scores) == 1:
