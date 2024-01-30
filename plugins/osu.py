@@ -126,11 +126,6 @@ async def osu(message: discord.Message, *options):
     await client.send_message(message.channel, embed=card[0], file=card[1])
 
 
-@plugins.command(aliases="l")
-async def lazer(message: discord.Message, _: utils.placeholder):
-    """ osu! commands. now with lazer scores. """
-
-
 @osu.command(aliases="set")
 async def link(message: discord.Message, name: Annotate.LowerContent):
     """ Tell the bot who you are on osu!. """
@@ -535,36 +530,6 @@ plugins.command(name="rm")(recent_mania)
 osu.command(name="rm")(recent_mania)
 
 
-@lazer.command(name="recent", aliases="last new r")
-async def recent_lazer(message: discord.Message, user: str = None):
-    """ Display your or another member's most recent score. """
-    await recent_command(message, user, True)
-
-
-@lazer.command(name="rs")
-async def recent_standard_lazer(message: discord.Message, user: str = None):
-    """ Display your or another member's most recent score. """
-    await recent_command(message, user, True, mode=enums.GameMode.osu)
-
-
-@lazer.command(name="rt")
-async def recent_taiko_lazer(message: discord.Message, user: str = None):
-    """ Display your or another member's most recent score. """
-    await recent_command(message, user, True, mode=enums.GameMode.taiko)
-
-
-@lazer.command(name="rc")
-async def recent_catch_lazer(message: discord.Message, user: str = None):
-    """ Display your or another member's most recent score. """
-    await recent_command(message, user, True, mode=enums.GameMode.fruits)
-
-
-@lazer.command(name="rm")
-async def recent_mania_lazer(message: discord.Message, user: str = None):
-    """ Display your or another member's most recent score. """
-    await recent_command(message, user, True, mode=enums.GameMode.mania)
-
-
 @osu.command(usage="<replay>")
 async def render(message: discord.Message, *options):
     """ Render a replay using <https://ordr.issou.best>.
@@ -672,13 +637,6 @@ plugins.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score
 osu.command(name="score", aliases="c", usage="[member] <url> +<mods>")(score)
 
 
-@lazer.command(name="score", aliases="c", usage="[member] <url> +<mods>")
-async def lazer_score(message: discord.Message, *options):
-    """ Display your own or the member's score on a beatmap. Add mods to simulate the beatmap score with those mods.
-    If URL is not provided it searches the last 10 messages for a URL. """
-    await score_command(message, *options, lazer_api=True)
-
-
 async def scores_command(message: discord.Message, *options, lazer_api: bool = False):
     member = None
     beatmap_url = None
@@ -769,13 +727,6 @@ async def scores(message: discord.Message, *options):
 
 plugins.command(name="scores", usage="[member] <url> <+mods>")(scores)
 osu.command(name="scores", usage="[member] <url> <+mods>")(scores)
-
-
-@lazer.command(name="scores", usage="[member] <url> <+mods>")
-async def lazer_scores(message: discord.Message, *options):
-    """ Display all of your own or the member's scores on a beatmap. Add mods to only show the score with those mods.
-    If URL is not provided it searches the last 10 messages for a URL. """
-    await scores_command(message, *options, lazer_api=True)
 
 
 @osu.command(aliases="map")
@@ -885,66 +836,6 @@ async def top(message: discord.Message, *options):
 
 plugins.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
 osu.command(name="top", usage="[member] <sort_by>", aliases="osutop")(top)
-
-
-@lazer.command(name="top", usage="[member] <sort_by>", aliases="osutop")
-async def lazer_top(message: discord.Message, *options):
-    """ By default displays your or the selected member's 5 highest rated plays sorted by PP.
-     You can also add "nochoke" as an option to display a list of unchoked top scores instead.
-     Alternative sorting methods are "oldest", "newest", "combo", "score" and "acc" """
-    member = None
-    to_search = ""
-    list_type = "pp"
-    mode = None
-    for value in options:
-        if value in gamemodes:
-            mode = enums.GameMode.get_mode(value)
-        elif value in ("newest", "recent"):
-            list_type = "newest"
-        elif value == "oldest":
-            list_type = value
-        elif value == "acc":
-            list_type = value
-        elif value == "combo":
-            list_type = value
-        elif value == "score":
-            list_type = value
-        elif utils.member_mention_pattern.match(value):
-            member = utils.find_member(message.guild, value)
-        else:
-            to_search = value
-
-    if not member:
-        member = message.author
-
-    osu_user = await user_utils.get_user(message, member, to_search)
-
-    if not mode:
-        mode = osu_user.mode
-
-    params = {
-        "mode": mode.name,
-        "limit": score_request_limit,
-    }
-    fetched_scores = await api.get_user_scores(osu_user.id, "best", params=params,
-                                               lazer=True)
-    assert fetched_scores, "Failed to retrieve scores. Please try again."
-    for i, osu_score in enumerate(fetched_scores):
-        osu_score.add_position(i + 1)
-
-    osu_scores = fetched_scores
-    author_text = osu_user.username
-    sorted_scores = score_utils.get_sorted_scores(osu_scores, list_type)
-    m = await score_format.get_formatted_score_list(mode, sorted_scores, 5)
-    e = embed_format.get_embed_from_template(m, member.color, author_text, user_utils.get_user_url(str(osu_user.id)),
-                                             osu_user.avatar_url,
-                                             osu_user.avatar_url)
-    view = score_format.PaginatedScoreList(sorted_scores, mode,
-                                           score_utils.count_score_pages(sorted_scores, 5), e)
-    e.set_footer(text=f"Page {1} of {score_utils.count_score_pages(sorted_scores, 5)}")
-    message = await client.send_message(message.channel, embed=e, view=view)
-    await view.wait()
-    await message.edit(embed=view.embed, view=None)
 
 
 @osu.command()
