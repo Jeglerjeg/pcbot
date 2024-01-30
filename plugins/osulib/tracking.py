@@ -124,13 +124,6 @@ class OsuTracker:
     async def wait_for_ready(self):
         await client.wait_until_ready()
 
-    async def __notify(self, member_id: int, old_osu_user: OsuUser = None):
-        # Next, check for any differences in pp between the "old" and the "new" subsections
-        # and notify any guilds
-        await self.__notify_pp(str(member_id), old_osu_user)
-        # Check for any differences in the users' events and post about map updates
-        await self.__notify_recent_events(str(member_id), old_osu_user)
-
     async def __update_user_data(self, member_id: int, profile: int):
         """ Go through all registered members playing osu!, and update their data. """
         # Go through each member playing and give them an "old" and a "new" subsection
@@ -155,12 +148,21 @@ class OsuTracker:
         osu_user = OsuUser(db_user)
         osu_user.add_tick()
 
+        if osu_user.ticks > not_playing_skip:
+            osu_user.reset_ticks()
+
         # Only update members not tracked ingame every nth update
         if not user_utils.is_playing(member) and osu_user.ticks % not_playing_skip > 0:
+            if osu_user.ticks >= not_playing_skip:
+                osu_user.reset_ticks()
             db.update_osu_user(osu_user, member_id, osu_user.ticks)
             return
 
-        client.loop.create_task(self.__notify(member_id, osu_user))
+        db.update_osu_user(osu_user, member_id, osu_user.ticks)
+
+        await self.__notify_pp(str(member_id), osu_user)
+
+        client.loop.create_task(self.__notify_recent_events(str(member_id), osu_user))
 
     async def __notify_recent_events(self, member_id: str, new_osu_user: OsuUser):
         """ Notify any map updates, such as update, resurrect and qualified. """
