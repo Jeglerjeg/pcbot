@@ -256,8 +256,12 @@ class Beatmapset(BeatmapsetCompact):
         self.title_unicode = raw_data.title_unicode
         self.user_id = raw_data.user_id
         if beatmaps:
-            self.beatmaps = [Beatmap(db.get_beatmap(beatmap),
-                                     from_db=True, beatmapset=False) for beatmap in pickle.loads(raw_data.beatmaps)]
+            beatmaps = [db.get_beatmap(beatmap) for beatmap in pickle.loads(raw_data.beatmaps)]
+            for beatmap in beatmaps:
+                if not beatmap:
+                    continue
+                self.beatmaps.append(Beatmap(beatmap,
+                                             from_db=True, beatmapset=False))
         self.bpm = raw_data.bpm
         self.ranked = raw_data.ranked
         self.time_cached = raw_data.time_cached.replace(tzinfo=timezone.utc)
