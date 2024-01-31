@@ -12,7 +12,7 @@ import sys
 import traceback
 from argparse import ArgumentParser
 from copy import copy
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 
 import discord
 
@@ -31,7 +31,7 @@ class Client(discord.Client):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.time_started = datetime.now(UTC)
+        self.time_started = datetime.now(timezone.utc)
         self.last_deleted_messages = []
 
     async def _handle_event(self, func, event, *args, **kwargs):
@@ -475,7 +475,7 @@ async def on_message(message: discord.Message):
     The bot will handle all commands in plugins and send on_message to plugins using it. """
     # Make sure the client is ready before processing commands
     await client.wait_until_ready()
-    start_time = datetime.now(UTC)
+    start_time = datetime.now(timezone.utc)
 
     # Make a local copy of the message since some attributes are changed and they shouldn't be overridden
     # in plugin based on_message events
@@ -539,7 +539,7 @@ async def on_message(message: discord.Message):
     client.dispatch("command_requested", message, parsed_command, *args, **kwargs)
 
     # Log time spent parsing the command
-    stop_time = datetime.now(UTC)
+    stop_time = datetime.now(timezone.utc)
     time_elapsed = (stop_time - start_time).total_seconds() * 1000
     logging.debug("Time spent parsing command: %sms", utils.format_number(time_elapsed, 6))
 

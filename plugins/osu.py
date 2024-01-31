@@ -18,7 +18,7 @@ TUTORIAL:
 """
 import asyncio
 import importlib
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from operator import itemgetter
 from textwrap import wrap
 
@@ -546,7 +546,7 @@ async def render(message: discord.Message, *options):
             replay_url = attachment.url
 
     if message.author.id in last_rendered:
-        time_since_render = datetime.now(UTC) - last_rendered[message.author.id]
+        time_since_render = datetime.now(timezone.utc) - last_rendered[message.author.id]
         if time_since_render.total_seconds() < 300:
             await client.say(message, "It's been less than 5 minutes since your last render. "
                                       "Please wait before trying again")
@@ -565,8 +565,8 @@ async def render(message: discord.Message, *options):
                                                       ordr.get_render_error(int(render_job["errorCode"]))]))
         return
 
-    last_rendered[message.author.id] = datetime.now(UTC)
-    ordr.requested_renders[int(render_job["renderID"])] = {"message": placeholder_msg, "edited": datetime.now(UTC)}
+    last_rendered[message.author.id] = datetime.now(timezone.utc)
+    ordr.requested_renders[int(render_job["renderID"])] = {"message": placeholder_msg, "edited": datetime.now(timezone.utc)}
 
 
 async def score_command(message: discord.Message, *options, lazer_api: bool = False):
@@ -930,7 +930,7 @@ async def debug(message: discord.Message):
                 member_list.append(f"`{member.name}`")
 
     average_requests = utils.format_number(api.requests_sent /
-                                           ((datetime.now(UTC) - client.time_started).total_seconds() / 60.0), 2) \
+                                           ((datetime.now(timezone.utc) - client.time_started).total_seconds() / 60.0), 2) \
         if api.requests_sent > 0 else 0
     last_update = f"<t:{int(osu_tracker.previous_update.timestamp())}:F>" \
         if osu_tracker.previous_update else "Not updated yet."

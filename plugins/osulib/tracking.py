@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import traceback
-from datetime import datetime, timezone, timedelta, UTC
+from datetime import datetime, timezone, timedelta
 
 import aiohttp
 import discord
@@ -29,7 +29,7 @@ class MapEvent:
     def __init__(self, text):
         self.text = text
 
-        self.time_created = datetime.now(UTC)
+        self.time_created = datetime.now(timezone.utc)
         self.count = 1
         self.messages = []
 

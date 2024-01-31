@@ -1,4 +1,4 @@
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 
 import discord
 import bot
@@ -151,7 +151,7 @@ async def debug(message: discord.Message):
                 member_list.append(f"`{member.name}`")
 
     average_requests = utils.format_number(api.requests_sent /
-                                           ((datetime.now(UTC) - client.time_started).total_seconds() / 60.0), 2) \
+                                           ((datetime.now(timezone.utc) - client.time_started).total_seconds() / 60.0), 2) \
         if api.requests_sent > 0 else 0
     last_update = f"<t:{int(scoresaber_tracker.previous_update.timestamp())}:F>" \
         if scoresaber_tracker.previous_update else "Not updated yet."
