@@ -83,6 +83,14 @@ def get_beatmap(beatmap_id: int):
         return result.fetchone()
 
 
+def get_beatmaps_by_beatmapset_id(beatmapset_id: int):
+    with engine.connect() as connection:
+        table = db_metadata.tables["beatmaps"]
+        statement = select(table).where(table.c.beatmapset_id == beatmapset_id)
+        result = connection.execute(statement)
+        return result.fetchall()
+
+
 def delete_beatmap(beatmap_id: int):
     with engine.connect() as connection:
         table = db_metadata.tables["beatmaps"]
