@@ -244,7 +244,7 @@ class OsuUser(OsuUserCompact):
         self.ticks += 1
 
     def reset_ticks(self):
-        self.ticks = 0
+        self.ticks = randint(0, not_playing_skip - 1)
 
     def set_time_cached(self, time: datetime):
         self.time_cached = time
