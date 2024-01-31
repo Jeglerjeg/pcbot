@@ -152,9 +152,7 @@ class OsuTracker:
             osu_user.reset_ticks()
 
         # Only update members not tracked ingame every nth update
-        if not user_utils.is_playing(member) and osu_user.ticks % not_playing_skip > 0:
-            if osu_user.ticks >= not_playing_skip:
-                osu_user.reset_ticks()
+        if not user_utils.is_playing(member) and osu_user.ticks != not_playing_skip:
             db.update_osu_user(osu_user, member_id, osu_user.ticks)
             return
 
