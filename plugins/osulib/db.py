@@ -187,7 +187,7 @@ def delete_osu_users():
         previous_users = connection.execute(select(table.c.discord_id))
         statement = delete(table)
         connection.execute(statement)
-        return previous_users.fetchall()
+        return len(previous_users.fetchall())
 
 
 def get_osu_user(discord_id: int):
