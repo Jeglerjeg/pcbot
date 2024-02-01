@@ -134,7 +134,7 @@ async def format_new_score(mode: enums.GameMode, osu_score: OsuScore, beatmap: B
         f"{format_score_info(osu_score, beatmap)}"
         "```ansi\n"
         f"{format_score_statistics(osu_score, beatmap, mode)}```"
-        f"<t:{int(osu_score.ended_at.timestamp())}:R>"
+        f"<t:{int(osu_score.ended_at.timestamp())}:R>\n"
         f"{await misc_format.format_stream(member, osu_score, beatmap) if member else ''}"
     )
 
@@ -204,7 +204,7 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuSco
         # Add score position to the score
         pos = f"{osu_score.position}." if not hasattr(osu_score, "pp_difference") or not osu_score["pp_difference"] \
             else f"{osu_score.position}. ({utils.format_number(osu_score.pp_difference, 2):+}pp)"
-        m.append("".join([f"{pos}\n\n", await format_new_score(mode, osu_score, beatmap),
+        m.append("".join([f"{pos}\n", await format_new_score(mode, osu_score, beatmap),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
                           "\n" if not i == limit - 1 else ""]))
     return "".join(m)
