@@ -399,8 +399,7 @@ class OsuTracker:
                 m.append(await score_format.format_new_score(mode, osu_score, beatmap, member))
         elif len(osu_scores) > 1:
             m.append(await score_format.get_formatted_score_list(mode, osu_scores,
-                                                                 limit=len(osu_scores) if len(osu_scores) <= 5 else 5,
-                                                                 no_time=True))
+                                                                 limit=len(osu_scores) if len(osu_scores) <= 5 else 5))
             thumbnail_url = new_osu_user.avatar_url
             author_text = f"""{new_osu_user.username} set new best scores"""
         else:

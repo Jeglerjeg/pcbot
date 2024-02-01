@@ -75,33 +75,6 @@ def format_potential_pp(score_pp: pp.PPStats, osu_score: OsuScore):
     return potential_string
 
 
-def get_formatted_score_time(osu_score: OsuScore):
-    """ Returns formatted time since score was set. """
-    time_string = ""
-    if pendulum:
-        score_time = pendulum.now("UTC").diff(pendulum.from_timestamp(osu_score.ended_at.timestamp()))
-        if score_time.in_seconds() < 60:
-            time_string = f"""{"".join([str(score_time.in_seconds()),
-                                        (" seconds" if score_time.in_seconds() > 1 else " second")])} ago"""
-        elif score_time.in_minutes() < 60:
-            time_string = f"""{"".join([str(score_time.in_minutes()),
-                                        (" minutes" if score_time.in_minutes() > 1 else " minute")])} ago"""
-        elif score_time.in_hours() < 24:
-            time_string = f"""{"".join([str(score_time.in_hours()),
-                                        (" hours" if score_time.in_hours() > 1 else " hour")])} ago"""
-        elif score_time.in_days() <= 31:
-            time_string = f"""{"".join([str(score_time.in_days()),
-                                        (" days" if score_time.in_days() > 1 else " day")])} ago"""
-        elif score_time.in_months() < 12:
-            time_string = f"""{"".join([str(score_time.in_months()),
-                                        (" months" if score_time.in_months() > 1 else " month")])} ago"""
-        else:
-            time_string = f"""{"".join([str(score_time.in_years()),
-                                        (" years" if score_time.in_years() > 1 else " year")])} ago"""
-
-    return time_string
-
-
 def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.GameMode):
     """" Returns formatted score statistics for each mode. """
     acc = f"{utils.format_number(osu_score.accuracy * 100, 2)}%"
@@ -161,6 +134,7 @@ async def format_new_score(mode: enums.GameMode, osu_score: OsuScore, beatmap: B
         f"{format_score_info(osu_score, beatmap)}"
         "```ansi\n"
         f"{format_score_statistics(osu_score, beatmap, mode)}```"
+        f"<t:{int(osu_score.ended_at.timestamp())}:R>"
         f"{await misc_format.format_stream(member, osu_score, beatmap) if member else ''}"
     )
 
@@ -204,7 +178,7 @@ def format_completion_rate(osu_score: OsuScore, pp_stats: pp.PPStats):
 
 
 async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuScore], limit: int, beatmap_id: int = None,
-                                   no_time: bool = False, offset: int = 0, nochoke: bool = False):
+                                   offset: int = 0, nochoke: bool = False):
     """ Return a list of formatted scores along with time since the score was set. """
     m = []
     for i, osu_score in enumerate(osu_scores):
@@ -227,14 +201,10 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuSco
         # Add potential pp to the score
         potential_string = format_potential_pp(score_pp, osu_score)
 
-        # Add time since play to the score
-        time_since_string = f"<t:{int(osu_score.ended_at.timestamp())}:R>"
-
         # Add score position to the score
         pos = f"{osu_score.position}." if not hasattr(osu_score, "pp_difference") or not osu_score["pp_difference"] \
             else f"{osu_score.position}. ({utils.format_number(osu_score.pp_difference, 2):+}pp)"
         m.append("".join([f"{pos}\n", await format_new_score(mode, osu_score, beatmap),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
-                          "".join([time_since_string, "\n"]) if not no_time else "",
                           "\n" if not i == limit - 1 else ""]))
     return "".join(m)

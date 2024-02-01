@@ -43,9 +43,6 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
     if (not hasattr(beatmap, "max_combo") or not beatmap.max_combo) and score_pp and score_pp.max_combo:
         beatmap.add_max_combo(score_pp.max_combo)
 
-    time_string = ""
-    if time:
-        time_string = score_format.get_formatted_score_time(osu_score)
     embed = get_embed_from_template(await score_format.format_new_score(mode, osu_score, beatmap,
                                                                         member if twitch_link else None),
                                     member.color, osu_score.user.username,
@@ -54,7 +51,6 @@ async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore
                                     osu_score.beatmapset.covers.list2x
                                     if hasattr(osu_score, "beatmapset") and osu_score["beatmapset"]
                                     else beatmap.beatmapset.covers.list2x,
-                                    time=time_string,
                                     potential_string=score_format.format_potential_pp(
                                         score_pp if score_pp is not None else None,
                                         osu_score) if score_utils.calculate_potential_pp(osu_score, mode) else "",
