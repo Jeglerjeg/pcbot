@@ -12,7 +12,8 @@ from aiohttp import FormData
 from pcbot import utils, config, Config
 
 host = "https://apis.issou.best/ordr/"
-ws_link = "https://ordr-ws.issou.best"
+ws_link = "https://apis.issou.best"
+socket_path = "/ordr/ws"
 requested_renders = {}
 
 ordr_client = socketio.AsyncClient()
@@ -281,6 +282,6 @@ async def establish_ws_connection():
     if ordr_client.connected:
         await ordr_client.disconnect()
     try:
-        await ordr_client.connect(ws_link)
+        await ordr_client.connect(ws_link, socketio_path=socket_path)
     except socketio.exceptions.ConnectionError:
         logging.error("Failed to connnect to ordr websocket.")
