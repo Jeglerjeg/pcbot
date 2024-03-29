@@ -186,7 +186,7 @@ async def wipe_tracking(message: discord.Message, member: discord.Member = None)
         osu_config.data["map_cache"] = {}
         await osu_config.asyncsave()
         wiped_users = delete_osu_users()
-        await client.say(message, f"Wiped {len(wiped_users)} entries.")
+        await client.say(message, f"Wiped {wiped_users} entries.")
 
 
 @osu.command(aliases="unset")

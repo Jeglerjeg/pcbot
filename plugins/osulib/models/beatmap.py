@@ -258,7 +258,7 @@ class Beatmapset(BeatmapsetCompact):
         if beatmaps:
             fetched_beatmaps = db.get_beatmaps_by_beatmapset_id(self.id)
             self.beatmaps = [(Beatmap(beatmap,
-                                         from_db=True, beatmapset=False)) for beatmap in fetched_beatmaps]
+                                      from_db=True, beatmapset=False)) for beatmap in fetched_beatmaps]
         self.bpm = raw_data.bpm
         self.ranked = raw_data.ranked
         self.time_cached = raw_data.time_cached.replace(tzinfo=timezone.utc)

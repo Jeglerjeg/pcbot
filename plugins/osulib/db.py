@@ -192,7 +192,7 @@ def get_osu_users():
 def delete_osu_users():
     with engine.connect() as connection:
         table = db_metadata.tables["osu_users"]
-        previous_users = connection.execute(select(table.c.discord_id))
+        previous_users = connection.execute(select(table))
         statement = delete(table)
         connection.execute(statement)
         return len(previous_users.fetchall())
