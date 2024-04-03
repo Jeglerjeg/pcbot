@@ -106,7 +106,7 @@ def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.G
            f"{max_combo}"
 
 
-def format_score_info(osu_score: OsuScore, beatmap: Beatmap):
+def format_score_info(osu_score: OsuScore, beatmap: Beatmap, list_position = None):
     """ Return formatted beatmap information. """
     beatmap_url = beatmap_utils.get_beatmap_url(beatmap.id, osu_score.mode, beatmap.beatmapset_id)
     modslist = enums.Mods.format_mods(osu_score.mods, score_display=True)
@@ -124,14 +124,18 @@ def format_score_info(osu_score: OsuScore, beatmap: Beatmap):
     i = ("*" if "*" not in osu_score.beatmapset.artist + osu_score.beatmapset.title else "") if \
         hasattr(osu_score, "beatmapset") and osu_score.beatmapset else \
         ("*" if "*" not in beatmap.beatmapset.artist + beatmap.beatmapset.title else "")
-    return f'[{i}{artist} - {title} [{beatmap.version}]{i}]({beatmap_url})\n' \
+
+    formatted_list_position = f"{list_position}. " if list_position else ""
+
+    return f'{formatted_list_position}[{i}{artist} - {title} [{beatmap.version}]{i}]({beatmap_url})\n' \
            f'**{score_pp}pp {stars}\u2605, {osu_score.rank} {scoreboard_rank}{failed}+{modslist} {ranked_score}**'
 
 
-async def format_new_score(mode: enums.GameMode, osu_score: OsuScore, beatmap: Beatmap, member: discord.Member = None):
+async def format_new_score(mode: enums.GameMode, osu_score: OsuScore, beatmap: Beatmap, member: discord.Member = None,
+                           list_position = None):
     """ Format any score. There should be a member name/mention in front of this string. """
     return (
-        f"{format_score_info(osu_score, beatmap)}"
+        f"{format_score_info(osu_score, beatmap, list_position)}"
         "```ansi\n"
         f"{format_score_statistics(osu_score, beatmap, mode)}```"
         f"<t:{int(osu_score.ended_at.timestamp())}:R>\n"
@@ -200,11 +204,8 @@ async def get_formatted_score_list(mode: enums.GameMode, osu_scores: list[OsuSco
                 beatmap.add_max_combo(score_pp.max_combo)
         # Add potential pp to the score
         potential_string = format_potential_pp(score_pp, osu_score)
-
         # Add score position to the score
-        pos = f"{osu_score.position}." if not hasattr(osu_score, "pp_difference") or not osu_score["pp_difference"] \
-            else f"{osu_score.position}. ({utils.format_number(osu_score.pp_difference, 2):+}pp)"
-        m.append("".join([f"{pos}\n", await format_new_score(mode, osu_score, beatmap),
+        m.append("".join([await format_new_score(mode, osu_score, beatmap, list_position=osu_score.position),
                           ("".join([potential_string, "\n"]) if potential_string is not None else ""),
                           "\n" if not i == limit - 1 else ""]))
     return "".join(m)
