@@ -1,5 +1,6 @@
 import copy
 from enum import Enum
+import rosu_pp_py
 
 from pcbot import utils
 from plugins.osulib.constants import mode_names
@@ -133,3 +134,13 @@ class GameMode(Enum):
                     return GameMode.__members__[mode_name]
 
         return None
+
+    def to_rosu(self):
+        if self.value == 0:
+            return rosu_pp_py.GameMode.Osu
+        elif self.value == 1:
+            return rosu_pp_py.GameMode.Taiko
+        elif self.value == 2:
+            return rosu_pp_py.GameMode.Catch
+        elif self.value == 3:
+            return rosu_pp_py.GameMode.Mania

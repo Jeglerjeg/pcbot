@@ -15,13 +15,11 @@ from plugins.osulib.models.beatmap import Beatmap, Beatmapset
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import misc_utils, score_utils
 
-try:
-    import rosu_pp_py
-except ImportError:
-    rosu_pp_py = None
+import rosu_pp_py
+
 
 CachedBeatmap = namedtuple("CachedBeatmap", "url_or_id beatmap")
-PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs od hp bpm")
+PPStats = namedtuple("PPStats", "pp stars partial_stars max_pp max_combo ar cs od hp clock_rate")
 ClosestPPStats = namedtuple("ClosestPPStats", "count_100 pp stars")
 
 cache_path = "plugins/osulib/mapcache"
@@ -126,15 +124,8 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
 
     osu_map = rosu_pp_py.Beatmap(path=beatmap_path)
 
-    if args.ar:
-        osu_map.set_ar(args.ar)
-    if args.od:
-        osu_map.set_od(args.od)
-    if args.hp:
-        osu_map.set_hp(args.hp)
-    if args.cs:
-        osu_map.set_cs(args.cs)
-    calculator = rosu_pp_py.Calculator(mods=mods_bitmask, mode=mode.value)
+    osu_map.convert(mode.to_rosu())
+    calculator = rosu_pp_py.Performance(mods=mods_bitmask)
     if args.clock_rate:
         calculator.set_clock_rate(args.clock_rate)
 
@@ -149,8 +140,8 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     # Calculate maximum stars and pp
     if failed or potential:
         if args.potential_acc:
-            calculator.set_acc(args.potential_acc)
-        potential_pp_info = calculator.performance(osu_map)
+            calculator.set_accuracy(args.potential_acc)
+        potential_pp_info = calculator.calculate(osu_map)
         max_combo = potential_pp_info.difficulty.max_combo
         total_stars = potential_pp_info.difficulty.stars
         if mode is enums.GameMode.osu:
@@ -158,11 +149,12 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
 
     # Calculate actual stars and pp
     calculator = set_score_params(calculator, args)
-    pp_info = calculator.performance(osu_map)
+    pp_info = calculator.calculate(osu_map)
     if not max_combo:
         max_combo = pp_info.difficulty.max_combo
 
-    map_attributes = calculator.map_attributes(osu_map)
+    map_attributes = rosu_pp_py.BeatmapAttributesBuilder(map=osu_map, mods=mods_bitmask)
+    map_attributes = set_map_params(map_attributes, args).build()
 
     pp = pp_info.pp
     total_stars = total_stars if failed else pp_info.difficulty.stars
@@ -171,17 +163,39 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     cs = map_attributes.cs
     od = map_attributes.od
     hp = map_attributes.hp
-    bpm = map_attributes.bpm
-    return PPStats(pp, total_stars, partial_stars, max_pp, max_combo, ar, cs, od, hp, bpm)
+    clock_rate = map_attributes.clock_rate
+    return PPStats(pp, total_stars, partial_stars, max_pp, max_combo, ar, cs, od, hp, clock_rate)
 
 
-def set_score_params(calculator: rosu_pp_py.Calculator, args):
+def set_map_params(osu_map_attributes: rosu_pp_py.BeatmapAttributesBuilder, args):
+    if args.clock_rate:
+        osu_map_attributes.set_clock_rate(args.clock_rate)
+    if args.ar:
+        osu_map_attributes.set_ar(args.ar, False)
+    if args.od:
+        osu_map_attributes.set_od(args.od, False)
+    if args.hp:
+        osu_map_attributes.set_hp(args.hp, False)
+    if args.cs:
+        osu_map_attributes.set_cs(args.cs, False)
+    return osu_map_attributes
+
+
+def set_score_params(calculator: rosu_pp_py.Performance, args):
+    if args.ar:
+        calculator.set_ar(args.ar, False)
+    if args.od:
+        calculator.set_od(args.od, False)
+    if args.hp:
+        calculator.set_hp(args.hp, False)
+    if args.cs:
+        calculator.set_cs(args.cs, False)
     if args.objects and args.objects > 0:
         calculator.set_passed_objects(args.objects)
     if args.combo:
         calculator.set_combo(args.combo)
     if args.acc:
-        calculator.set_acc(args.acc)
+        calculator.set_accuracy(args.acc)
     if args.c300:
         calculator.set_n300(args.c300)
     if args.c100:
@@ -193,31 +207,28 @@ def set_score_params(calculator: rosu_pp_py.Calculator, args):
     if args.geki:
         calculator.set_n_geki(args.geki)
     if args.misses:
-        calculator.set_n_misses(args.misses)
+        calculator.set_misses(args.misses)
     return calculator
 
 
-async def find_closest_pp(osu_map: rosu_pp_py.Beatmap, calculator: rosu_pp_py.Calculator, args):
+async def find_closest_pp(osu_map: rosu_pp_py.Beatmap, calculator: rosu_pp_py.Performance, args):
     """ Find the accuracy required to get the given amount of pp from this map. """
 
     # Define a partial command for easily setting the pp value by 100s count
     def calc(n100: int, pp_info=None):
         if pp_info:
             calculator.set_n100(n100)
-            calculator.set_difficulty(pp_info.difficulty)
-            pp_info = calculator.performance(osu_map)
+            pp_info = calculator.calculate(pp_info)
         else:
             new_calculator = set_score_params(calculator, args)
             new_calculator.set_n100(n100)
-            pp_info = new_calculator.performance(osu_map)
+            pp_info = new_calculator.calculate(osu_map)
 
         return pp_info
 
     # Find the smallest possible value rosu-pp is willing to give, below 16.67% acc returns infpp since
     # it's an impossible value.
-    map_attributes = calculator.map_attributes(osu_map)
-    object_count = map_attributes.n_circles + map_attributes.n_sliders + map_attributes.n_spinners
-    min_pp = calc(n100=object_count)
+    min_pp = calc(n100=osu_map.n_objects)
 
     if args.pp <= min_pp.pp:
         raise ValueError(f"The given pp value is too low (calculator gives **{min_pp.pp:.02f}pp** as the "
