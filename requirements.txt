@@ -7,8 +7,8 @@ future>=0.18, <0.19
 imageio>=2.34, <2.35
 markovify>=0.9, <0.10
 nltk>=3.8, <3.9
-numpy @ git+https://github.com/numpy/numpy@3f82757ceb8d852865034749d5d590a960e1fbe7
-cffi @ git+https://github.com/python-cffi/cffi@56f760955c85592b0594895ca626c29174fe8078
+git+https://github.com/numpy/numpy@3f82757ceb8d852865034749d5d590a960e1fbe7#egg=numpy
+git+https://github.com/python-cffi/cffi@56f760955c85592b0594895ca626c29174fe8078#egg=cffi
 orjson>=3.10, <3.11
 pendulum>=3.0, <3.1
 pillow>=10.3, <10.4
