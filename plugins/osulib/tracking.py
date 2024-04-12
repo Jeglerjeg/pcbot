@@ -317,6 +317,7 @@ class OsuTracker:
                 if member_id not in self.previous_score_updates:
                     self.previous_score_updates[member_id] = []
 
+                db.update_recent_events(int(member_id), last_user_events, recent=True)
                 if osu_score.id in self.previous_score_updates[member_id]:
                     continue
 
@@ -324,7 +325,6 @@ class OsuTracker:
 
                 beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
 
-                db.update_recent_events(int(member_id), last_user_events, recent=True)
                 # Send the message to all guilds
                 member = discord.utils.get(client.get_all_members(), id=int(member_id))
                 if not member:
