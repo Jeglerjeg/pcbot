@@ -341,7 +341,7 @@ async def calculate_pp_for_beatmapset(beatmapset: Beatmapset, osu_config: Config
         diff.cs = pp_stats.cs
         diff.accuracy = pp_stats.od
         diff.drain = pp_stats.hp
-        diff.add_new_bpm(pp_stats.bpm)
+        diff.add_new_bpm(diff.bpm * pp_stats.clock_rate)
 
         if ignore_osu_cache:
             # Cache the difficulty
@@ -362,7 +362,7 @@ async def calculate_pp_for_beatmapset(beatmapset: Beatmapset, osu_config: Config
             osu_config.data["map_cache"][set_id][map_id][mods]["cs"] = pp_stats.cs
             osu_config.data["map_cache"][set_id][map_id][mods]["od"] = pp_stats.od
             osu_config.data["map_cache"][set_id][map_id][mods]["hp"] = pp_stats.hp
-            osu_config.data["map_cache"][set_id][map_id][mods]["new_bpm"] = pp_stats.bpm
+            osu_config.data["map_cache"][set_id][map_id][mods]["new_bpm"] = diff.bpm * pp_stats.clock_rate
     if ignore_osu_cache:
         await osu_config.asyncsave()
 
