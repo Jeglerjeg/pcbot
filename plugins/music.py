@@ -87,12 +87,12 @@ def format_song(song: Song, url=True):
         duration = f"Duration: **{length[0]}:{length[1]:02}**"
 
     return f"**{song.player.title}**\nRequested by: **{song.requester.display_name}**\n{duration}" \
-           + (f"\n**URL**: <{song.player.url}>" if url else "")
+        + (f"\n**URL**: <{song.player.url}>" if url else "")
 
 
 class VoiceState:
     def __init__(self, voice):
-        self.voice = voice # type: discord.VoiceClient
+        self.voice = voice  # type: discord.VoiceClient
         self._volume = default_volume
         self.current = None
         self.queue = deque()  # The queue contains items of type Song
@@ -143,7 +143,7 @@ class VoiceState:
 
     def format_playing(self):
         if self.voice.is_playing():
-            return format_song(self.current, url=True)
+            return format_song(self.current)
 
         return "*Nothing.*"
 
@@ -175,6 +175,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 async def music(message, _: utils.placeholder):
     """ Manage music. If a music channel is assigned, the bot will join
     whenever someone plays music. """
+
 
 def client_connected(guild: discord.Guild):
     """ Returns True or False whether the bot is client_connected to the
@@ -222,7 +223,7 @@ async def disconnect(guild: discord.Guild):
 @music.command(aliases="p pl")
 async def play(message: discord.Message, song: Annotate.Content = None):
     """ Play a song in the guild voice channel. The given song could either be a URL or keywords
-    to lookup videos in youtube. """
+    to lookup videos in YouTube. """
 
     assert_connected(message.author, checkbot=False)
 
@@ -237,7 +238,7 @@ async def play(message: discord.Message, song: Annotate.Content = None):
     assert songs_queued < max_songs_queued, "**You have queued enough songs for now.**"
 
     if song is None:
-        assert len(message.attachments) > 0,\
+        assert len(message.attachments) > 0, \
             "**An audio file must be provided when using this command without a song name or url.**"
         song = message.attachments[0].url
 
