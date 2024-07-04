@@ -1,7 +1,8 @@
 aiohttp>=3.9, <3.10
 aiofiles>=24.1, <24.2
+cffi==v1.17.0rc1
 CairoSVG>=2.7, <2.8
-discord.py>=2.4, <2.5
+discord.py @ git+https://github.com/Jeglerjeg/discord.py@ee30fab4aebabc6b633ab6ccf018309636421978
 imageio>=2.34, <2.35
 markovify>=0.9, <0.10
 nltk>=3.8, <3.9
@@ -15,7 +16,7 @@ python-dateutil>=2.9, <2.10
 python-socketio[asyncio_client]>=5.11, <5.12
 pytz>=2024.1 , <2024.2
 requests>=2.32, <2.33
-rosu-pp-py>=1.0, <1.1
+rosu-pp-py @ git+https://github.com/Jeglerjeg/rosu-pp-py@c30fc7b4d8c75fa01cc5a5f72df75189b2c7a833
 SQLAlchemy>=2.0, <2.1
 twitchio[speed]>=2.10,<2.11
 yt-dlp==2024.7.1
