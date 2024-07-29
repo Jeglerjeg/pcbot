@@ -566,7 +566,8 @@ async def render(message: discord.Message, *options):
         return
 
     last_rendered[message.author.id] = datetime.now(timezone.utc)
-    ordr.requested_renders[int(render_job["renderID"])] = {"message": placeholder_msg, "edited": datetime.now(timezone.utc)}
+    ordr.requested_renders[int(render_job["renderID"])] = \
+        {"message": placeholder_msg, "edited": datetime.now(timezone.utc)}
 
 
 async def score_command(message: discord.Message, *options, lazer_api: bool = False):
@@ -930,7 +931,8 @@ async def debug(message: discord.Message):
                 member_list.append(f"`{member.name}`")
 
     average_requests = utils.format_number(api.requests_sent /
-                                           ((datetime.now(timezone.utc) - client.time_started).total_seconds() / 60.0), 2) \
+                                           ((datetime.now(timezone.utc) - client.time_started).total_seconds() / 60.0),
+                                           2) \
         if api.requests_sent > 0 else 0
     last_update = f"<t:{int(osu_tracker.previous_update.timestamp())}:F>" \
         if osu_tracker.previous_update else "Not updated yet."
