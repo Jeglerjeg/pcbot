@@ -7,10 +7,12 @@ import os
 import traceback
 from collections import namedtuple
 from operator import itemgetter
+from typing import Union
 
 from pcbot import utils, Config
 from plugins.osulib import enums, api
 from plugins.osulib.args import parse as parse_options
+from plugins.osulib.args import mods as parse_mods
 from plugins.osulib.models.beatmap import Beatmap, Beatmapset
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.utils import misc_utils, score_utils
@@ -98,12 +100,13 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False):
     return beatmap_path
 
 
-async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore_osu_cache: bool = False,
+async def calculate_pp(beatmap_url_or_id, *options, mods: Union[list, str], mode: enums.GameMode, ignore_osu_cache: bool = False,
                        failed: bool = False, potential: bool = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
 
     :param beatmap_url_or_id: beatmap_url as str or the id as int
+    :param mods: the mods to calculate pp for
     :param mode: which mode to calculate PP for
     :param ignore_osu_cache: When true, does not download or use .osu file cache
     :param failed: whether or not the play was failed
@@ -117,15 +120,17 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     args = parse_options(*options)
 
     # Calculate the mod bitmask and apply settings if needed
-    if args.mods and enums.Mods.NC in args.mods:
-        args.mods.remove(enums.Mods.NC)
-        args.mods.append(enums.Mods.DT)
-    mods_bitmask = sum(mod.value for mod in args.mods) if args.mods else 0
+    if isinstance(mods, str):
+        mod_args = parse_mods(mods)
+        if mod_args and enums.Mods.NC in mod_args:
+            mod_args.remove(enums.Mods.NC)
+            mod_args.append(enums.Mods.DT)
+        mods = sum(mod.value for mod in mod_args) if mod_args else 0
 
     osu_map = rosu_pp_py.Beatmap(path=beatmap_path)
 
     osu_map.convert(mode.to_rosu())
-    calculator = rosu_pp_py.Performance(mods=mods_bitmask)
+    calculator = rosu_pp_py.Performance(mods=mods)
     if args.clock_rate:
         calculator.set_clock_rate(args.clock_rate)
 
@@ -153,7 +158,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mode: enums.GameMode, ignore
     if not max_combo:
         max_combo = pp_info.difficulty.max_combo
 
-    map_attributes = rosu_pp_py.BeatmapAttributesBuilder(map=osu_map, mods=mods_bitmask)
+    map_attributes = rosu_pp_py.BeatmapAttributesBuilder(map=osu_map, mods=mods)
     map_attributes = set_map_params(map_attributes, args).build()
 
     pp = pp_info.pp
@@ -284,7 +289,7 @@ async def get_score_pp(osu_score: OsuScore, mode: enums.GameMode, beatmap: Beatm
     """ Return PP for a given score. """
     score_pp = None
     try:
-        score_pp = await calculate_pp(beatmap.id if beatmap else osu_score.beatmap_id, mode=mode,
+        score_pp = await calculate_pp(beatmap.id if beatmap else osu_score.beatmap_id, mods=osu_score.mods, mode=mode,
                                       ignore_osu_cache=not bool(beatmap.status in ("ranked", "approved")) if beatmap
                                       else False,
                                       potential=score_utils.calculate_potential_pp(osu_score, mode),
@@ -329,7 +334,7 @@ async def calculate_pp_for_beatmapset(beatmapset: Beatmapset, osu_config: Config
 
         # If the diff is not cached, or was changed, calculate the pp and update the cache
         try:
-            pp_stats = await calculate_pp(int(map_id), mods, mode=diff.mode,
+            pp_stats = await calculate_pp(int(map_id), mods=mods, mode=diff.mode,
                                           ignore_osu_cache=ignore_osu_cache)
         except ValueError:
             logging.error(traceback.format_exc())

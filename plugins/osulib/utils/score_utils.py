@@ -88,7 +88,6 @@ def get_score_object_count(osu_score: OsuScore):
 
 
 def process_score_args(osu_score: OsuScore):
-    formatted_mods = f"+{enums.Mods.format_mods(osu_score.mods)}"
     great = osu_score.statistics.great
     ok = osu_score.statistics.ok
     miss = osu_score.statistics.miss
@@ -97,47 +96,22 @@ def process_score_args(osu_score: OsuScore):
 
     if osu_score.mode is enums.GameMode.osu:
         potential_acc = misc_utils.calculate_acc(osu_score.mode, osu_score, exclude_misses=True)
-        args_list = (f"{formatted_mods} {acc:.2%} {potential_acc:.2%}pot {great}x300 {ok}x100 {meh}x50 "
+        args_list = (f"{acc:.2%} {potential_acc:.2%}pot {great}x300 {ok}x100 {meh}x50 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
     elif osu_score.mode is enums.GameMode.taiko:
-        args_list = (f"{formatted_mods} {acc:.2%} {great}x300 {ok}x100 "
+        args_list = (f"{acc:.2%} {great}x300 {ok}x100 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
     elif osu_score.mode is enums.GameMode.mania:
-        args_list = f"{formatted_mods} {osu_score.statistics.perfect}xgeki {great}x300 " \
+        args_list = f"{osu_score.statistics.perfect}xgeki {great}x300 " \
                     f"{osu_score.statistics.good}xkatu {ok}x100 {meh}x50 " \
                     f"{miss}m {get_score_object_count(osu_score)}objects".split()
     else:
         large_tick_hit = osu_score.statistics.large_tick_hit
         small_tick_hit = osu_score.statistics.small_tick_hit
         small_tick_miss = osu_score.statistics.small_tick_miss
-        args_list = (f"{formatted_mods} {great}x300 {large_tick_hit}x100 {small_tick_hit}x50 {small_tick_miss}xkatu "
+        args_list = (f"{great}x300 {large_tick_hit}x100 {small_tick_hit}x50 {small_tick_miss}xkatu "
                      f"{miss}m {osu_score.max_combo}x").split()
-    return args_list + process_mod_settings(osu_score)
-
-
-def process_mod_settings(osu_score: OsuScore):
-    """ Adds args for all difficulty adjusting mod settings in a score. """
-    args = []
-    for mod in osu_score.mods:
-        if "settings" not in mod:
-            continue
-        if mod["acronym"] == "DT" or mod["acronym"] == "NC" or mod["acronym"] == "HT" or mod["acronym"] == "DC":
-            if "speed_change" in mod["settings"]:
-                args.append(f'{mod["settings"]["speed_change"]}*')
-            elif mod["acronym"] == "DT" or mod["acronym"] == "NC":
-                args.append("1.5*")
-            else:
-                args.append("0.75*")
-        if mod["acronym"] == "DA":
-            if "circle_size" in mod["settings"]:
-                args.append(f'cs{mod["settings"]["circle_size"]}')
-            if "approach_rate" in mod["settings"]:
-                args.append(f'ar{mod["settings"]["approach_rate"]}')
-            if "drain_rate" in mod["settings"]:
-                args.append(f'hp{mod["settings"]["drain_rate"]}')
-            if "overall_difficulty" in mod["settings"]:
-                args.append(f'od{mod["settings"]["overall_difficulty"]}')
-    return args
+    return args_list
 
 
 def calculate_potential_pp(osu_score: OsuScore, mode: enums.GameMode):
