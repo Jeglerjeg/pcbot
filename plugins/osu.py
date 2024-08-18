@@ -268,9 +268,9 @@ async def info(message: discord.Message, member: discord.Member = Annotate.Self)
     e.add_field(name="Notification Mode", value=update_mode.name)
     e.add_field(name="Playing osu!", value="YES" if user_utils.is_playing(member) else "NO")
     e.add_field(name="Notifying leaderboard scores", value="YES"
-                if user_utils.get_leaderboard_update_status(str(member.id)) else "NO")
+    if user_utils.get_leaderboard_update_status(str(member.id)) else "NO")
     e.add_field(name="Notifying beatmap updates", value="YES"
-                if user_utils.get_beatmap_update_status(str(member.id)) else "NO")
+    if user_utils.get_beatmap_update_status(str(member.id)) else "NO")
 
     await client.send_message(message.channel, embed=e)
 
@@ -312,7 +312,7 @@ async def pp_(message: discord.Message, beatmap_url: str, *options):
 
         beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
 
-        pp_stats = await pp.calculate_pp(beatmap_url, *options,
+        pp_stats = await pp.calculate_pp(beatmap_url, *options, mods=[],
                                          mode=beatmap_info.gamemode if beatmap_info.gamemode else beatmap.mode,
                                          ignore_osu_cache=not bool(beatmap.status in ("ranked", "approved")))
     except ValueError as e:
