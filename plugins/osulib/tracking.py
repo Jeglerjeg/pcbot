@@ -106,7 +106,7 @@ class OsuTracker:
         if not api.access_token:
             await api.get_access_token(osu_config.data.get("client_id"), osu_config.data.get("client_secret"))
             client.loop.create_task(api.refresh_access_token(osu_config.data.get("client_id"),
-                                                             osu_config.data.get("client_secret")))
+                                                                   osu_config.data.get("client_secret")))
         self.started = datetime.now()
 
         try:
@@ -149,8 +149,9 @@ class OsuTracker:
         osu_user.add_tick()
 
         if osu_user.ticks > not_playing_skip:
-            await update_osu_user(int(member_id), osu_user.id, member, osu_user)
             osu_user.reset_ticks()
+            await update_osu_user(int(member_id), osu_user.id, member, osu_user)
+            return
 
         # Only update members not tracked ingame every nth update
         if not user_utils.is_playing(member) and osu_user.ticks != not_playing_skip:
