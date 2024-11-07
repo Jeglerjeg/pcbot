@@ -23,6 +23,7 @@ from operator import itemgetter
 from textwrap import wrap
 
 import discord
+from discord import Message
 
 import bot
 import plugins
@@ -593,7 +594,11 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
-        beatmap_info = await beatmap_utils.find_beatmap_info(message.channel)
+        if message.reference and isinstance(message.reference.resolved, Message):
+            beatmap_info = await beatmap_utils.find_beatmap_info([message.reference.resolved])
+        else:
+            beatmap_info = await beatmap_utils.find_beatmap_info(
+                [message async for message in message.channel.history(before=message)])
         # Check if URL was found
         assert beatmap_info, "No beatmap link found"
     else:
@@ -661,7 +666,11 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
 
     # Attempt to find beatmap URL in previous messages
     if not beatmap_url:
-        beatmap_info = await beatmap_utils.find_beatmap_info(message.channel)
+        if message.reference and isinstance(message.reference.resolved, Message):
+            beatmap_info = await beatmap_utils.find_beatmap_info([message.reference.resolved])
+        else:
+            beatmap_info = await beatmap_utils.find_beatmap_info(
+                [message async for message in message.channel.history(before=message)])
         # Check if URL was found
         assert beatmap_info, "No beatmap link found"
     else:

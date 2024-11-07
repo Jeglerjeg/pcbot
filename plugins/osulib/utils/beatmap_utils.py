@@ -1,18 +1,21 @@
-import discord
+from typing import AsyncIterator, Union
+
+from discord import Message, MessageReference
 
 from pcbot import utils
 from plugins.osulib import api, enums
 from plugins.osulib.constants import host
 
 
-async def find_beatmap_info(channel: discord.TextChannel):
+async def find_beatmap_info(messages: list[Message]):
     beatmap_info = None
-    async for m in channel.history():
+    for m in messages:
         to_search = [m.content]
         if m.embeds:
             for embed in m.embeds:
                 to_search.append(embed.description if embed.description else "")
                 to_search.append(embed.title if embed.title else "")
+                to_search.append(embed.url if embed.url else "")
                 to_search.append(embed.footer.text if embed.footer else "")
         found_url = utils.http_url_pattern.search("".join(to_search))
         if found_url:
