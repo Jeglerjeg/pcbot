@@ -130,10 +130,7 @@ async def osu(message: discord.Message, *options):
 @osu.command(aliases="set")
 async def link(message: discord.Message, name: Annotate.LowerContent):
     """ Tell the bot who you are on osu!. """
-    params = {
-        "key": "username",
-    }
-    osu_user = await api.get_user(name, params=params)
+    osu_user = await api.get_user(f"@{name}")
 
     # Check if the osu! user exists
     assert osu_user, f"osu! user `{name}` does not exist."

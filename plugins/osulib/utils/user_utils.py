@@ -19,18 +19,11 @@ def get_missing_user_string(guild: discord.Guild):
 async def get_user(message: discord.Message, member: discord.Member, username: str = None, mode: GameMode = None):
     """ Get member by discord username or osu username. """
     if username:
-        params = {
-            "key": "username",
-        }
-        osu_user = await api.get_user(username, mode.name if mode else "", params=params)
+        osu_user = await api.get_user(f"@{username}", mode.name if mode else "")
     else:
         linked_profile = get_linked_osu_profile(member.id)
         assert linked_profile, get_missing_user_string(message.guild)
-        params = {
-            "key": "id",
-        }
-        osu_user = await api.get_user(linked_profile.osu_id, mode.name if mode else GameMode(linked_profile.mode).name,
-                                      params=params)
+        osu_user = await api.get_user(linked_profile.osu_id, mode.name if mode else GameMode(linked_profile.mode).name)
 
     assert osu_user, "Failed to get user data. Please try again later."
 
@@ -38,10 +31,7 @@ async def get_user(message: discord.Message, member: discord.Member, username: s
 
 
 async def retrieve_user_profile(profile: str, mode: enums.GameMode, timestamp: datetime = None):
-    params = {
-        "key": "id"
-    }
-    user_data = await api.get_user(profile, mode.name, params=params)
+    user_data = await api.get_user(profile, mode.name)
     if not user_data:
         return None
     if timestamp:
