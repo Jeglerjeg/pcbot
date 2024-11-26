@@ -27,8 +27,7 @@ def get_embed_from_template(description: str, color: discord.Colour, author_text
 
 
 async def create_score_embed_with_pp(member: discord.Member, osu_score: OsuScore, beatmap: Beatmap,
-                                     mode: enums.GameMode, twitch_link: bool = False,
-                                     time: bool = False):
+                                     mode: enums.GameMode, twitch_link: bool = False):
     """ Returns a score embed for use outside of automatic score notifications. """
     score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
     mods = enums.Mods.format_mods(osu_score.mods)

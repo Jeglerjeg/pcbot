@@ -10,7 +10,7 @@ import aiohttp
 from plugins.osulib import enums, api, db
 from plugins.osulib.constants import score_request_limit
 from plugins.osulib.models.beatmap import Beatmap
-from plugins.osulib.models.score import OsuScore
+from plugins.osulib.models.score import OsuScore, ScoreStatistics
 from plugins.osulib.utils import user_utils, misc_utils
 
 
@@ -31,6 +31,13 @@ def get_sorted_scores(osu_scores: list[OsuScore], list_type: str):
     else:
         sorted_scores = osu_scores
     return sorted_scores
+
+
+def is_perfect(statistics: ScoreStatistics):
+    if statistics.miss > 0 or statistics.large_tick_miss > 0 or statistics.combo_break > 0:
+        return False
+    return True
+
 
 
 def get_maximum_score_combo(osu_score: OsuScore, beatmap: Beatmap):

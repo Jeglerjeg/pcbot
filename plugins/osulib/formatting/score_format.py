@@ -85,8 +85,8 @@ def format_score_statistics(osu_score: OsuScore, beatmap: Beatmap, mode: enums.G
     maxcombo = osu_score.max_combo
     calculated_max_combo = get_maximum_score_combo(osu_score, beatmap)
     max_combo = f"/{calculated_max_combo}" if calculated_max_combo is not None else ""
-    color = "\u001b[0;32m" if osu_score.legacy_perfect \
-            or (maxcombo == calculated_max_combo if calculated_max_combo else 0) else "\u001b[0;31m"
+    color = "\u001b[0;32m" if (score_utils.is_perfect(osu_score.statistics) if osu_score.build_id else
+                               osu_score.legacy_perfect) else "\u001b[0;31m"
     if mode is enums.GameMode.osu:
         return "acc    300s  100s  50s  miss  combo\n" \
               f'{color}{acc:<7}{great:<6}{ok:<6}{meh:<5}{miss:<6}{maxcombo}{max_combo}'

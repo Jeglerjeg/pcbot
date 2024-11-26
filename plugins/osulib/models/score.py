@@ -19,6 +19,7 @@ class ScoreStatistics:
     large_tick_hit: int
     large_tick_miss: int
     miss: int
+    combo_break: int
 
     def __init__(self, raw_data: dict):
         self.perfect = raw_data["perfect"] if "perfect" in raw_data else 0
@@ -31,6 +32,7 @@ class ScoreStatistics:
         self.large_tick_hit = raw_data["large_tick_hit"] if "large_tick_hit" in raw_data else 0
         self.large_tick_miss = raw_data["large_tick_miss"] if "large_tick_miss" in raw_data else 0
         self.miss = raw_data["miss"] if "miss" in raw_data else 0
+        self.combo_break = raw_data["combo_break"] if "combo_break" in raw_data else 0
 
     def __repr__(self):
         return str(self.__dict__)
@@ -81,6 +83,7 @@ class OsuScore:
     rank_global: Optional[int]
     weight: Optional[dict]
     user: Optional[OsuUserCompact]
+    build_id: Optional[int]
 
     def __init__(self, data):
         self.total_score = data["total_score"]
@@ -139,6 +142,10 @@ class OsuScore:
             self.user = OsuUserCompact(data["user"], from_db=False)
         else:
             self.user = None
+        if "build_id" in data:
+            self.build_id = data["build_id"]
+        else:
+            self.build_id = None
 
     def __getitem__(self, item):
         return getattr(self, item)

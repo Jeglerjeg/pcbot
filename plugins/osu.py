@@ -628,8 +628,7 @@ async def score_command(message: discord.Message, *options, lazer_api: bool = Fa
 
     embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap,
                                                           beatmap_info.gamemode if beatmap_info.gamemode else
-                                                          osu_user.mode,
-                                                          time=bool(not mods))
+                                                          osu_user.mode)
     await client.send_message(message.channel, embed=embed)
 
 
@@ -704,16 +703,14 @@ async def scores_command(message: discord.Message, *options, lazer_api: bool = F
         matching_score.user = osu_user
         embed = await embed_format.create_score_embed_with_pp(member, matching_score, beatmap,
                                                               beatmap_info.gamemode if beatmap_info.gamemode else
-                                                              osu_user.mode,
-                                                              time=bool(not mods))
+                                                              osu_user.mode)
     elif len(fetched_osu_scores["scores"]) == 1:
         osu_score = fetched_osu_scores["scores"][0]
         # Add user to the score so formatting will work properly.
         osu_score.user = osu_user
         embed = await embed_format.create_score_embed_with_pp(member, osu_score, beatmap,
                                                               beatmap_info.gamemode if beatmap_info.gamemode else
-                                                              osu_user.mode,
-                                                              time=bool(not mods))
+                                                              osu_user.mode)
     else:
         osu_score_list = fetched_osu_scores["scores"]
         # Add position to the scores so formatting the score list will work properly.
