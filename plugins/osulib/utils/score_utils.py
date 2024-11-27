@@ -104,7 +104,9 @@ def process_score_args(osu_score: OsuScore):
     if osu_score.mode is enums.GameMode.osu:
         potential_acc = misc_utils.calculate_acc(osu_score.mode, osu_score, exclude_misses=True)
         args_list = (f"{acc:.2%} {potential_acc:.2%}pot {great}x300 {ok}x100 {meh}x50 "
-                     f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()
+                     f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects "
+                     f"{osu_score.statistics.large_tick_hit}xlargetick "
+                     f"{osu_score.statistics.slider_tail_hit}xsliderend").split()
     elif osu_score.mode is enums.GameMode.taiko:
         args_list = (f"{acc:.2%} {great}x300 {ok}x100 "
                      f"{miss}m {osu_score.max_combo}x {get_score_object_count(osu_score)}objects").split()

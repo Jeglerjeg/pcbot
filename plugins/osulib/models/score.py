@@ -18,6 +18,7 @@ class ScoreStatistics:
     small_tick_miss: int
     large_tick_hit: int
     large_tick_miss: int
+    slider_tail_hit: int
     miss: int
     combo_break: int
 
@@ -31,6 +32,7 @@ class ScoreStatistics:
         self.small_tick_miss = raw_data["small_tick_miss"] if "small_tick_miss" in raw_data else 0
         self.large_tick_hit = raw_data["large_tick_hit"] if "large_tick_hit" in raw_data else 0
         self.large_tick_miss = raw_data["large_tick_miss"] if "large_tick_miss" in raw_data else 0
+        self.slider_tail_hit = raw_data["slider_tail_hit"] if "slider_tail_hit" in raw_data else 0
         self.miss = raw_data["miss"] if "miss" in raw_data else 0
         self.combo_break = raw_data["combo_break"] if "combo_break" in raw_data else 0
 

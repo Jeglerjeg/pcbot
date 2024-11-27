@@ -101,7 +101,7 @@ async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False):
 
 
 async def calculate_pp(beatmap_url_or_id, *options, mods: Union[list, str], mode: enums.GameMode, ignore_osu_cache: bool = False,
-                       failed: bool = False, potential: bool = False):
+                       failed: bool = False, potential: bool = False, lazer: bool = False):
     """ Return a PPStats namedtuple from this beatmap, or a ClosestPPStats namedtuple
     when [pp_value]pp is given in the options.
 
@@ -134,8 +134,9 @@ async def calculate_pp(beatmap_url_or_id, *options, mods: Union[list, str], mode
 
     osu_map = rosu_pp_py.Beatmap(path=beatmap_path)
 
-    osu_map.convert(mode.to_rosu())
+    osu_map.convert(mode.to_rosu(), mods=mods)
     calculator = rosu_pp_py.Performance(mods=mods)
+    calculator.set_lazer(lazer)
     if args.clock_rate:
         calculator.set_clock_rate(args.clock_rate)
 
@@ -218,6 +219,10 @@ def set_score_params(calculator: rosu_pp_py.Performance, args):
         calculator.set_n_geki(args.geki)
     if args.misses:
         calculator.set_misses(args.misses)
+    if args.large_ticks:
+        calculator.set_large_tick_hits(args.large_ticks)
+    if args.slider_ends:
+        calculator.set_slider_end_hits(args.slider_ends)
     return calculator
 
 
@@ -298,7 +303,8 @@ async def get_score_pp(osu_score: OsuScore, mode: enums.GameMode, beatmap: Beatm
                                       ignore_osu_cache=not bool(beatmap.status in ("ranked", "approved")) if beatmap
                                       else False,
                                       potential=score_utils.calculate_potential_pp(osu_score, mode),
-                                      failed=not osu_score.passed, *score_utils.process_score_args(osu_score))
+                                      failed=not osu_score.passed, *score_utils.process_score_args(osu_score),
+                                      lazer=osu_score.build_id is not None)
     except Exception:
         logging.error(traceback.format_exc())
     return score_pp

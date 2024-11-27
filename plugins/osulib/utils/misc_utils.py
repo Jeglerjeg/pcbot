@@ -50,12 +50,13 @@ def calculate_acc(mode: enums.GameMode, osu_score: OsuScore, exclude_misses: boo
     ok = osu_score.statistics.ok
     meh = osu_score.statistics.meh
     miss = osu_score.statistics.miss
+    slider_tail_hit = osu_score.statistics.slider_tail_hit
+    large_tick_hit = osu_score.statistics.large_tick_hit
 
     # Catch accuracy is done a tad bit differently, so we calculate that by itself
     if mode is enums.GameMode.fruits:
         small_tick_hit = osu_score.statistics.small_tick_hit
         small_tick_miss = osu_score.statistics.small_tick_miss
-        large_tick_hit = osu_score.statistics.large_tick_hit
         total_numbers_of_fruits_caught = small_tick_hit + large_tick_hit + great
         total_numbers_of_fruits = (miss + small_tick_hit + large_tick_hit +
                                    great + small_tick_miss)
@@ -64,8 +65,9 @@ def calculate_acc(mode: enums.GameMode, osu_score: OsuScore, exclude_misses: boo
     total_points_of_hits, total_number_of_hits = 0, 0
 
     if mode is enums.GameMode.osu:
-        total_points_of_hits = meh * 50 + ok * 100 + great * 300
-        total_number_of_hits = (0 if exclude_misses else miss) + meh + ok + great
+        total_points_of_hits = 30 * large_tick_hit + meh * 50 + ok * 100 + 150 * slider_tail_hit + great * 300
+        total_number_of_hits = 30 * large_tick_hit + 150 * slider_tail_hit + ((0 if exclude_misses else miss) + meh + ok + great) * 300
+        return total_points_of_hits / total_number_of_hits
     elif mode is enums.GameMode.taiko:
         total_points_of_hits = (miss * 0 + ok * 0.5 + great * 1) * 300
         total_number_of_hits = miss + ok + great
