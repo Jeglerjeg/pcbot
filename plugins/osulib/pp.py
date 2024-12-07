@@ -221,6 +221,8 @@ def set_score_params(calculator: rosu_pp_py.Performance, args):
         calculator.set_misses(args.misses)
     if args.large_ticks:
         calculator.set_large_tick_hits(args.large_ticks)
+    if args.small_ticks:
+        calculator.set_small_tick_hits(args.small_ticks)
     if args.slider_ends:
         calculator.set_slider_end_hits(args.slider_ends)
     return calculator

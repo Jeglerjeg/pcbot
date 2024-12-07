@@ -82,6 +82,7 @@ parser.add("c50", r"(\d+)x50", arg_type=int)
 parser.add("katu", r"(\d+)xkatu", arg_type=int)
 parser.add("geki", r"(\d+)xgeki", arg_type=int)
 parser.add("large_ticks", r"(\d+)xlargetick", arg_type=int)
+parser.add("small_ticks", r"(\d+)xsmalltick", arg_type=int)
 parser.add("slider_ends", r"(\d+)xsliderend", arg_type=int)
 
 parser.add("misses", r"(\d+)(?:m|xm(?:iss)?)", arg_type=int)
