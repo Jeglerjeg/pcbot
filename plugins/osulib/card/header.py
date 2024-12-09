@@ -239,7 +239,7 @@ def draw_followers_pill(follower_count: int):
 
     text_x = padding + user_icon.width + text_padding + 10
 
-    text_y = (pill_height - text_height) // 2 - (15 if follower_count < 1000 else 5)
+    text_y = (pill_height - text_height) // 2 - (30 if follower_count < 1000 else 20)
 
     followers_draw.text(
         (text_x, text_y), follower_count_string, fill=(255, 255, 255), font=font
