@@ -18,6 +18,7 @@ from plugins.osulib.card.helpers import (
     calculate_corner_radius,
     convert_country_code_to_unicode, adjust_color_saturation_and_brightness,
 )
+from plugins.osulib.enums import GameMode
 from plugins.osulib.models.user import OsuUser, UserGroup
 
 
@@ -29,7 +30,7 @@ def draw_header(image: Image, draw: ImageDraw, user_data: OsuUser, avatar_data: 
     draw_level(image, draw, user_data.level)
     draw_flag(image, user_data.country_code)
     draw_username(image, draw, user_data.username)
-    draw_osu_logo(image)
+    draw_osu_logo(image, user_data.mode)
     pills = []
     if len(user_data.groups or []) > 0:
         pills.append(draw_user_group_pill(user_data.groups))
@@ -164,11 +165,18 @@ def draw_username(image: Image, draw: ImageDraw, username: str):
     draw.text((username_x, username_y), username, font=font, fill=text_color)
 
 
-def draw_osu_logo(image: Image):
+def draw_osu_logo(image: Image, mode: GameMode):
     osu_logo_x = int(IMAGE_WIDTH // 4.8)
     osu_logo_y = int(IMAGE_HEIGHT // 8.5)
 
-    osu_logo = Image.open("plugins/osulib/image_resources/images/osu.png")
+    if mode is GameMode.osu:
+        osu_logo = Image.open("plugins/osulib/image_resources/images/osu.png")
+    elif mode is GameMode.fruits:
+        osu_logo = Image.open("plugins/osulib/image_resources/images/ctb.png")
+    elif mode is GameMode.taiko:
+        osu_logo = Image.open("plugins/osulib/image_resources/images/taiko.png")
+    else:
+        osu_logo = Image.open("plugins/osulib/image_resources/images/mania.png")
 
     image.paste(osu_logo, (osu_logo_x, osu_logo_y), osu_logo)
 
