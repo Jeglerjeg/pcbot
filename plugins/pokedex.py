@@ -146,6 +146,7 @@ async def pokedex_(message: discord.Message, name_or_id: Annotate.LowerCleanCont
     # Assign our pokemon
     pokemon = pokedex[name]
 
+    sprite = None
     # Send an image if the bots has Attach Files permission or the message is a dm
     if message.guild is None or message.channel.permissions_for(message.guild.me).attach_files:
         # Get the guild's scale factor
