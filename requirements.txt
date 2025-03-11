@@ -21,4 +21,4 @@ requests>=2.32, <2.33
 rosu-pp-py>=2.0, <2.1
 SQLAlchemy>=2.0, <2.1
 twitchio[speed]>=2.10,<2.11
-yt-dlp==2025.1.26
+yt-dlp==2025.2.19

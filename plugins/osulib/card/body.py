@@ -213,7 +213,7 @@ def draw_stats(image: Image, user_data: OsuUser):
 
 def draw_grade(grade: str, count: int):
     grade_image = Image.open(f"plugins/osulib/image_resources/images/grades/{grade}.png").convert("RGBA")
-    grade_image.thumbnail((IMAGE_HEIGHT // 8, IMAGE_HEIGHT // 8), Image.LANCZOS)
+    grade_image.thumbnail((IMAGE_HEIGHT // 8, IMAGE_HEIGHT // 8), Image.Resampling.LANCZOS)
     font = ImageFont.truetype(TORUS_SEMIBOLD, 48)
     padding = 10
     count_text = f"{count:,}"
