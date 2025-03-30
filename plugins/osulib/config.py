@@ -20,4 +20,5 @@ osu_config = Config("osu", pretty=True, data={
     "opt_in_leaderboard": True,  # Whether or not leaderboard notifications should be opt-in
     "opt_in_beatmaps": False,  # Whether or not beatmap update notifications should be opt-in
     "notify_empty_scores": False,  # Whether or not to notify pp gain when a score isn't found (only if pp mode is off)
+    "scores_ws_url": "Change to the scores-ws URL"
 })

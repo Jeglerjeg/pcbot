@@ -62,6 +62,7 @@ def get_osu_users_db():
         Column("country_code", String, nullable=False),
         Column("mode", Integer, nullable=False),
         Column("pp", Float, nullable=False),
+        Column("min_pp", Float, nullable=False),
         Column("accuracy", Float, nullable=False),
         Column("country_rank", Integer, nullable=False),
         Column("global_rank", Integer, nullable=False),

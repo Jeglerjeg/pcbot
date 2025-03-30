@@ -134,52 +134,5 @@ def add_score_position(osu_scores: list[OsuScore]):
     return osu_scores
 
 
-async def get_new_score(member_id: str):
-    """ Compare old user scores with new user scores and return the discovered
-    new score if there is any. When a score is returned, it's position in the
-    player's top plays can be retrieved with score["pos"]. """
-    # Download a list of the user's scores
-    profile = db.get_linked_osu_profile(int(member_id)).osu_id
-    mode = user_utils.get_mode(member_id)
-    try:
-        fetched_scores = await retrieve_osu_scores(profile, mode)
-    except aiohttp.ServerDisconnectedError:
-        return None
-    except asyncio.TimeoutError:
-        logging.warning("Timed out when retrieving osu! scores from %s (%s)", member_id, profile)
-        return None
-    except ValueError:
-        logging.info("Could not retrieve osu! scores from %s (%s)", member_id, profile)
-        return None
-    except Exception:
-        logging.error(traceback.format_exc())
-        return None
-    if fetched_scores is None:
-        return None
-
-    recent_notifications = db.get_recent_events(int(member_id))
-
-    new_scores = []
-    # Compare the scores from top to bottom and try to find a new one
-    for i, osu_score in enumerate(fetched_scores):
-        if osu_score.ended_at.timestamp() > float(recent_notifications.last_pp_notification):
-            # If the score is older than 3 hours, don't notify it
-            if (datetime.now(tz=timezone.utc) - osu_score.ended_at).total_seconds() > 3600 * 3:
-                continue
-            # Calculate the difference in pp from the score below
-            if i < len(fetched_scores) - 2:
-                score_pp = float(osu_score.pp)
-                diff = score_pp - float(fetched_scores[i + 1].pp)
-            else:
-                diff = 0
-            osu_score.pp_difference = diff
-            new_scores.append(osu_score)
-
-    # Save the updated score list, and if there are new scores, update time_updated
-    if new_scores:
-        db.update_recent_events(int(member_id), recent_notifications, pp=True)
-    return new_scores
-
-
 def count_score_pages(osu_scores: list[OsuScore], scores_per_page: int):
     return ceil(len(osu_scores) / scores_per_page)

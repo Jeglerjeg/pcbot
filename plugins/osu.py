@@ -28,7 +28,7 @@ from discord import Message
 import bot
 import plugins
 from pcbot import utils, Annotate
-from plugins.osulib import api, pp, ordr, enums, db
+from plugins.osulib import api, pp, ordr, enums, db, scores_ws
 from plugins.osulib.card.data import get_card
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import minimum_pp_required, host, score_request_limit
@@ -51,6 +51,7 @@ async def on_ready():
     """ Handle every event. """
     await client.wait_until_ready()
     await ordr.establish_ws_connection()
+    await scores_ws.run()
 
 
 async def on_reload(name: str):
@@ -196,7 +197,8 @@ async def unlink(message: discord.Message, member: discord.Member = Annotate.Sel
         member = message.author
 
     # The member might not be linked to any profile
-    assert get_linked_osu_profile(member.id), user_utils.get_missing_user_string(message.guild)
+    linked_profile = get_linked_osu_profile(member.id)
+    assert linked_profile, user_utils.get_missing_user_string(message.guild)
 
     # Clear the tracking data when unlinking user
     await wipe_user(message.author.id)

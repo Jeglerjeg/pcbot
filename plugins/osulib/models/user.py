@@ -143,6 +143,7 @@ class OsuUser(OsuUserCompact):
     medal_count: Optional[int]
     ticks: Optional[int]
     time_cached: Optional[datetime]
+    min_pp: Optional[float]
 
     def __init__(self, data, from_db: bool = True):
         super().__init__(data, from_db)
@@ -156,6 +157,7 @@ class OsuUser(OsuUserCompact):
             self.ranked_score = data.ranked_score
             self.ticks = data.ticks
             self.time_cached = datetime.fromtimestamp(data.time_cached)
+            self.min_pp = data.min_pp
             self.groups = None
             self.follower_count = None
             self.support_level = None
@@ -212,6 +214,7 @@ class OsuUser(OsuUserCompact):
             self.medal_count = len(data["user_achievements"])
             self.ticks = None
             self.time_cached = None
+            self.min_pp = None
 
     def to_db_query(self, discord_id: int, new_user: bool = False, ticks: int = None):
         if new_user:
@@ -220,7 +223,8 @@ class OsuUser(OsuUserCompact):
         return {"discord_id": discord_id, "id": self.id, "username": self.username, "avatar_url": self.avatar_url,
                 "country_code": self.country_code, "mode": self.mode.value, "pp": self.pp, "accuracy": self.accuracy,
                 "country_rank": self.country_rank, "global_rank": self.global_rank, "max_combo": self.max_combo,
-                "ranked_score": self.ranked_score, "ticks": ticks, "time_cached": int(self.time_cached.timestamp())}
+                "ranked_score": self.ranked_score, "ticks": ticks, "time_cached": int(self.time_cached.timestamp()),
+                "min_pp": self.min_pp}
 
     def __getitem__(self, item):
         return getattr(self, item)

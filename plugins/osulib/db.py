@@ -41,7 +41,7 @@ def get_recent_events(user_id: int):
 
 def insert_recent_events(user_id: int):
     current_time = int(datetime.now(tz=timezone.utc).timestamp())
-    new_recent_events = {"id": user_id, "last_pp_notification": current_time, "last_recent_notification": current_time}
+    new_recent_events = {"id": user_id, "last_pp_notification": 0, "last_recent_notification": current_time}
     with engine.connect() as connection:
         table = db_metadata.tables["osu_recent_events"]
         statement = insert(table).values(new_recent_events)
@@ -50,11 +50,11 @@ def insert_recent_events(user_id: int):
         transaction.commit()
 
 
-def update_recent_events(user_id: int, old: Row, pp: bool = False, recent: bool = False):
+def update_recent_events(user_id: int, old: Row, score_id: int = None, recent: bool = False):
     current_time = int(datetime.now(tz=timezone.utc).timestamp())
     updated_recent_events = {"id": user_id,
-                             "last_pp_notification": current_time
-                             if pp else old.last_pp_notification,
+                             "last_pp_notification": score_id
+                             if score_id else old.last_pp_notification,
                              "last_recent_notification": current_time
                              if recent else old.last_recent_notification
                              }
