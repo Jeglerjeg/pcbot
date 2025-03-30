@@ -62,13 +62,6 @@ async def add_new_user(member_id: int, profile: int):
     mode = user_utils.get_mode(str(member_id))
     api_user_data = await user_utils.retrieve_user_profile(str(profile), mode, current_time)
     if api_user_data:
-        params = {
-            "mode": mode.name,
-            "limit": score_request_limit,
-        }
-        api_user_scores = await api.get_user_scores(str(profile), "best", params=params)
-        sorted_scores = score_utils.get_sorted_scores(api_user_scores, "pp")
-        api_user_data.min_pp = sorted_scores[len(sorted_scores) - 1].pp
         db.insert_osu_user(api_user_data, member_id)
         if not db.get_recent_events(member_id):
             db.insert_recent_events(member_id)
@@ -91,13 +84,6 @@ async def update_osu_user(member_id: int, profile: int, member: discord.Member, 
         if api_user_data is None:
             logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
             return
-        params = {
-            "mode": mode.name,
-            "limit": score_request_limit,
-        }
-        api_user_scores = await api.get_user_scores(str(profile), "best", params=params)
-        sorted_scores = score_utils.get_sorted_scores(api_user_scores, "pp")
-        api_user_data.min_pp = sorted_scores[len(sorted_scores) - 1].pp
         db.update_osu_user(api_user_data, member_id, osu_user.ticks)
     except aiohttp.ServerDisconnectedError:
         return
