@@ -39,9 +39,8 @@ async def run():
         logging.error(f"Couldn't connect: {e}")
 
 async def process_scores(websocket):
-    try:
-        async for event in websocket:
-            # `event` consists of JSON bytes of a score as sent by the osu!api
+    async for event in websocket:
+        try:
             score = json.loads(event)
             if int(score["user_id"]) in tracked_users:
                 score = OsuScore(score)
@@ -67,8 +66,8 @@ async def process_scores(websocket):
                         api_user_scores = await api.get_user_scores(score.user_id, "best", params=params)
                         if check_top100(score, api_user_scores):
                             client.loop.create_task(notify_pp(member_id, score, db_user, last_user_events))
-    except Exception as e:
-        logging.error(e)
+        except Exception as e:
+            logging.error(e)
 
 
 def check_top100(score: OsuScore, score_list: list[OsuScore]):
