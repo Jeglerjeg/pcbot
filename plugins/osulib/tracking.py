@@ -51,7 +51,7 @@ async def wipe_user(member_id: int):
         if len(scores_ws.tracked_users[old_user.id]) == 1:
             scores_ws.tracked_users.pop(old_user.id, None)
         else:
-            scores_ws.tracked_users[old_user.id].remove(member_id)
+            scores_ws.tracked_users[old_user.id].discard(member_id)
 
 
 async def add_new_user(member_id: int, profile: int):
@@ -73,9 +73,9 @@ async def add_new_user(member_id: int, profile: int):
         if not db.get_recent_events(member_id):
             db.insert_recent_events(member_id)
         if profile in scores_ws.tracked_users:
-            scores_ws.tracked_users[profile].append(member_id)
+            scores_ws.tracked_users[profile].add(member_id)
         else:
-            scores_ws.tracked_users[profile] = [member_id]
+            scores_ws.tracked_users[profile] = {member_id}
     else:
         logging.info("Could not retrieve osu! info from %s (%s)", member_id, profile)
         return

@@ -15,11 +15,12 @@ client = plugins.client  # type: bot.Client
 tracked_users = {}
 for member in db.get_linked_osu_profiles():
     if member.osu_id in tracked_users:
-        tracked_users[member.osu_id].append(member.id)
+        tracked_users[member.osu_id].add(member.id)
     else:
-        tracked_users[member.osu_id] = [member.id]
+        tracked_users[member.osu_id] = {member.id}
 
 async def run():
+    print(tracked_users)
     # Create the websocket stream
     scores_ws_url = config.osu_config.data.get("scores_ws_url")
     if scores_ws_url == "Change to the scores-ws websocket URL":
@@ -60,5 +61,5 @@ async def process_scores(websocket):
 
                     if score.id > last_user_events.last_pp_notification:
                         client.loop.create_task(notify_pp(member_id, score, db_user, last_user_events))
-    except asyncio.CancelledError:
-        raise
+    except Exception as e:
+        logging.error(e)
