@@ -1,17 +1,13 @@
-import asyncio
-import logging
-import traceback
 from math import ceil
-from datetime import datetime, timezone
 from operator import itemgetter
+from bisect import bisect
 
-import aiohttp
 
-from plugins.osulib import enums, api, db
+from plugins.osulib import enums, api
 from plugins.osulib.constants import score_request_limit
 from plugins.osulib.models.beatmap import Beatmap
 from plugins.osulib.models.score import OsuScore, ScoreStatistics
-from plugins.osulib.utils import user_utils, misc_utils
+from plugins.osulib.utils import misc_utils
 
 
 def get_sorted_scores(osu_scores: list[OsuScore], list_type: str):
@@ -132,6 +128,19 @@ def add_score_position(osu_scores: list[OsuScore]):
     for i, osu_score in enumerate(osu_scores):
         osu_score.add_position(i + 1)
     return osu_scores
+
+def find_score_position(osu_score: OsuScore, osu_scores: list[OsuScore]):
+    found_index = None
+    for i, api_score in enumerate(osu_scores):
+        if osu_score.id == api_score.id:
+            found_index = i + 1
+            break
+    if not found_index:
+        osu_scores.append(osu_score)
+        sorted_scores = get_sorted_scores(osu_scores, "pp")
+        found_index = sorted_scores.index(osu_score) + 1
+    return found_index
+
 
 
 def count_score_pages(osu_scores: list[OsuScore], scores_per_page: int):

@@ -11,7 +11,7 @@ from plugins.osulib.models.score import OsuScore
 from plugins.osulib.tracking import notify_pp, add_new_user
 import json
 
-from plugins.osulib.utils import score_utils
+from plugins.osulib.utils.score_utils import find_score_position, get_sorted_scores
 
 client = plugins.client  # type: bot.Client
 
@@ -63,18 +63,18 @@ async def process_scores(websocket):
                             "mode": GameMode(db_user.mode).name,
                             "limit": score_request_limit,
                         }
-                        api_user_scores = await api.get_user_scores(score.user_id, "best", params=params)
+                        api_user_scores = get_sorted_scores(await api.get_user_scores(score.user_id, "best", params=params), "pp")
                         if check_top100(score, api_user_scores):
+                            score.position = find_score_position(score, api_user_scores)
                             client.loop.create_task(notify_pp(member_id, score, db_user, last_user_events))
         except Exception as e:
             logging.error(e)
 
 
 def check_top100(score: OsuScore, score_list: list[OsuScore]):
-    sorted_scores = score_utils.get_sorted_scores(score_list, "pp")
-    if score.pp < sorted_scores[len(sorted_scores) - 1].pp:
+    if score.pp < score_list[len(score_list) - 1].pp:
         return False
-    for api_score in sorted_scores:
+    for api_score in score_list:
         if api_score.beatmap_id == score.beatmap_id and score.pp < api_score.pp:
             return False
     return True

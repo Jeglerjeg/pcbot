@@ -376,7 +376,7 @@ async def notify_pp(member_id: str, osu_score: OsuScore, old_osu_user: OsuUser =
 
     beatmap = await api.beatmap_lookup(map_id=osu_score.beatmap_id)
     thumbnail_url = beatmap.beatmapset.covers.list2x
-    author_text = f"{new_osu_user.username} set a new best!"
+    author_text = f"{new_osu_user.username} set a new best (#{osu_score.position}/{score_request_limit})"
 
     # Calculate PP and change beatmap SR if using a difficult adjusting mod
     score_pp = await pp.get_score_pp(osu_score, mode, beatmap)
