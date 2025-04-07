@@ -18,7 +18,7 @@ python-dateutil>=2.9, <2.10
 python-socketio[asyncio_client]>=5.12, <5.13
 pytz>=2025.2 , <2025.3
 requests>=2.32, <2.33
-rosu-pp-py>=2.0, <2.1
+rosu-pp-py>=3.0, <3.1
 SQLAlchemy>=2.0, <2.1
 twitchio[speed]>=2.10,<2.11
 yt-dlp==2025.3.27

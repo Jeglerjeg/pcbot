@@ -59,17 +59,19 @@ async def process_scores(websocket):
                         last_user_events = db.get_recent_events(int(member_id))
 
                     if score.id > last_user_events.last_pp_notification:
-                        params = {
-                            "mode": GameMode(db_user.mode).name,
-                            "limit": score_request_limit,
-                        }
-                        api_user_scores = get_sorted_scores(await api.get_user_scores(score.user_id, "best", params=params), "pp")
-                        if check_top100(score, api_user_scores):
-                            score.position = find_score_position(score, api_user_scores)
-                            client.loop.create_task(notify_pp(member_id, score, db_user, last_user_events))
+                        client.loop.create_task(check_notify(db_user, score, member_id, last_user_events))
         except Exception as e:
             logging.error(e)
 
+async def check_notify(db_user, score: OsuScore, member_id: int, last_user_events):
+    params = {
+        "mode": GameMode(db_user.mode).name,
+        "limit": score_request_limit,
+    }
+    api_user_scores = get_sorted_scores(await api.get_user_scores(score.user_id, "best", params=params), "pp")
+    if check_top100(score, api_user_scores):
+        score.position = find_score_position(score, api_user_scores)
+        await notify_pp(member_id, score, db_user, last_user_events)
 
 def check_top100(score: OsuScore, score_list: list[OsuScore]):
     if score.pp < score_list[len(score_list) - 1].pp:

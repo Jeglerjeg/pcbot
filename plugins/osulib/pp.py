@@ -109,8 +109,9 @@ async def calculate_pp(beatmap_url_or_id, *options, mods: Union[list, str], mode
     :param mods: the mods to calculate pp for
     :param mode: which mode to calculate PP for
     :param ignore_osu_cache: When true, does not download or use .osu file cache
-    :param failed: whether or not the play was failed
-    :param potential: whether or not potential PP should be calculated
+    :param failed: whether the play was failed
+    :param potential: whether potential PP should be calculated
+    :param lazer: whether the score was set on lazer
     """
 
     if not rosu_pp_py:
