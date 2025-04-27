@@ -22,6 +22,8 @@ from plugins.osulib.utils import user_utils, misc_utils, score_utils
 
 client = plugins.client  # type: bot.Client
 
+previous_score_updates = {}
+
 
 class MapEvent:
     """ Store userpage map events so that we don't send multiple updates. """
@@ -100,7 +102,6 @@ class OsuTracker:
         self.previous_update = None
         self.time_elapsed = 0
         self.started = None
-        self.previous_score_updates = {}
         self.recent_map_events = []
 
         # Notify the owner when they have not set their API key
@@ -324,14 +325,14 @@ class OsuTracker:
                 osu_score = osu_scores["score"]  # type: OsuScore
                 osu_score.rank_global = osu_scores["position"]
 
-                if member_id not in self.previous_score_updates:
-                    self.previous_score_updates[member_id] = []
+                if member_id not in previous_score_updates:
+                    previous_score_updates[member_id] = []
 
                 db.update_recent_events(int(member_id), last_user_events, recent=True)
-                if osu_score.id in self.previous_score_updates[member_id]:
+                if osu_score.id in previous_score_updates[member_id]:
                     continue
 
-                self.previous_score_updates[member_id].append(osu_score.id)
+                previous_score_updates[member_id].append(osu_score.id)
 
                 beatmap = await api.beatmap_lookup(map_id=beatmap_info.beatmap_id)
 
@@ -360,6 +361,14 @@ class OsuTracker:
 
 async def notify_pp(member_id: str, osu_score: OsuScore, old_osu_user: OsuUser = None, last_user_events = None):
     """ Notify any differences in pp and post the scores + rank/pp gained. """
+    if member_id not in previous_score_updates:
+        previous_score_updates[member_id] = []
+
+    if osu_score.id in previous_score_updates[member_id]:
+        return
+
+    previous_score_updates[member_id].append(osu_score.id)
+
     member = discord.utils.get(client.get_all_members(), id=int(member_id))
     if not member:
         return
