@@ -258,6 +258,14 @@ async def get_user_beatmap_scores(beatmap_id: int, user_id: int, params=None, la
         result["scores"] = [OsuScore(osu_score) for osu_score in result["scores"]]
     return result
 
+async def get_score(score_id:int):
+    request = def_section(f"scores/{score_id}")
+    result = await request()
+    if "{'error': None}" in str(result) or result is None:
+        result = None
+    else:
+        result = OsuScore(result)
+    return result
 
 async def get_beatmapset(beatmapset_id, force_redownload: bool = False):
     """ Returns a beatmapset using beatmapset ID"""

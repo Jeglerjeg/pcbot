@@ -73,6 +73,7 @@ async def check_notify(db_user, score: OsuScore, member_id: int, last_user_event
     }
     api_user_scores = get_sorted_scores(await api.get_user_scores(score.user_id, "best", params=params), "pp")
     if check_top100(score, api_user_scores):
+        score = await api.get_score(score.id)
         score.position = find_score_position(score, api_user_scores)
         await notify_pp(str(member_id), score, db_user, last_user_events)
 
