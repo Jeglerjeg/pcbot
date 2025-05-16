@@ -14,7 +14,7 @@ from plugins.osulib import api, enums, pp, db, scores_ws
 from plugins.osulib.config import osu_config
 from plugins.osulib.constants import not_playing_skip, event_repeat_interval, update_interval, host, \
     use_mentions_in_scores, score_request_limit
-from plugins.osulib.enums import UpdateModes, Mods
+from plugins.osulib.enums import UpdateModes, Mods, GameMode
 from plugins.osulib.formatting import embed_format, beatmap_format, misc_format, score_format
 from plugins.osulib.models.score import OsuScore
 from plugins.osulib.models.user import OsuUser
@@ -55,6 +55,15 @@ async def wipe_user(member_id: int):
         else:
             scores_ws.tracked_users[old_user.id].discard(member_id)
 
+async def get_min_pp(osu_user: int, mode: GameMode):
+    params = {
+        "mode": mode.name,
+        "limit": score_request_limit,
+    }
+    tops = await api.get_user_scores(osu_user, "best", params=params)
+
+    return tops[len(tops) - 1].pp
+
 
 async def add_new_user(member_id: int, profile: int):
     # Wipe user data to make sure things aren't duplicated
@@ -64,6 +73,7 @@ async def add_new_user(member_id: int, profile: int):
     mode = user_utils.get_mode(str(member_id))
     api_user_data = await user_utils.retrieve_user_profile(str(profile), mode, current_time)
     if api_user_data:
+        api_user_data.min_pp = await get_min_pp(profile, mode)
         db.insert_osu_user(api_user_data, member_id)
         if not db.get_recent_events(member_id):
             db.insert_recent_events(member_id)

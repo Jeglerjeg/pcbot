@@ -53,6 +53,9 @@ async def process_scores(websocket):
                     if score.mode != GameMode(db_user.mode):
                         continue
 
+                    if score.pp < db_user.min_pp:
+                        continue
+
                     last_user_events = db.get_recent_events(int(member_id))
                     if not last_user_events:
                         db.insert_recent_events(int(member_id))
