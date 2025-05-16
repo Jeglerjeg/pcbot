@@ -96,6 +96,7 @@ async def update_osu_user(member_id: int, profile: int, member: discord.Member, 
         if api_user_data is None:
             logging.info("Could not retrieve osu! info from %s (%s)", member, profile)
             return
+        api_user_data.min_pp = await get_min_pp(profile, mode)
         db.update_osu_user(api_user_data, member_id, osu_user.ticks)
     except aiohttp.ServerDisconnectedError:
         return
