@@ -305,7 +305,7 @@ beatmap_url_pattern_v1 = \
 beatmapset_url_pattern_v2 = \
     re.compile(r"https?://(osu|lazer)\.ppy\.sh/beatmapsets/(?P<beatmapset_id>\d+)/?(?:#(?P<mode>\w+)/("
                r"?P<beatmap_id>\d+))?")
-beatmap_url_pattern_v2 = re.compile(r"https?://(osu|lazer)\.ppy\.sh/beatmaps/(?P<beatmap_id>\d+)(?:\?mode=("
+beatmap_url_pattern_v2 = re.compile(r"https?://(osu|lazer)\.ppy\.sh/beatmaps/(?P<beatmap_id>\d+)(?:\?ruleset=("
                                     r"?P<mode>\w+))?")
 
 BeatmapURLInfo = namedtuple("BeatmapURLInfo", "beatmapset_id beatmap_id gamemode")
