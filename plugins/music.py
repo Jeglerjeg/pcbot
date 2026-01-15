@@ -96,7 +96,6 @@ class VoiceState:
         self._volume = default_volume
         self.current = None
         self.queue = deque()  # The queue contains items of type Song
-        self.skip_votes = set()
 
     @property
     def volume(self):
@@ -116,7 +115,6 @@ class VoiceState:
     async def play_next(self):
         """ Play the next song if there are any. """
 
-        self.skip_votes.clear()
         if not self.queue:
             if self.voice.is_connected():
                 await disconnect(self.voice.guild)
@@ -220,7 +218,6 @@ async def disconnect(guild: discord.Guild):
     del voice_states[guild]
 
 
-@music.command(aliases="p pl")
 async def play(message: discord.Message, song: Annotate.Content = None):
     """ Play a song in the guild voice channel. The given song could either be a URL or keywords
     to lookup videos in YouTube. """
@@ -232,10 +229,6 @@ async def play(message: discord.Message, song: Annotate.Content = None):
         await join(message)
 
     state = voice_states[message.guild]
-
-    # Check that the member hasn't already requested enough songs
-    songs_queued = sum(1 for s in state.queue if s.requester == message.author)
-    assert songs_queued < max_songs_queued, "**You have queued enough songs for now.**"
 
     if song is None:
         assert len(message.attachments) > 0, \
@@ -278,33 +271,24 @@ async def play(message: discord.Message, song: Annotate.Content = None):
         await state.play_next()
 
 
-@music.command(aliases="s next")
+music.command(aliases="p pl")(play)
+plugins.command(aliases="p")(play)
+
+
 async def skip(message: discord.Message):
     """ Skip the song currently playing. """
     assert_connected(message.author)
     state = voice_states[message.guild]
     assert state.voice.is_playing(), "**There is no song currently playing.**"
-    assert message.author not in state.skip_votes, "**You have already voted to skip this song.**"
 
-    # We want to skip immediately when the requester skips their own song.
-    if message.author == state.current.requester:
-        await client.say(message, "Skipped song on behalf of the requester.")
-        state.skip()
-        return
-
-    state.skip_votes.add(message.author)
-
-    # In order to skip, everyone but the requester and the bot must vote
-    needed_to_skip = len(state.voice.channel.members) - 2
-    votes = len(state.skip_votes)
-    if votes >= needed_to_skip:
-        await client.say(message, "**Skipped song.**")
-        state.skip()
-    else:
-        await client.say(message, f"Voted to skip the current song. `{votes}/{needed_to_skip}`")
+    await client.say(message, "**Skipped song.**")
+    state.skip()
 
 
-@music.command(aliases="u nvm fuck no")
+music.command(aliases="s next")(skip)
+plugins.command(aliases="s")(skip)
+
+
 async def undo(message: discord.Message):
     """ Undo your previously queued song. This will not *skip* the song if it's playing. """
     assert_connected(message.author)
@@ -319,7 +303,10 @@ async def undo(message: discord.Message):
     await client.say(message, "**You have nothing to undo.**")
 
 
-@music.command()
+music.command(aliases="u nvm fuck no")(undo)
+plugins.command()(undo)
+
+
 async def clear(message: discord.Message):
     """ Remove all songs you have queued. """
     assert_connected(message.author)
@@ -335,6 +322,10 @@ async def clear(message: discord.Message):
         await client.say(message, f"Removed all queued songs by **{message.author.display_name}**.")
     else:
         await client.say(message, "**You have no queued songs.**")
+
+
+music.command()(clear)
+plugins.command()(clear)
 
 
 @music.command(roles="Shuffler")
@@ -356,7 +347,6 @@ async def vol(message: discord.Message, volume: int):
     await client.say(message, f"Set the volume to **{state.volume:.00%}**.")
 
 
-@music.command(aliases="np")
 async def playing(message: discord.Message):
     """ Return the name and URL of the song currently playing. """
     assert_connected(message.author)
@@ -368,7 +358,10 @@ async def playing(message: discord.Message):
     await client.send_message(message.channel, embed=embed)
 
 
-@music.command()
+music.command(aliases="np")(playing)
+plugins.command(aliases="np")(playing)
+
+
 async def pause(message: discord.Message):
     """ Pause the currently playing song. """
     assert_connected(message.author)
@@ -379,7 +372,10 @@ async def pause(message: discord.Message):
     await client.say(message, content="Paused the currently playing song.")
 
 
-@music.command()
+music.command()(pause)
+plugins.command()(pause)
+
+
 async def resume(message: discord.Message):
     """ Resume the currently paused song. """
     assert_connected(message.author)
@@ -390,7 +386,10 @@ async def resume(message: discord.Message):
     await client.say(message, content="Resumed the paused song.")
 
 
-@music.command(aliases="q l list")
+music.command()(resume)
+plugins.command()(resume)
+
+
 async def queue(message: discord.Message):
     """ Return a list of the queued songs. """
     assert_connected(message.author)
@@ -402,6 +401,10 @@ async def queue(message: discord.Message):
         "\n".join(format_song(s, url=False).replace("**", "") + "\n" for s in state.queue))
 
     await client.send_message(message.channel, embed=embed)
+
+
+music.command(aliases="q l list")(queue)
+plugins.command(aliases="q")(queue)
 
 
 @plugins.event()
