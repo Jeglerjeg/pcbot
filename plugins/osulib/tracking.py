@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 import aiohttp
 import discord
+from dateutil.tz import UTC
 from discord.ext import tasks
 
 import bot
@@ -168,6 +169,9 @@ class OsuTracker:
             return
 
         osu_user = OsuUser(db_user)
+        if (datetime.now(UTC) - osu_user.time_cached).total_seconds() > 86400:
+            await add_new_user(member_id, profile)
+            return
         osu_user.add_tick()
 
         if osu_user.ticks > not_playing_skip:
