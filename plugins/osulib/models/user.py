@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from random import randint
 from typing import Optional
 
+from dateutil.tz import UTC
+
 from plugins.osulib.constants import not_playing_skip
 from plugins.osulib.enums import GameMode
 
@@ -156,7 +158,7 @@ class OsuUser(OsuUserCompact):
             self.max_combo = data.max_combo
             self.ranked_score = data.ranked_score
             self.ticks = data.ticks
-            self.time_cached = datetime.fromtimestamp(data.time_cached)
+            self.time_cached = datetime.fromtimestamp(data.time_cached, UTC)
             self.min_pp = data.min_pp
             self.groups = None
             self.follower_count = None
