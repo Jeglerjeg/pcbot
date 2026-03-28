@@ -428,7 +428,7 @@ async def summary(message: discord.Message, *options, phrase: Annotate.Content =
 
         # Check if we even have any messages
         assert message_content, on_no_messages.format(message)
-        sentences = generate_message(message, message_content, phrase, strict, coherent, bigram, num)
+        sentences = generate_message(message, message_content, phrase, strict, coherent, num)
 
     await client.send_message(message.channel, "\n".join(sentences), tts=tts)
 
