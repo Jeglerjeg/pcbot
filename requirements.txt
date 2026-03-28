@@ -1,7 +1,7 @@
 aiohttp>=3.13, <3.14
 aiofiles>=25.1, <26.1
 cffi>=2.0, <2.1
-CairoSVG>=2.8, <2.9
+CairoSVG>=2.9, <2.10
 discord.py>=2.7, <2.8
 davey>=0.1.0
 audioop-lts>=0.2, <0.3; python_version >="3.13"
@@ -17,7 +17,7 @@ pyrate-limiter>=2.10, <2.11
 python-dateutil>=2.9, <2.10
 python-socketio[asyncio_client]>=5.16, <5.17
 pytz>=2026.1 , <2026.2
-requests>=2.3, <2.33
+requests>=2.3, <2.34
 rosu-pp-py @ git+https://github.com/Jeglerjeg/rosu-pp-py@82815e759fa7ce369a4b9a2fb90812492c71260c
 SQLAlchemy>=2.0, <2.1
 twitchio[speed]>=2.10,<2.11
