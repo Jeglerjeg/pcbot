@@ -11,14 +11,14 @@ markovify>=0.9, <0.10
 numpy>=2.4, <2.5
 orjson>=3.11, <3.12
 pendulum>=3.2, <3.3
-pillow>=12.1, <12.2
+pillow>=12.2, <12.3
 PyNaCl>=1.6, <1.7
 pyrate-limiter>=2.10, <2.11
 python-dateutil>=2.9, <2.10
 python-socketio[asyncio_client]>=5.16, <5.17
 pytz>=2026.1 , <2026.2
 requests>=2.3, <2.34
-rosu-pp-py @ git+https://github.com/Jeglerjeg/rosu-pp-py@82815e759fa7ce369a4b9a2fb90812492c71260c
+rosu-pp-py>=4.0, <4.1
 SQLAlchemy>=2.0, <2.1
 twitchio[speed]>=2.10,<2.11
 yt-dlp
