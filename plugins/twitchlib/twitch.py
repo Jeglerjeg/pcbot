@@ -1,7 +1,10 @@
 """ API wrapper for twitch.tv. """
+import asyncio
 import re
 
 import discord
+
+import plugins
 
 try:
     import twitchio
@@ -11,6 +14,7 @@ except ImportError:
 from pcbot import Config
 
 twitch_config = Config("twitch-api", data={"ids": {}, "client_id": None, "client_secret": None})
+client = plugins.client
 
 # Define twitch API info
 client_id = twitch_config.data["client_id"] or ""
@@ -19,7 +23,8 @@ client_secret = twitch_config.data["client_secret"] or ""
 url_pattern = re.compile(r"^https://www.twitch.tv/(?P<name>.+)$")
 
 if client_id and client_secret and twitchio:
-    twitch_client = twitchio.Client.from_client_credentials(client_id=client_id, client_secret=client_secret)
+    twitch_client = twitchio.Client(client_id=client_id, client_secret=client_secret)
+    client.loop.create_task(twitch_client.login())
 else:
     twitch_client = None
 
@@ -34,6 +39,7 @@ class UserNotResolved(Exception):
 
 async def get_stream(twitch_id: int):
     """ Get stream info from twitch API. """
+    assert twitch_client is not None, "twitch_client not initialized."
     response = await twitch_client.fetch_streams(user_ids=[twitch_id])
     if len(response) == 0:
         raise RequestFailed
@@ -42,6 +48,7 @@ async def get_stream(twitch_id: int):
 
 async def get_videos(user_id: int):
     """ Return a user's archived videos sorted by time. """
+    assert twitch_client is not None, "twitch_client not initialized."
     response = await twitch_client.fetch_videos(user_id=user_id, sort="time", type="archive")
     return response
 
@@ -82,7 +89,8 @@ async def get_id(member: discord.Member, name: str = None):
         name = match.group("name")
 
     # Make a request for the user found
-    response = await twitch_client.fetch_users(names=[name])
+    assert twitch_client is not None, "twitch_client not initialized."
+    response = await twitch_client.fetch_users(logins=[name])
     if len(response) == 0:
         raise UserNotResolved(
             f"Could not resolve twitch user account of {member}: twitch user {name} does not exist.")

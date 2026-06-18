@@ -20,6 +20,6 @@ pytz>=2026.2 , <2026.3
 requests>=2.3, <2.35
 rosu-pp-py>=4.0, <4.1
 SQLAlchemy>=2.0, <2.1
-twitchio[speed]>=2.10,<2.11
+twitchio[speed]>=3.2,<3.3
 yt-dlp
 websockets>=16.0, <16.1
