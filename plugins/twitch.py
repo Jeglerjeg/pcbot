@@ -71,7 +71,7 @@ def make_twitch_embed(member: discord.Member, response: twitchio.models.Stream):
     if streaming_activity is None:
         raise TypeError("No twitch stream found when making embed.")
 
-    thumbnail_url = response.thumbnail_url.replace("{width}", "640").replace("{height}", "360")
+    thumbnail_url = response.thumbnail.url
 
     e = discord.Embed(title="Playing " + streaming_activity.game, url=streaming_activity.url,
                       description=streaming_activity.name, color=member.color)
