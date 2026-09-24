@@ -554,7 +554,7 @@ async def render(message: discord.Message, *options):
 
     assert replay_url, "No replay provided"
     placeholder_msg = await client.send_message(message.channel, "Sending render...")
-    render_job = await ordr.send_render_job(replay_url)
+    render_job = await ordr.send_render_job(replay_url, message.author.id)
 
     if not isinstance(render_job, dict):
         await placeholder_msg.edit(content="An error occurred when sending this replay. Please try again later.")
@@ -863,10 +863,10 @@ async def beatmap_updates(message: discord.Message, notify_setting: str):
             db.insert_recent_events(int(member.id))
         else:
             db.update_recent_events(int(member.id), last_user_events, recent=True)
-        await client.say(message, "Enabled leaderboard updates.")
+        await client.say(message, "Enabled beatmap updates.")
     elif notify_setting.lower() == "off":
         osu_config.data["beatmap_updates"][str(member.id)] = False
-        await client.say(message, "Disabled leaderboard updates.")
+        await client.say(message, "Disabled beatmap updates.")
     else:
         await client.say(message, "Invalid setting selected. Valid settings are on and off.")
 

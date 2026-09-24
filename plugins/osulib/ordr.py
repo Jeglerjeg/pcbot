@@ -195,19 +195,20 @@ async def get_render(render_id: int):
     return result
 
 
-async def send_render_job(option):
+async def send_render_job(supplied_replay, discord_id):
     """ Send a replay to be rendered by ordr.
     """
     replay = None
     replay_url = None
 
-    if isinstance(option, (bytes, bytearray)):
-        replay = option
-    elif utils.http_url_pattern.match(option):
-        replay_url = option
+    if isinstance(supplied_replay, (bytes, bytearray)):
+        replay = supplied_replay
+    elif utils.http_url_pattern.match(supplied_replay):
+        replay_url = supplied_replay
 
     params = {
         "username": config.name,
+        "discordUserId": discord_id,
         "resolution": ordr_config.data["resolution"],
         "globalVolume": ordr_config.data["globalVolume"],
         "musicVolume": ordr_config.data["musicVolume"],
