@@ -135,6 +135,53 @@ def get_render_error(error_code: int):
         error = "The star rating is greater than 20."
     elif error_code == 31:
         error = "This mapper is blacklisted from ordr."
+    elif error_code == 32:
+        error = "The beatmapset is blacklisted"
+    elif error_code == 33:
+        error = "The replay has already errored less than an hour ago"
+    elif error_code == 34:
+        error = "Invalid replay URL or can't download the replay"
+    elif error_code == 35:
+        error = "A required field is missing."
+    elif error_code == 36:
+        error = "Your last replays have a too high error rate"
+    elif error_code == 37:
+        error = "The replay username is inappropriate"
+    elif error_code == 38:
+        error = "This skin does not exist"
+    elif error_code == 39:
+        error = "This custom skin does not exist or has been deleted"
+    elif error_code == 40:
+        error = "o!rdr is not ready to take render jobs at the moment"
+    elif error_code == 41:
+        error = "o!rdr is not ready to take render jobs at the moment"
+    elif error_code == 42:
+        error = "Replay accuracy is too bad and you're not authenticated"
+    elif error_code == 43:
+        error = "This score does not exist"
+    elif error_code == 44:
+        error = "The replay for this score isn't available"
+    elif error_code == 45:
+        error = "Invalid osu! ruleset score ID"
+    elif error_code == 46:
+        error = "The replay username is too long (> 32 characters)"
+    elif error_code == 47:
+        error = "This user doesn't have the permission to use motion blur"
+    elif error_code == 48:
+        error = "This user doesn't have the permission to set the resolution to 1080p"
+    elif error_code == 49:
+        error = "This user doesn't have the permission to change the music pitch"
+    elif error_code == 50:
+        error = "This replay has incompatible mods selected: \
+        either the renderer doesn't support it or the replay was tampered with"
+    elif error_code == 51:
+        error = "The beatmap difficulty is blacklisted"
+    elif error_code == 52:
+        error = "This user doesn't have the permission to send score IDs to render"
+    elif error_code == 53:
+        error = "The beatmap is too short"
+    elif error_code == 54:
+        error = "The Discord user is being rate-limited."
     return error
 
 
