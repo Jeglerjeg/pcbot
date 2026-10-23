@@ -496,7 +496,7 @@ async def on_message(message: discord.Message):
     """ Perform lambda commands. """
     args = utils.split(message.content)
     if not args:
-        return
+        return None
 
     # Check if the command is a lambda command and is not disabled (in the blacklist)
     if args[0] in lambdas.data and args[0] not in lambda_config.data["blacklist"]:
@@ -535,6 +535,7 @@ async def on_message(message: discord.Message):
                                 "\n%s", utils.format_exception(e))
 
         return True
+    return None
 
 
 # Initialize the plugin's modules

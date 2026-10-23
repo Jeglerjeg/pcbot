@@ -90,7 +90,7 @@ async def on_message(message: discord.Message):
     """ Automatically post editor timestamps with URL. """
     # Ignore commands
     if message.content.startswith("!"):
-        return
+        return None
 
     timestamps = [f"{stamp} {editor_url}" for stamp, editor_url in misc_utils.get_timestamps_with_url(message.content)]
     if timestamps:
@@ -98,6 +98,7 @@ async def on_message(message: discord.Message):
                                   embed=discord.Embed(color=message.author.color,
                                                       description="\n".join(timestamps)))
         return True
+    return None
 
 
 @plugins.command(aliases="circlesimulator eba profile", usage="[member] <mode>")

@@ -72,6 +72,7 @@ async def download_beatmap(beatmap_url_or_id, beatmap_path: str, ignore_cache: b
     if not beatmap_file.decode().strip("\ufeff \t").startswith("osu file format"):
         logging.error("Invalid file received from %s\nCheck %s", file_url, beatmap_path)
         raise ValueError("Could not download the .osu file.")
+    return None
 
 
 async def parse_map(beatmap_url_or_id, ignore_osu_cache: bool = False):
@@ -115,7 +116,7 @@ async def calculate_pp(beatmap_url_or_id, *options, mods: Union[list, str], mode
     """
 
     if not rosu_pp_py:
-        return
+        return None
 
     beatmap_path = await parse_map(beatmap_url_or_id, ignore_osu_cache=ignore_osu_cache)
     args = parse_options(*options)

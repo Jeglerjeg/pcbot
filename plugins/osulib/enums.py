@@ -142,5 +142,6 @@ class GameMode(Enum):
             return rosu_pp_py.GameMode.Taiko
         elif self.value == 2:
             return rosu_pp_py.GameMode.Catch
-        elif self.value == 3:
+        else:
             return rosu_pp_py.GameMode.Mania
+

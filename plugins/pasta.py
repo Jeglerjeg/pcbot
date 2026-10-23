@@ -100,3 +100,4 @@ async def on_message(message: discord.Message):
         embed, content = await generate_pasta(message.content[1:].lower())
         await client.send_message(message.channel, content, embed=embed)
         return True
+    return None

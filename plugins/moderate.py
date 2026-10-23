@@ -272,6 +272,7 @@ async def check_nsfw(message: discord.Message):
                              f"{message.author.mention}: **Please post NSFW content in {nsfw_channel.mention}**")
 
         return True
+    return False
 
 
 @plugins.event()
