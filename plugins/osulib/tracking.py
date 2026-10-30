@@ -338,6 +338,8 @@ class OsuTracker:
                     continue
 
                 osu_score = osu_scores["score"]  # type: OsuScore
+                if (datetime.now() - osu_score.ended_at) > timedelta(hours=24):
+                    continue
                 osu_score.rank_global = osu_scores["position"]
 
                 if member_id not in previous_score_updates:
