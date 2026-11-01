@@ -339,6 +339,7 @@ class OsuTracker:
 
                 osu_score = osu_scores["score"]  # type: OsuScore
                 if (datetime.now() - osu_score.ended_at) > timedelta(hours=24):
+                    logging.info(f"Skipping score {osu_score.id}, age is {(datetime.now() - osu_score.ended_at).seconds / 3600} hours")
                     continue
                 osu_score.rank_global = osu_scores["position"]
 
